@@ -2,6 +2,13 @@
 
 ## requirements
 
+* You need to get an API TOKEN from [BotFather@Telegram](https://core.telegram.org/bots)
+* Load that api token under the environment variable *$BOT_TOKEN*
+ 
+```bash
+export BOT_TOKEN="yourapi:token"
+```
+
 ## Database Schemas
 
 ### Definitions
