@@ -1,0 +1,178 @@
+package main
+
+import (
+	"os"
+	"time"
+	"github.com/tucnak/telebot"
+	"fmt"
+	"regexp"
+	"database/sql"
+	"strings"
+	"strconv"
+	log "github.com/Sirupsen/logrus"
+	"github.com/davecgh/go-spew/spew"
+)
+
+var bot *telebot.Bot
+var db *sql.DB
+
+const version string = "1.0"
+const dbFile string = "./sample.db"
+const levelIgnore int = 500 //level minimum to ignore a user
+
+
+func main() {
+
+	log.Info("Loading zbot-telegram")
+	log.SetLevel(log.DebugLevel)
+
+	var err error
+	bot, err = telebot.NewBot(os.Getenv("BOT_TOKEN"))
+	if err != nil {
+		log.Fatal(err)
+
+	}
+
+	db = InitDB(dbFile)
+	defer db.Close()
+
+	go cleanIgnoreList()
+	bot.Messages = make(chan telebot.Message, 1000)
+	go messagesProcessing()
+
+	bot.Start(1 * time.Second)
+}
+
+func messagesProcessing() {
+	output := make(chan string)
+	for message := range bot.Messages {
+
+		//we're going to process only the message starting with ! or ?
+		processingMsg := regexp.MustCompilePOSIX(`^[!|?].*`)
+
+		//check if the user isn't on the ignore_list
+		if !checkIgnoreList(db, strings.ToLower(message.Sender.Username)) {
+			if processingMsg.MatchString(message.Text) {
+				log.Printf("Received a message from %s with the text: %s\n", message.Sender.Username, message.Text)
+				go processing(message, output)
+			}
+		} else {
+			log.Debug(fmt.Sprintf("User [%s] ignored", strings.ToLower(message.Sender.Username)))
+		}
+	}
+}
+
+func processing(msg telebot.Message, output chan string) {
+
+	var outputMsg string
+
+	versionPattern := regexp.MustCompile(`^!version`)
+	learnPattern := regexp.MustCompile(`^!learn\s(\S*)\s(.*)`)
+	getPattern := regexp.MustCompile(`^\?\s(\S*)`)
+	findPattern := regexp.MustCompile(`^!find\s(\S*)`)
+	searchPattern := regexp.MustCompile(`^!search\s(\S*)`)
+	topPattern := regexp.MustCompile(`^!top`)
+	lastPattern := regexp.MustCompile(`^!last`)
+	randPattern := regexp.MustCompile(`^!rand`)
+	statsPattern := regexp.MustCompile(`^!stats`)
+	pingPattern := regexp.MustCompile(`^!ping`)
+
+	//Levels
+	levelPattern := regexp.MustCompile(`^!level`)
+	ignorePattern := regexp.MustCompile(`^!ignore\s(\S*)`)
+
+	nowDate := time.Now().Format("2006-01-02")
+	var author string
+	var authorIdent string
+	if msg.Sender.Username != ""  {
+		author = msg.Sender.Username
+		authorIdent = strings.ToLower(msg.Sender.FirstName)
+	} else {
+		author = msg.Sender.FirstName
+		authorIdent = strings.ToLower(msg.Sender.FirstName)
+	}
+
+	switch {
+	case ignorePattern.MatchString(msg.Text):
+		result := ignorePattern.FindStringSubmatch(msg.Text)
+		level := getLevel(db, msg.Sender.Username)
+		levelInt, _ := strconv.Atoi(level)
+		if levelInt >= levelIgnore {
+			if strings.ToLower(result[1]) != strings.ToLower(msg.Sender.Username) {
+				insertIgnoreUser(db, result[1])
+				outputMsg = fmt.Sprintf("User [%s] ignored for 10 minutes", result[1])
+			} else {
+				outputMsg = fmt.Sprintf("You can't ignore youself")
+			}
+		}else {
+			outputMsg = fmt.Sprintf("level not enough (minimum %s yours %s)", levelIgnore, level)
+		}
+		break
+	case pingPattern.MatchString(msg.Text):
+		outputMsg = fmt.Sprintf("pong!!")
+		break
+	case learnPattern.MatchString(msg.Text):
+		result := learnPattern.FindStringSubmatch(msg.Text)
+		if author != "" {
+			def := definitionItem{
+				term: result[1],
+				meaning: result[2],
+				author: fmt.Sprintf("%s!%s@telegram.bot", author, authorIdent),
+				date: nowDate,
+			}
+			term, meaning := setDefinition(db, def)
+			outputMsg = fmt.Sprintf("[%s] - [%s]", term, meaning)
+		} else {
+			spew.Dump(msg.Sender)
+			outputMsg = ""
+		}
+		break
+	case getPattern.MatchString(msg.Text):
+		result := getPattern.FindStringSubmatch(msg.Text)
+		definition := getDefinition(db, result[1])
+		if definition.term != "" {
+			outputMsg = fmt.Sprintf("[%s] - [%s]", definition.term, definition.meaning)
+		}else {
+			outputMsg = fmt.Sprintf("[%s] Not found!", result[1])
+		}
+		break
+	case findPattern.MatchString(msg.Text):
+		result := findPattern.FindStringSubmatch(msg.Text)
+		results := findDef(db, result[1])
+		outputMsg = fmt.Sprintf("%s", strings.Join(results, " "))
+		break
+	case searchPattern.MatchString(msg.Text):
+		result := searchPattern.FindStringSubmatch(msg.Text)
+		results := searchDef(db, result[1])
+		outputMsg = fmt.Sprintf("%s", strings.Join(results, " "))
+		break
+	case topPattern.MatchString(msg.Text):
+		keys := getTop(db)
+		outputMsg = fmt.Sprintf(strings.Join(keys, " "))
+		break
+	case lastPattern.MatchString(msg.Text):
+		lastItem := getLast(db)
+		outputMsg = fmt.Sprintf("[%s] - [%s]", lastItem.term, lastItem.meaning)
+		break
+	case versionPattern.MatchString(msg.Text):
+		outputMsg = fmt.Sprintf("zbot golang version %s", version)
+		break
+	case randPattern.MatchString(msg.Text):
+		randItem := getRand(db)
+		outputMsg = fmt.Sprintf("[%s] - [%s]", randItem.term, randItem.meaning)
+		break
+	case statsPattern.MatchString(msg.Text):
+		statTotal := getStats(db)
+		outputMsg = fmt.Sprintf("Count: %s",statTotal)
+		break
+	case levelPattern.MatchString(msg.Text):
+		level := getLevel(db, msg.Sender.Username)
+		outputMsg = fmt.Sprintf("%s level %s", msg.Sender.Username, level)
+		break
+	default:
+		outputMsg = ""
+		break
+	}
+
+	bot.SendMessage(msg.Chat, outputMsg, nil)
+}
