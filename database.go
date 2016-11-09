@@ -15,6 +15,7 @@ type definitionItem struct {
 	meaning	string
 	author string
 	date string
+	id int
 }
 
 func InitDB(filepath string) *sql.DB {
@@ -98,8 +99,8 @@ func getLast(db *sql.DB) definitionItem {
 
 func getDefinition(db *sql.DB, term string) definitionItem {
 	var def definitionItem
-	statement := "SELECT term, meaning FROM definitions WHERE term = ? COLLATE NOCASE LIMIT 1"
-	err := db.QueryRow(statement, term).Scan(&def.term, &def.meaning)
+	statement := "SELECT id, term, meaning FROM definitions WHERE term = ? COLLATE NOCASE LIMIT 1"
+	err := db.QueryRow(statement, term).Scan(&def.id, &def.term, &def.meaning)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return definitionItem{term: "", meaning: ""}
@@ -107,6 +108,15 @@ func getDefinition(db *sql.DB, term string) definitionItem {
 			log.Fatal(err)
 		}
 	}
+
+	statement = "UPDATE definitions SET hits = hits + 1 WHERE id = ?"
+	stmt, err := db.Prepare(statement)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	stmt.Exec(def.id)
+
 
 	return def
 }
