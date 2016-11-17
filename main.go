@@ -69,6 +69,7 @@ func messagesProcessing(db sqlLite) {
 }
 
 func processing(db sqlLite, msg telebot.Message, output chan string) {
+	//TODO: check chain responsibility design pattern
 
 	var outputMsg string
 
