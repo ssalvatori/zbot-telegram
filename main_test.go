@@ -2,9 +2,34 @@ package main
 
 import (
 	"github.com/stretchr/testify/assert"
-	"github.com/tucnak/telebot"
 	"testing"
+	"github.com/tucnak/telebot"
 )
+
+var db mockDatabase = mockDatabase{level: "666"}
+
+func TestGetTerms(t *testing.T) {
+
+	var items = []definitionItem {
+		{term: "Term1"},
+		{term: "Term2"},
+		{meaning: ""},
+	}
+
+	terms := getTerms(items)
+	assert.Equal(t, terms, []string{"Term1", "Term2"} )
+}
+
+func TestProcessingVersion(t *testing.T) {
+	output := make(chan string)
+	botMsg := telebot.Message{Text: "!version sf"}
+	go processing(db, botMsg, output)
+	result := <-output
+	assert.Equal(t, result, "zbot golang version 1.0", "!version fail")
+}
+
+/*
+
 
 func TestProcessingPing(t *testing.T) {
 	output := make(chan string)
@@ -33,13 +58,7 @@ func TestProcessingGet(t *testing.T) {
 
 }
 
-func TestProcessingVersion(t *testing.T) {
-	output := make(chan string)
-	botMsg := telebot.Message{Text: "!version sf"}
-	go processing(botMsg, output)
-	result := <-output
-	assert.Equal(t, result, "zbot golang version 1.0", "!version fail")
-}
+
 
 func TestProcessingFind(t *testing.T) {
 	output := make(chan string)
@@ -73,7 +92,6 @@ func TestProcessingStats(t *testing.T) {
 	assert.Equal(t, result, "Count: 17461", "!stats")
 }
 
-/*
 func TestMessagesProcessing(t *testing.T) {
 	bot.Messages = make(chan telebot.Message)
 	botMsg := [2]telebot.Message{ telebot.Message{Text: "!rand"}, telebot.Message{Text: "any text"}}

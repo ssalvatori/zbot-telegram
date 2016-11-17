@@ -5,6 +5,9 @@ import (
 )
 
 type mockDatabase struct {
+	level string
+	db *sql.DB
+	file string
 }
 
 func (d mockDatabase) init() error {
@@ -15,7 +18,7 @@ func (d mockDatabase) close() {
 }
 
 func (d mockDatabase) statistics() (string, error) {
-	return "66", nil
+	return d.level, nil
 }
 
 func (d mockDatabase) top() ([]definitionItem, error) {

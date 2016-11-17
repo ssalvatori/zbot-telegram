@@ -16,7 +16,7 @@ var bot *telebot.Bot
 
 const version string = "1.0"
 const dbFile string = "./sample.db"
-const levelIgnore uint = 500 //level minimum to ignore a user
+const levelIgnore int = 500 //level minimum to ignore a user
 
 func main() {
 	var db sqlLite
@@ -32,7 +32,7 @@ func main() {
 	}
 
 	db = sqlLite{file: dbFile}
-	db.close()
+	defer db.close()
 	err = db.init()
 	if err != nil {
 		log.Fatal(err)
@@ -160,31 +160,28 @@ func processing(db sqlLite, msg telebot.Message, output chan string) {
 		break
 	case findPattern.MatchString(msg.Text):
 		result := findPattern.FindStringSubmatch(msg.Text)
-		//TODO:  check how to do some map with golang
 		results, err := db.find(result[1])
 		if err != nil {
 			log.Error(err)
 			break
 		}
-		outputMsg = fmt.Sprintf("%s", strings.Join(results, " "))
+		outputMsg = fmt.Sprintf("%s", strings.Join(getTerms(results), " "))
 		break
 	case searchPattern.MatchString(msg.Text):
 		result := searchPattern.FindStringSubmatch(msg.Text)
 		results, err := db.search(result[1])
-		//TODO:  check how to do some map with golang
 		if err != nil {
 			log.Error(err)
 			break
 		}
-		outputMsg = fmt.Sprintf("%s", strings.Join(results, " "))
+		outputMsg = fmt.Sprintf("%s", strings.Join(getTerms(results), " "))
 		break
 	case topPattern.MatchString(msg.Text):
 		items, err := db.top()
 		if err != nil {
 			log.Error(err)
 		}
-		//TODO:  check how to do some map with golang
-		outputMsg = fmt.Sprintf(strings.Join(items, " "))
+		outputMsg = fmt.Sprintf(strings.Join(getTerms(items), " "))
 		break
 	case lastPattern.MatchString(msg.Text):
 		lastItem, err := db.last()
@@ -227,4 +224,16 @@ func processing(db sqlLite, msg telebot.Message, output chan string) {
 	}
 
 	bot.SendMessage(msg.Chat, outputMsg, nil)
+}
+
+func getTerms(items []definitionItem) ([]string) {
+	var terms []string
+	for _,item := range items {
+		if item.term != "" {
+			terms = append(terms, item.term)
+		} else {
+			return terms
+		}
+	}
+	return terms
 }
