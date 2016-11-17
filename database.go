@@ -2,147 +2,164 @@ package main
 
 import (
 	"database/sql"
-	"strings"
+	"errors"
 	"fmt"
-	"time"
-	"strconv"
-	_ "github.com/mattn/go-sqlite3"
 	log "github.com/Sirupsen/logrus"
+	_ "github.com/mattn/go-sqlite3"
+	"strconv"
+	"strings"
+	"time"
 )
 
+type database interface {
+	init() error
+	close()
+	statistics() (string, error)
+	top() ([]definitionItem, error)
+	rand() (definitionItem, error)
+	last() (definitionItem, error)
+	get(string) (definitionItem, error)
+	set(definitionItem) error
+	_set(string, definitionItem) (sql.Result, error)
+	find(string) ([]definitionItem, error)
+	search(string) ([]definitionItem, error)
+	userLevel(string) (string, error)
+	userIgnoreInsert(string) error
+	userCheckIgnore(string) (bool, error)
+	userCleanIgnore() error
+}
+type sqlLite struct {
+	db   *sql.DB
+	file string
+}
+
 type definitionItem struct {
-	term	string
-	meaning	string
-	author string
-	date string
-	id int
+	term    string
+	meaning string
+	author  string
+	date    string
+	id      int
 }
 
-func InitDB(filepath string) *sql.DB {
+func (d sqlLite) close() {
+	d.db.Close()
+}
+func (d sqlLite) init() error {
 	log.Debug("Connecting to database")
-	db, err := sql.Open("sqlite3", filepath)
-	if err != nil { panic(err) }
-	if db == nil { panic("db nil") }
-	return db
+	db, error := sql.Open("sqlite3", d.file)
+	if error != nil {
+		return error
+	}
+	if db == nil {
+		errors.New("Error connecting")
+	}
+	d.db = db
+	return nil
 }
-
-func getStats(db *sql.DB) string {
+func (d sqlLite) statistics() (string, error) {
 	statement := "select count(*) as total from definitions"
-	var totalCount string;
-	err := db.QueryRow(statement).Scan(&totalCount)
+	var totalCount string
+	err := d.db.QueryRow(statement).Scan(&totalCount)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return "error"
+			return totalCount, errors.New("No Rows found")
 		} else {
-			log.Fatal(err)
+			return totalCount, err
 		}
 	}
 
-	return totalCount
+	return totalCount, err
 }
-
-func getTop(db *sql.DB) []string {
+func (d sqlLite) top() ([]definitionItem, error) {
 
 	statement := "SELECT term FROM definitions ORDER BY hits DESC LIMIT 10"
-	rows, err := db.Query(statement)
-	if err != nil { panic(err) }
+	rows, err := d.db.Query(statement)
+	if err != nil {
+		return nil, err
+	}
 	defer rows.Close()
 
-	var keys []string
+	var items []definitionItem
 	for rows.Next() {
 		var key string
 		err2 := rows.Scan(&key)
 		if err2 != nil {
-			panic(err2)
+			return nil, err2
 		}
-		keys = append(keys, key)
+		items = append(items, definitionItem{term: key})
 	}
 
-	return keys
-
+	return items, nil
 }
-
-func getRand(db *sql.DB) definitionItem {
+func (d sqlLite) rand() (definitionItem, error) {
+	var def definitionItem
 
 	sql := "SELECT term, meaning FROM definitions ORDER BY random() LIMIT 1"
-	rows, err := db.Query(sql)
-	if err != nil { panic(err) }
+	rows, err := d.db.Query(sql)
+	if err != nil {
+		return def, err
+	}
 	defer rows.Close()
 
-	var def definitionItem
 	for rows.Next() {
 		err2 := rows.Scan(&def.term, &def.meaning)
 		if err2 != nil {
-			panic(err2)
+			return def, err2
 		}
 	}
 
-	return def
+	return def, nil
 
 }
 
-func getLast(db *sql.DB) definitionItem {
+func (d sqlLite) last() (definitionItem, error) {
 	var def definitionItem
 	statement := "SELECT term, meaning FROM definitions ORDER BY id DESC LIMIT 1"
 
-	err := db.QueryRow(statement).Scan(&def.term, &def.meaning)
+	err := d.db.QueryRow(statement).Scan(&def.term, &def.meaning)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return definitionItem{term: "", meaning: ""}
+			return def, errors.New("Nothing defined")
 		} else {
 			log.Fatal(err)
+			return def, err
 		}
 	}
 
-	return def
+	return def, nil
 }
-
-func getDefinition(db *sql.DB, term string) definitionItem {
+func (d sqlLite) get(term string) (definitionItem, error) {
 	var def definitionItem
 	statement := "SELECT id, term, meaning FROM definitions WHERE term = ? COLLATE NOCASE LIMIT 1"
-	err := db.QueryRow(statement, term).Scan(&def.id, &def.term, &def.meaning)
+	err := d.db.QueryRow(statement, term).Scan(&def.id, &def.term, &def.meaning)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return definitionItem{term: "", meaning: ""}
+			return definitionItem{term: "", meaning: ""}, nil
 		} else {
 			log.Fatal(err)
+			return def, err
 		}
 	}
 
 	statement = "UPDATE definitions SET hits = hits + 1 WHERE id = ?"
-	stmt, err := db.Prepare(statement)
+	stmt, err := d.db.Prepare(statement)
 	if err != nil {
 		log.Fatal(err)
+		return def, err
 	}
 
-	stmt.Exec(def.id)
-
-
-	return def
-}
-
-func setDefinition(db *sql.DB, def definitionItem) (string, string)  {
-	count := 1
-	term := def.term
-	for {
-		_, err := insertDef(db, term, def)
-		if err != nil {
-			if strings.Contains(err.Error(), "UNIQUE constraint failed: definitions.value") {
-				term = fmt.Sprintf("%s%d", def.term, count)
-				count = count + 1
-			}
-		} else {
-			break
-		}
+	_, err = stmt.Exec(def.id)
+	if err != nil {
+		return def, err
 	}
-	return term, def.meaning
 
+	return def, nil
 }
 
-func insertDef(db *sql.DB, term string, def definitionItem) (sql.Result, error) {
+func (d sqlLite) _set(term string, def definitionItem) (sql.Result, error) {
 	statement := "INSERT INTO definitions (term, meaning, author, locked, active, date, hits, link) VALUES (?,?,?,?,?,?,?,?)"
 
-	stmt, err := db.Prepare(statement)
+	stmt, err := d.db.Prepare(statement)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -150,68 +167,99 @@ func insertDef(db *sql.DB, term string, def definitionItem) (sql.Result, error) 
 
 }
 
-func findDef(db *sql.DB, criteria string) []string {
+func (d sqlLite) set(def definitionItem) error {
+	count := 1
+	term := def.term
+	for {
+		_, err := d._set(term, def)
+		if err != nil {
+			if strings.Contains(err.Error(), "UNIQUE constraint failed: definitions.value") {
+				term = fmt.Sprintf("%s%d", def.term, count)
+				count = count + 1
+			} else {
+				return  err
+			}
+
+		} else {
+			break
+		}
+	}
+	return nil
+
+}
+
+func (d sqlLite) find(criteria string) ([]definitionItem, error) {
+	var items []definitionItem
 	statement := "SELECT term FROM definitions WHERE meaning like ? ORDER BY random() COLLATE NOCASE LIMIT 20"
-	stmt, err := db.Prepare(statement)
+	stmt, err := d.db.Prepare(statement)
 	if err != nil {
 		log.Fatal(err)
+		return items, err
 	}
 	defer stmt.Close()
 	rows, err2 := stmt.Query(criteria)
-	if err2 != nil { panic(err2) }
+	if err2 != nil {
+		return items, err
+	}
 	defer rows.Close()
 
-	var results []string
-	for rows.Next() {
-		result := ""
-		err2 := rows.Scan(&result)
-		if err2 != nil { panic(err2) }
-		results = append(results, result)
-	}
-	return results
-}
 
-func searchDef(db *sql.DB, criteria string) []string {
+	var result string
+	for rows.Next() {
+		err2 := rows.Scan(&result)
+		if err2 != nil {
+			return items, err2
+		}
+		items = append(items, definitionItem{term: result})
+	}
+	return items, nil
+}
+func (d sqlLite) search(criteria string) ([]definitionItem, error) {
 	statement := "SELECT term FROM definitions WHERE term like ? ORDER BY random() COLLATE NOCASE LIMIT 10"
-	stmt, err := db.Prepare(statement)
+	stmt, err := d.db.Prepare(statement)
 	if err != nil {
 		log.Fatal(err)
+		return nil, err
 	}
 	defer stmt.Close()
 	rows, err2 := stmt.Query(criteria)
-	if err2 != nil { panic(err2) }
+	if err2 != nil {
+		panic(err2)
+	}
 	defer rows.Close()
 
-	var results []string
+	var items []definitionItem
+	var result string
 	for rows.Next() {
-		result := ""
 		err2 := rows.Scan(&result)
-		if err2 != nil { panic(err2) }
-		results = append(results, result)
+		if err2 != nil {
+			return nil, err2
+		}
+		items = append(items, definitionItem{term: result})
 	}
-	return results
+	return items, nil
 }
 
-func getLevel(db *sql.DB, username string) string {
+func (d sqlLite) userLevel(username string) (string, error) {
 	var level string
 	statement := "SELECT level FROM users WHERE username = ? COLLATE NOCASE LIMIT 1"
-	err := db.QueryRow(statement, username).Scan(&level)
+	err := d.db.QueryRow(statement, username).Scan(&level)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return "0"
+			return "0", nil
 		} else {
-			log.Fatal(err)
+			return level, err
 		}
 	}
 
-	return level
+	return level, nil
 }
-
-func insertIgnoreUser(db *sql.DB, username string) {
+func (d sqlLite) userIgnoreInsert(username string) error {
 	statement := "INSERT INTO ignore_list (username, since, until) VALUES (?,?,?)"
-	stmt, err := db.Prepare(statement)
+	stmt, err := d.db.Prepare(statement)
+
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	since := time.Now().Unix()
@@ -221,47 +269,51 @@ func insertIgnoreUser(db *sql.DB, username string) {
 	_, err = stmt.Exec(username, since, until)
 	if err != nil {
 		log.Fatal(err)
+		return err
 	}
+	return nil
 }
-
-func checkIgnoreList(db *sql.DB, username string) bool {
+func (d sqlLite) userCheckIgnore(username string) (bool, error) {
 	ignored := false
 
 	now := time.Now().Unix()
 
 	var level string
 	statement := "SELECT count(*) as total FROM ignore_list WHERE username = ? AND until >= ?"
-	err := db.QueryRow(statement, username, now).Scan(&level)
+	err := d.db.QueryRow(statement, username, now).Scan(&level)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ignored = false
 		} else {
 			log.Fatal(err)
+			return ignored, err
+
 		}
 	}
 	levelInt, _ := strconv.Atoi(level)
 	log.Debug("Ingored ", levelInt)
-	if ( levelInt > 0) {
+	if levelInt > 0 {
 		ignored = true
 	}
 
-	return ignored
+	return ignored, nil
 }
-
-func cleanIgnoreList() {
+func (d sqlLite) userCleanIgnore() error {
 	for {
 		log.Debug("Cleaning ignore list")
 		now := time.Now().Unix()
 		statement := "DELETE FROM ignore_list WHERE until <= ?"
-		stmt, err := db.Prepare(statement)
+		stmt, err := d.db.Prepare(statement)
 		_, err = stmt.Query(now)
 		if err != nil {
 			if err == sql.ErrNoRows {
 
 			} else {
 				log.Fatal(err)
+				return err
 			}
 		}
 		time.Sleep(5 * time.Minute)
 	}
+	return nil
 }

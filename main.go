@@ -6,7 +6,6 @@ import (
 	"github.com/tucnak/telebot"
 	"fmt"
 	"regexp"
-	"database/sql"
 	"strings"
 	"strconv"
 	log "github.com/Sirupsen/logrus"
@@ -14,7 +13,7 @@ import (
 )
 
 var bot *telebot.Bot
-var db *sql.DB
+var db sqlLite
 
 const version string = "1.0"
 const dbFile string = "./sample.db"
@@ -33,10 +32,14 @@ func main() {
 
 	}
 
-	db = InitDB(dbFile)
-	defer db.Close()
+	db = sqlLite{file: dbFile}
+	db.close()
+	err = db.init()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	go cleanIgnoreList()
+	go db.userCleanIgnore()
 	bot.Messages = make(chan telebot.Message, 1000)
 	go messagesProcessing()
 
@@ -51,7 +54,11 @@ func messagesProcessing() {
 		processingMsg := regexp.MustCompilePOSIX(`^[!|?].*`)
 
 		//check if the user isn't on the ignore_list
-		if !checkIgnoreList(db, strings.ToLower(message.Sender.Username)) {
+		ignore, err := db.userCheckIgnore(strings.ToLower(message.Sender.Username))
+		if (err != nil) {
+			log.Error(err)
+		}
+		if (!ignore) {
 			if processingMsg.MatchString(message.Text) {
 				log.Printf("Received a message from %s with the text: %s\n", message.Sender.Username, message.Text)
 				go processing(message, output)
@@ -95,11 +102,19 @@ func processing(msg telebot.Message, output chan string) {
 	switch {
 	case ignorePattern.MatchString(msg.Text):
 		result := ignorePattern.FindStringSubmatch(msg.Text)
-		level := getLevel(db, msg.Sender.Username)
+		level, err := db.userLevel(msg.Sender.Username)
+		if (err != nil) {
+			log.Error(err)
+			break
+		}
 		levelInt, _ := strconv.Atoi(level)
 		if levelInt >= levelIgnore {
 			if strings.ToLower(result[1]) != strings.ToLower(msg.Sender.Username) {
-				insertIgnoreUser(db, result[1])
+				err := db.userIgnoreInsert(result[1])
+				if (err != nil) {
+					log.Error(err)
+					break
+				}
 				outputMsg = fmt.Sprintf("User [%s] ignored for 10 minutes", result[1])
 			} else {
 				outputMsg = fmt.Sprintf("You can't ignore youself")
@@ -120,8 +135,11 @@ func processing(msg telebot.Message, output chan string) {
 				author: fmt.Sprintf("%s!%s@telegram.bot", author, authorIdent),
 				date: nowDate,
 			}
-			term, meaning := setDefinition(db, def)
-			outputMsg = fmt.Sprintf("[%s] - [%s]", term, meaning)
+			err := db.set(def)
+			if (err != nil) {
+				log.Error(err)
+			}
+			outputMsg = fmt.Sprintf("[%s] - [%s]", def.term, def.meaning)
 		} else {
 			spew.Dump(msg.Sender)
 			outputMsg = ""
@@ -129,7 +147,11 @@ func processing(msg telebot.Message, output chan string) {
 		break
 	case getPattern.MatchString(msg.Text):
 		result := getPattern.FindStringSubmatch(msg.Text)
-		definition := getDefinition(db, result[1])
+		definition, err := db.get(strings.ToLower(result[1]))
+		if (err != nil) {
+			log.Error(err)
+			break
+		}
 		if definition.term != "" {
 			outputMsg = fmt.Sprintf("[%s] - [%s]", definition.term, definition.meaning)
 		}else {
@@ -138,35 +160,65 @@ func processing(msg telebot.Message, output chan string) {
 		break
 	case findPattern.MatchString(msg.Text):
 		result := findPattern.FindStringSubmatch(msg.Text)
-		results := findDef(db, result[1])
+		//TODO:  check how to do some map with golang
+		results, err := db.find(result[1])
+		if (err != nil) {
+			log.Error(err)
+			break
+		}
 		outputMsg = fmt.Sprintf("%s", strings.Join(results, " "))
 		break
 	case searchPattern.MatchString(msg.Text):
 		result := searchPattern.FindStringSubmatch(msg.Text)
-		results := searchDef(db, result[1])
+		results, err := db.search(result[1])
+		//TODO:  check how to do some map with golang
+		if (err != nil) {
+			log.Error(err)
+			break
+		}
 		outputMsg = fmt.Sprintf("%s", strings.Join(results, " "))
 		break
 	case topPattern.MatchString(msg.Text):
-		keys := getTop(db)
-		outputMsg = fmt.Sprintf(strings.Join(keys, " "))
+		items, err := db.top()
+		if (err != nil) {
+			log.Error(err)
+		}
+		//TODO:  check how to do some map with golang
+		outputMsg = fmt.Sprintf(strings.Join(items, " "))
 		break
 	case lastPattern.MatchString(msg.Text):
-		lastItem := getLast(db)
+		lastItem, err := db.last()
+		if(err != nil) {
+			log.Error(err)
+			break
+		}
 		outputMsg = fmt.Sprintf("[%s] - [%s]", lastItem.term, lastItem.meaning)
 		break
 	case versionPattern.MatchString(msg.Text):
 		outputMsg = fmt.Sprintf("zbot golang version %s", version)
 		break
 	case randPattern.MatchString(msg.Text):
-		randItem := getRand(db)
+		randItem, err := db.rand()
+		if (err != nil) {
+			log.Error(err)
+			break
+		}
 		outputMsg = fmt.Sprintf("[%s] - [%s]", randItem.term, randItem.meaning)
 		break
 	case statsPattern.MatchString(msg.Text):
-		statTotal := getStats(db)
+		statTotal, err := db.statistics()
+		if (err != nil) {
+			log.Error(err)
+			break
+		}
 		outputMsg = fmt.Sprintf("Count: %s",statTotal)
 		break
 	case levelPattern.MatchString(msg.Text):
-		level := getLevel(db, msg.Sender.Username)
+		level, err := db.userLevel(msg.Sender.Username)
+		if (err != nil) {
+			log.Error(err)
+			break
+		}
 		outputMsg = fmt.Sprintf("%s level %s", msg.Sender.Username, level)
 		break
 	default:
