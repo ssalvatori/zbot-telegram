@@ -1,26 +1,25 @@
 package main
 
 import (
-	"os"
-	"time"
-	"github.com/tucnak/telebot"
 	"fmt"
-	"regexp"
-	"strings"
-	"strconv"
 	log "github.com/Sirupsen/logrus"
 	"github.com/davecgh/go-spew/spew"
+	"github.com/tucnak/telebot"
+	"os"
+	"regexp"
+	"strconv"
+	"strings"
+	"time"
 )
 
 var bot *telebot.Bot
-var db sqlLite
 
 const version string = "1.0"
 const dbFile string = "./sample.db"
-const levelIgnore int = 500 //level minimum to ignore a user
-
+const levelIgnore uint = 500 //level minimum to ignore a user
 
 func main() {
+	var db sqlLite
 
 	log.Info("Loading zbot-telegram")
 	log.SetLevel(log.DebugLevel)
@@ -41,12 +40,12 @@ func main() {
 
 	go db.userCleanIgnore()
 	bot.Messages = make(chan telebot.Message, 1000)
-	go messagesProcessing()
+	go messagesProcessing(db)
 
 	bot.Start(1 * time.Second)
 }
 
-func messagesProcessing() {
+func messagesProcessing(db sqlLite) {
 	output := make(chan string)
 	for message := range bot.Messages {
 
@@ -55,13 +54,13 @@ func messagesProcessing() {
 
 		//check if the user isn't on the ignore_list
 		ignore, err := db.userCheckIgnore(strings.ToLower(message.Sender.Username))
-		if (err != nil) {
+		if err != nil {
 			log.Error(err)
 		}
-		if (!ignore) {
+		if !ignore {
 			if processingMsg.MatchString(message.Text) {
 				log.Printf("Received a message from %s with the text: %s\n", message.Sender.Username, message.Text)
-				go processing(message, output)
+				go processing(db, message, output)
 			}
 		} else {
 			log.Debug(fmt.Sprintf("User [%s] ignored", strings.ToLower(message.Sender.Username)))
@@ -69,7 +68,7 @@ func messagesProcessing() {
 	}
 }
 
-func processing(msg telebot.Message, output chan string) {
+func processing(db sqlLite, msg telebot.Message, output chan string) {
 
 	var outputMsg string
 
@@ -91,7 +90,7 @@ func processing(msg telebot.Message, output chan string) {
 	nowDate := time.Now().Format("2006-01-02")
 	var author string
 	var authorIdent string
-	if msg.Sender.Username != ""  {
+	if msg.Sender.Username != "" {
 		author = msg.Sender.Username
 		authorIdent = strings.ToLower(msg.Sender.FirstName)
 	} else {
@@ -103,7 +102,7 @@ func processing(msg telebot.Message, output chan string) {
 	case ignorePattern.MatchString(msg.Text):
 		result := ignorePattern.FindStringSubmatch(msg.Text)
 		level, err := db.userLevel(msg.Sender.Username)
-		if (err != nil) {
+		if err != nil {
 			log.Error(err)
 			break
 		}
@@ -111,7 +110,7 @@ func processing(msg telebot.Message, output chan string) {
 		if levelInt >= levelIgnore {
 			if strings.ToLower(result[1]) != strings.ToLower(msg.Sender.Username) {
 				err := db.userIgnoreInsert(result[1])
-				if (err != nil) {
+				if err != nil {
 					log.Error(err)
 					break
 				}
@@ -119,8 +118,8 @@ func processing(msg telebot.Message, output chan string) {
 			} else {
 				outputMsg = fmt.Sprintf("You can't ignore youself")
 			}
-		}else {
-			outputMsg = fmt.Sprintf("level not enough (minimum %s yours %s)", levelIgnore, level)
+		} else {
+			outputMsg = fmt.Sprintf("level not enough (minimum %d yours %s)", levelIgnore, level)
 		}
 		break
 	case pingPattern.MatchString(msg.Text):
@@ -130,13 +129,13 @@ func processing(msg telebot.Message, output chan string) {
 		result := learnPattern.FindStringSubmatch(msg.Text)
 		if author != "" {
 			def := definitionItem{
-				term: result[1],
+				term:    result[1],
 				meaning: result[2],
-				author: fmt.Sprintf("%s!%s@telegram.bot", author, authorIdent),
-				date: nowDate,
+				author:  fmt.Sprintf("%s!%s@telegram.bot", author, authorIdent),
+				date:    nowDate,
 			}
 			err := db.set(def)
-			if (err != nil) {
+			if err != nil {
 				log.Error(err)
 			}
 			outputMsg = fmt.Sprintf("[%s] - [%s]", def.term, def.meaning)
@@ -148,13 +147,13 @@ func processing(msg telebot.Message, output chan string) {
 	case getPattern.MatchString(msg.Text):
 		result := getPattern.FindStringSubmatch(msg.Text)
 		definition, err := db.get(strings.ToLower(result[1]))
-		if (err != nil) {
+		if err != nil {
 			log.Error(err)
 			break
 		}
 		if definition.term != "" {
 			outputMsg = fmt.Sprintf("[%s] - [%s]", definition.term, definition.meaning)
-		}else {
+		} else {
 			outputMsg = fmt.Sprintf("[%s] Not found!", result[1])
 		}
 		break
@@ -162,7 +161,7 @@ func processing(msg telebot.Message, output chan string) {
 		result := findPattern.FindStringSubmatch(msg.Text)
 		//TODO:  check how to do some map with golang
 		results, err := db.find(result[1])
-		if (err != nil) {
+		if err != nil {
 			log.Error(err)
 			break
 		}
@@ -172,7 +171,7 @@ func processing(msg telebot.Message, output chan string) {
 		result := searchPattern.FindStringSubmatch(msg.Text)
 		results, err := db.search(result[1])
 		//TODO:  check how to do some map with golang
-		if (err != nil) {
+		if err != nil {
 			log.Error(err)
 			break
 		}
@@ -180,7 +179,7 @@ func processing(msg telebot.Message, output chan string) {
 		break
 	case topPattern.MatchString(msg.Text):
 		items, err := db.top()
-		if (err != nil) {
+		if err != nil {
 			log.Error(err)
 		}
 		//TODO:  check how to do some map with golang
@@ -188,7 +187,7 @@ func processing(msg telebot.Message, output chan string) {
 		break
 	case lastPattern.MatchString(msg.Text):
 		lastItem, err := db.last()
-		if(err != nil) {
+		if err != nil {
 			log.Error(err)
 			break
 		}
@@ -199,7 +198,7 @@ func processing(msg telebot.Message, output chan string) {
 		break
 	case randPattern.MatchString(msg.Text):
 		randItem, err := db.rand()
-		if (err != nil) {
+		if err != nil {
 			log.Error(err)
 			break
 		}
@@ -207,15 +206,15 @@ func processing(msg telebot.Message, output chan string) {
 		break
 	case statsPattern.MatchString(msg.Text):
 		statTotal, err := db.statistics()
-		if (err != nil) {
+		if err != nil {
 			log.Error(err)
 			break
 		}
-		outputMsg = fmt.Sprintf("Count: %s",statTotal)
+		outputMsg = fmt.Sprintf("Count: %s", statTotal)
 		break
 	case levelPattern.MatchString(msg.Text):
 		level, err := db.userLevel(msg.Sender.Username)
-		if (err != nil) {
+		if err != nil {
 			log.Error(err)
 			break
 		}

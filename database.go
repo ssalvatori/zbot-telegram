@@ -46,12 +46,12 @@ func (d sqlLite) close() {
 }
 func (d sqlLite) init() error {
 	log.Debug("Connecting to database")
-	db, error := sql.Open("sqlite3", d.file)
-	if error != nil {
-		return error
+	db, err := sql.Open("sqlite3", d.file)
+	if err != nil {
+		return err
 	}
 	if db == nil {
-		errors.New("Error connecting")
+		return errors.New("Error connecting")
 	}
 	d.db = db
 	return nil
@@ -177,7 +177,7 @@ func (d sqlLite) set(def definitionItem) error {
 				term = fmt.Sprintf("%s%d", def.term, count)
 				count = count + 1
 			} else {
-				return  err
+				return err
 			}
 
 		} else {
@@ -202,7 +202,6 @@ func (d sqlLite) find(criteria string) ([]definitionItem, error) {
 		return items, err
 	}
 	defer rows.Close()
-
 
 	var result string
 	for rows.Next() {
@@ -315,5 +314,4 @@ func (d sqlLite) userCleanIgnore() error {
 		}
 		time.Sleep(5 * time.Minute)
 	}
-	return nil
 }
