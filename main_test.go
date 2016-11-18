@@ -6,8 +6,6 @@ import (
 	"github.com/tucnak/telebot"
 )
 
-var db mockDatabase = mockDatabase{level: "666"}
-
 func TestGetTerms(t *testing.T) {
 
 	var items = []definitionItem {
@@ -21,24 +19,50 @@ func TestGetTerms(t *testing.T) {
 }
 
 func TestProcessingVersion(t *testing.T) {
+
+	dbMock := mockZbotDatabase{
+		level: "666",
+		file: "hola.db",
+	}
+
 	output := make(chan string)
-	botMsg := telebot.Message{Text: "!version sf"}
-	go processing(db, botMsg, output)
-	result := <-output
+	botMsg := telebot.Message{Text: "!version"}
+	result := processing(dbMock, botMsg, output)
 	assert.Equal(t, result, "zbot golang version 1.0", "!version fail")
 }
 
-/*
+
 
 
 func TestProcessingPing(t *testing.T) {
+
+	dbMock := mockZbotDatabase{
+		level: "666",
+		file: "hola.db",
+	}
+
 	output := make(chan string)
 	botMsg := telebot.Message{Text: "!ping"}
-	go processing(botMsg, output)
-	result := <-output
+	result := processing(dbMock,botMsg, output)
 	assert.Equal(t, result, "pong!!", "!ping")
 }
 
+
+func TestProcessingStats(t *testing.T) {
+
+	dbMock := mockZbotDatabase{
+		level: "666",
+		file: "hola.db",
+	}
+
+	output := make(chan string)
+	botMsg := telebot.Message{Text: "!stats"}
+	result := processing(dbMock, botMsg, output)
+	assert.Equal(t, result, "Count: 666", "!stats")
+}
+
+
+/*
 func TestProcessingLearn(t *testing.T) {
 
 	output := make(chan string)

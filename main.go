@@ -19,19 +19,19 @@ const dbFile string = "./sample.db"
 const levelIgnore int = 500 //level minimum to ignore a user
 
 func main() {
-	var db sqlLite
 
 	log.Info("Loading zbot-telegram")
 	log.SetLevel(log.DebugLevel)
 
-	var err error
-	bot, err = telebot.NewBot(os.Getenv("BOT_TOKEN"))
+	bot, err := telebot.NewBot(os.Getenv("BOT_TOKEN"))
 	if err != nil {
 		log.Fatal(err)
-
 	}
 
-	db = sqlLite{file: dbFile}
+	db := sqlLite{
+		file: dbFile,
+	}
+
 	defer db.close()
 	err = db.init()
 	if err != nil {
@@ -45,7 +45,7 @@ func main() {
 	bot.Start(1 * time.Second)
 }
 
-func messagesProcessing(db sqlLite) {
+func messagesProcessing(db zbotDatabase) {
 	output := make(chan string)
 	for message := range bot.Messages {
 
@@ -60,7 +60,7 @@ func messagesProcessing(db sqlLite) {
 		if !ignore {
 			if processingMsg.MatchString(message.Text) {
 				log.Printf("Received a message from %s with the text: %s\n", message.Sender.Username, message.Text)
-				go processing(db, message, output)
+				go sendResponse(db, message, output)
 			}
 		} else {
 			log.Debug(fmt.Sprintf("User [%s] ignored", strings.ToLower(message.Sender.Username)))
@@ -68,7 +68,12 @@ func messagesProcessing(db sqlLite) {
 	}
 }
 
-func processing(db sqlLite, msg telebot.Message, output chan string) {
+func sendResponse(db zbotDatabase, msg telebot.Message, output chan string) {
+	response := processing(db, msg,output)
+	bot.SendMessage(msg.Chat, response, nil)
+}
+
+func processing(db zbotDatabase, msg telebot.Message, output chan string) string {
 	//TODO: check chain responsibility design pattern
 
 	var outputMsg string
@@ -223,7 +228,7 @@ func processing(db sqlLite, msg telebot.Message, output chan string) {
 		break
 	}
 
-	bot.SendMessage(msg.Chat, outputMsg, nil)
+	return outputMsg
 }
 
 func getTerms(items []definitionItem) ([]string) {

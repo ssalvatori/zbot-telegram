@@ -4,58 +4,74 @@ import (
 	"database/sql"
 )
 
-type mockDatabase struct {
+type mockZbotDatabase struct {
 	level string
-	db *sql.DB
 	file string
 }
 
-func (d mockDatabase) init() error {
+func (d mockZbotDatabase) init() error {
 	return nil
 }
 
-func (d mockDatabase) close() {
+func (d mockZbotDatabase) close() {
 }
 
-func (d mockDatabase) statistics() (string, error) {
+func (d mockZbotDatabase) statistics() (string, error) {
 	return d.level, nil
 }
 
-func (d mockDatabase) top() ([]definitionItem, error) {
+func (d mockZbotDatabase) top() ([]definitionItem, error) {
 	var items []definitionItem
 	return items, nil
 }
 
-func (d mockDatabase) rand() (definitionItem, error) {
+func (d mockZbotDatabase) rand() (definitionItem, error) {
 	var item definitionItem
 	return item, nil
 }
 
-func (d mockDatabase) get(term string) (definitionItem, error) {
+func (d mockZbotDatabase) last() (definitionItem, error) {
+	return definitionItem{},nil
+}
+
+func (d mockZbotDatabase) set(def definitionItem) error {
+	return nil
+}
+
+func (d mockZbotDatabase) find(criteria string) ([]definitionItem, error) {
+	var items []definitionItem
+	return items, nil
+}
+
+func (d mockZbotDatabase) get(term string) (definitionItem, error) {
 	var item definitionItem
 	return item, nil
 }
 
-func (d mockDatabase) _set(term string, def definitionItem) (sql.Result, error) {
+func (d mockZbotDatabase) _set(term string, def definitionItem) (sql.Result, error) {
 	var result sql.Result
 	return result, nil
 }
 
-func (d mockDatabase) search(str string) ([]definitionItem, error) {
+func (d mockZbotDatabase) search(str string) ([]definitionItem, error) {
 	var def []definitionItem
 	return def, nil
 }
 
-func (d mockDatabase) userLevel(str string) (string, error) {
+func (d mockZbotDatabase) userLevel(str string) (string, error) {
 	var strr string
 	return strr, nil
 }
 
-func (d mockDatabase) userCheckIgnore(str string) (bool, error) {
+func (d mockZbotDatabase) userCheckIgnore(str string) (bool, error) {
 	var ignore = false
 	return ignore, nil
 }
 
-func (d mockDatabase) userCleanIgnore() error {
+func (d mockZbotDatabase) userIgnoreInsert(username string) error {
+	return nil
+}
+
+func (d mockZbotDatabase) userCleanIgnore() error {
 	return nil
 }

@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-type database interface {
+type zbotDatabase interface {
 	init() error
 	close()
 	statistics() (string, error)
@@ -28,10 +28,6 @@ type database interface {
 	userCheckIgnore(string) (bool, error)
 	userCleanIgnore() error
 }
-type sqlLite struct {
-	db   *sql.DB
-	file string
-}
 
 type definitionItem struct {
 	term    string
@@ -41,21 +37,33 @@ type definitionItem struct {
 	id      int
 }
 
-func (d sqlLite) close() {
-	d.db.Close()
+type sqlLite struct {
+	db   *sql.DB
+	file string
 }
+
+
 func (d sqlLite) init() error {
 	log.Debug("Connecting to database")
 	db, err := sql.Open("sqlite3", d.file)
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 	if db == nil {
+		log.Error(err)
 		return errors.New("Error connecting")
 	}
 	d.db = db
+
 	return nil
 }
+
+func (d sqlLite) close() {
+	log.Debug("Closing conecction")
+	d.db.Close()
+}
+
 func (d sqlLite) statistics() (string, error) {
 	statement := "select count(*) as total from definitions"
 	var totalCount string
