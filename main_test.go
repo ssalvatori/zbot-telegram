@@ -18,9 +18,22 @@ func TestGetTerms(t *testing.T) {
 	assert.Equal(t, terms, []string{"Term1", "Term2"} )
 }
 
+func TestGetUserIgnored(t *testing.T) {
+	var users = []userIgnore {
+		{
+			username: "rigo",
+			since: "1478126960",
+			until: "1478127560",
+		},
+	}
+
+	formated := getUserIgnored(users)
+	assert.Equal(t, formated, []string{"[ @rigo ] since [1478126960] until [1478127560]"})
+}
+
 func TestProcessingVersion(t *testing.T) {
 
-	dbMock := mockZbotDatabase{
+	dbMock := &mockZbotDatabase{
 		level: "666",
 		file: "hola.db",
 	}
@@ -32,11 +45,9 @@ func TestProcessingVersion(t *testing.T) {
 }
 
 
-
-
 func TestProcessingPing(t *testing.T) {
 
-	dbMock := mockZbotDatabase{
+	dbMock := &mockZbotDatabase{
 		level: "666",
 		file: "hola.db",
 	}
@@ -50,7 +61,7 @@ func TestProcessingPing(t *testing.T) {
 
 func TestProcessingStats(t *testing.T) {
 
-	dbMock := mockZbotDatabase{
+	dbMock := &mockZbotDatabase{
 		level: "666",
 		file: "hola.db",
 	}

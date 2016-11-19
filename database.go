@@ -27,6 +27,7 @@ type zbotDatabase interface {
 	userIgnoreInsert(string) error
 	userCheckIgnore(string) (bool, error)
 	userCleanIgnore() error
+	userIgnoreList() ([]userIgnore, error)
 }
 
 type definitionItem struct {
@@ -37,13 +38,46 @@ type definitionItem struct {
 	id      int
 }
 
+type userIgnore struct {
+	username string
+	since string
+	until string
+}
+
 type sqlLite struct {
 	db   *sql.DB
 	file string
 }
 
 
-func (d sqlLite) init() error {
+func (d *sqlLite) userIgnoreList() ([]userIgnore, error) {
+	log.Debug("Getting ignore list")
+	statement := "SELECT username, since, until FROM ignore_list"
+	stmt, err := d.db.Prepare(statement)
+	if err != nil {
+		log.Fatal(err)
+		return nil, err
+	}
+	defer stmt.Close()
+	rows, err2 := stmt.Query()
+	if err2 != nil {
+		panic(err2)
+	}
+	defer rows.Close()
+
+	var users []userIgnore
+	var user userIgnore
+	for rows.Next() {
+		err2 := rows.Scan(&user.username, &user.since, &user.until)
+		if err2 != nil {
+			return nil, err2
+		}
+		users = append(users, user)
+	}
+	return users, nil
+}
+
+func (d *sqlLite) init() error {
 	log.Debug("Connecting to database")
 	db, err := sql.Open("sqlite3", d.file)
 	if err != nil {
@@ -59,12 +93,12 @@ func (d sqlLite) init() error {
 	return nil
 }
 
-func (d sqlLite) close() {
+func (d *sqlLite) close() {
 	log.Debug("Closing conecction")
 	d.db.Close()
 }
 
-func (d sqlLite) statistics() (string, error) {
+func (d *sqlLite) statistics() (string, error) {
 	statement := "select count(*) as total from definitions"
 	var totalCount string
 	err := d.db.QueryRow(statement).Scan(&totalCount)
@@ -78,7 +112,7 @@ func (d sqlLite) statistics() (string, error) {
 
 	return totalCount, err
 }
-func (d sqlLite) top() ([]definitionItem, error) {
+func (d *sqlLite) top() ([]definitionItem, error) {
 
 	statement := "SELECT term FROM definitions ORDER BY hits DESC LIMIT 10"
 	rows, err := d.db.Query(statement)
@@ -99,7 +133,7 @@ func (d sqlLite) top() ([]definitionItem, error) {
 
 	return items, nil
 }
-func (d sqlLite) rand() (definitionItem, error) {
+func (d *sqlLite) rand() (definitionItem, error) {
 	var def definitionItem
 
 	sql := "SELECT term, meaning FROM definitions ORDER BY random() LIMIT 1"
@@ -120,7 +154,7 @@ func (d sqlLite) rand() (definitionItem, error) {
 
 }
 
-func (d sqlLite) last() (definitionItem, error) {
+func (d *sqlLite) last() (definitionItem, error) {
 	var def definitionItem
 	statement := "SELECT term, meaning FROM definitions ORDER BY id DESC LIMIT 1"
 
@@ -136,7 +170,7 @@ func (d sqlLite) last() (definitionItem, error) {
 
 	return def, nil
 }
-func (d sqlLite) get(term string) (definitionItem, error) {
+func (d *sqlLite) get(term string) (definitionItem, error) {
 	var def definitionItem
 	statement := "SELECT id, term, meaning FROM definitions WHERE term = ? COLLATE NOCASE LIMIT 1"
 	err := d.db.QueryRow(statement, term).Scan(&def.id, &def.term, &def.meaning)
@@ -164,7 +198,7 @@ func (d sqlLite) get(term string) (definitionItem, error) {
 	return def, nil
 }
 
-func (d sqlLite) _set(term string, def definitionItem) (sql.Result, error) {
+func (d *sqlLite) _set(term string, def definitionItem) (sql.Result, error) {
 	statement := "INSERT INTO definitions (term, meaning, author, locked, active, date, hits, link) VALUES (?,?,?,?,?,?,?,?)"
 
 	stmt, err := d.db.Prepare(statement)
@@ -175,7 +209,7 @@ func (d sqlLite) _set(term string, def definitionItem) (sql.Result, error) {
 
 }
 
-func (d sqlLite) set(def definitionItem) error {
+func (d *sqlLite) set(def definitionItem) error {
 	count := 1
 	term := def.term
 	for {
@@ -196,7 +230,7 @@ func (d sqlLite) set(def definitionItem) error {
 
 }
 
-func (d sqlLite) find(criteria string) ([]definitionItem, error) {
+func (d *sqlLite) find(criteria string) ([]definitionItem, error) {
 	var items []definitionItem
 	statement := "SELECT term FROM definitions WHERE meaning like ? ORDER BY random() COLLATE NOCASE LIMIT 20"
 	stmt, err := d.db.Prepare(statement)
@@ -221,7 +255,7 @@ func (d sqlLite) find(criteria string) ([]definitionItem, error) {
 	}
 	return items, nil
 }
-func (d sqlLite) search(criteria string) ([]definitionItem, error) {
+func (d *sqlLite) search(criteria string) ([]definitionItem, error) {
 	statement := "SELECT term FROM definitions WHERE term like ? ORDER BY random() COLLATE NOCASE LIMIT 10"
 	stmt, err := d.db.Prepare(statement)
 	if err != nil {
@@ -247,7 +281,7 @@ func (d sqlLite) search(criteria string) ([]definitionItem, error) {
 	return items, nil
 }
 
-func (d sqlLite) userLevel(username string) (string, error) {
+func (d *sqlLite) userLevel(username string) (string, error) {
 	var level string
 	statement := "SELECT level FROM users WHERE username = ? COLLATE NOCASE LIMIT 1"
 	err := d.db.QueryRow(statement, username).Scan(&level)
@@ -261,7 +295,7 @@ func (d sqlLite) userLevel(username string) (string, error) {
 
 	return level, nil
 }
-func (d sqlLite) userIgnoreInsert(username string) error {
+func (d *sqlLite) userIgnoreInsert(username string) error {
 	statement := "INSERT INTO ignore_list (username, since, until) VALUES (?,?,?)"
 	stmt, err := d.db.Prepare(statement)
 
@@ -280,7 +314,7 @@ func (d sqlLite) userIgnoreInsert(username string) error {
 	}
 	return nil
 }
-func (d sqlLite) userCheckIgnore(username string) (bool, error) {
+func (d *sqlLite) userCheckIgnore(username string) (bool, error) {
 	ignored := false
 
 	now := time.Now().Unix()
@@ -305,7 +339,7 @@ func (d sqlLite) userCheckIgnore(username string) (bool, error) {
 
 	return ignored, nil
 }
-func (d sqlLite) userCleanIgnore() error {
+func (d *sqlLite) userCleanIgnore() error {
 	for {
 		log.Debug("Cleaning ignore list")
 		now := time.Now().Unix()
@@ -323,3 +357,4 @@ func (d sqlLite) userCleanIgnore() error {
 		time.Sleep(5 * time.Minute)
 	}
 }
+

@@ -12,8 +12,6 @@ import (
 	"time"
 )
 
-var bot *telebot.Bot
-
 const version string = "1.0"
 const dbFile string = "./sample.db"
 const levelIgnore int = 500 //level minimum to ignore a user
@@ -28,24 +26,25 @@ func main() {
 		log.Fatal(err)
 	}
 
-	db := sqlLite{
+	db := &sqlLite{
 		file: dbFile,
 	}
 
-	defer db.close()
 	err = db.init()
+	defer db.close()
+
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	go db.userCleanIgnore()
 	bot.Messages = make(chan telebot.Message, 1000)
-	go messagesProcessing(db)
+	go messagesProcessing(db, bot)
 
 	bot.Start(1 * time.Second)
 }
 
-func messagesProcessing(db zbotDatabase) {
+func messagesProcessing(db zbotDatabase, bot *telebot.Bot) {
 	output := make(chan string)
 	for message := range bot.Messages {
 
@@ -60,7 +59,7 @@ func messagesProcessing(db zbotDatabase) {
 		if !ignore {
 			if processingMsg.MatchString(message.Text) {
 				log.Printf("Received a message from %s with the text: %s\n", message.Sender.Username, message.Text)
-				go sendResponse(db, message, output)
+				go sendResponse(bot, db, message, output)
 			}
 		} else {
 			log.Debug(fmt.Sprintf("User [%s] ignored", strings.ToLower(message.Sender.Username)))
@@ -68,7 +67,7 @@ func messagesProcessing(db zbotDatabase) {
 	}
 }
 
-func sendResponse(db zbotDatabase, msg telebot.Message, output chan string) {
+func sendResponse(bot *telebot.Bot, db zbotDatabase, msg telebot.Message, output chan string) {
 	response := processing(db, msg,output)
 	bot.SendMessage(msg.Chat, response, nil)
 }
@@ -92,6 +91,7 @@ func processing(db zbotDatabase, msg telebot.Message, output chan string) string
 	//Levels
 	levelPattern := regexp.MustCompile(`^!level`)
 	ignorePattern := regexp.MustCompile(`^!ignore\s(\S*)`)
+	ignoreListPattern := regexp.MustCompile(`^!ignorelist`)
 
 	nowDate := time.Now().Format("2006-01-02")
 	var author string
@@ -105,6 +105,14 @@ func processing(db zbotDatabase, msg telebot.Message, output chan string) string
 	}
 
 	switch {
+	case ignoreListPattern.MatchString(msg.Text):
+		results, err := db.userIgnoreList()
+		if (err != nil) {
+			log.Error(err)
+			break
+		}
+		outputMsg = fmt.Sprintf(strings.Join(getUserIgnored(results), "/n"))
+		break
 	case ignorePattern.MatchString(msg.Text):
 		result := ignorePattern.FindStringSubmatch(msg.Text)
 		level, err := db.userLevel(msg.Sender.Username)
@@ -241,4 +249,15 @@ func getTerms(items []definitionItem) ([]string) {
 		}
 	}
 	return terms
+}
+
+func getUserIgnored(users []userIgnore) ([]string) {
+	var userIgnored []string
+	for _,user := range users {
+		if user.username != "" {
+			userString := fmt.Sprintf("[ @%s ] since [%s] until [%s]", user.username, user.since, user.until)
+			userIgnored = append(userIgnored, userString)
+		}
+	}
+	return userIgnored
 }
