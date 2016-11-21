@@ -2,11 +2,19 @@ package main
 
 import (
 	"database/sql"
+	"github.com/tucnak/telebot"
 )
 
 type mockZbotDatabase struct {
 	level string
 	file string
+	term string
+	meaning string
+	find_terms []string
+	search_terms []string
+	rand_def definitionItem
+	user telebot.User
+	ignore_list []string
 }
 
 func (d *mockZbotDatabase) init() error {
@@ -26,16 +34,20 @@ func (d *mockZbotDatabase) statistics() (string, error) {
 
 func (d *mockZbotDatabase) top() ([]definitionItem, error) {
 	var items []definitionItem
+
+	for _,value := range d.find_terms {
+		items = append(items, definitionItem{term: value})
+	}
+
 	return items, nil
 }
 
 func (d *mockZbotDatabase) rand() (definitionItem, error) {
-	var item definitionItem
-	return item, nil
+	return d.rand_def, nil
 }
 
 func (d *mockZbotDatabase) last() (definitionItem, error) {
-	return definitionItem{},nil
+	return definitionItem{term: d.term, meaning:d.meaning},nil
 }
 
 func (d *mockZbotDatabase) set(def definitionItem) error {
@@ -43,13 +55,11 @@ func (d *mockZbotDatabase) set(def definitionItem) error {
 }
 
 func (d *mockZbotDatabase) find(criteria string) ([]definitionItem, error) {
-	var items []definitionItem
-	return items, nil
+	return []definitionItem{definitionItem{term: d.term}}, nil
 }
 
 func (d *mockZbotDatabase) get(term string) (definitionItem, error) {
-	var item definitionItem
-	return item, nil
+	return definitionItem{term: d.term, meaning:d.meaning}, nil
 }
 
 func (d *mockZbotDatabase) _set(term string, def definitionItem) (sql.Result, error) {
@@ -58,13 +68,18 @@ func (d *mockZbotDatabase) _set(term string, def definitionItem) (sql.Result, er
 }
 
 func (d *mockZbotDatabase) search(str string) ([]definitionItem, error) {
-	var def []definitionItem
-	return def, nil
+	var items []definitionItem
+
+	for _,value := range d.search_terms {
+		items = append(items, definitionItem{term: value})
+	}
+
+
+	return items, nil
 }
 
 func (d *mockZbotDatabase) userLevel(str string) (string, error) {
-	var strr string
-	return strr, nil
+	return d.level, nil
 }
 
 func (d *mockZbotDatabase) userCheckIgnore(str string) (bool, error) {

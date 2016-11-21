@@ -72,66 +72,144 @@ func TestProcessingStats(t *testing.T) {
 	assert.Equal(t, result, "Count: 666", "!stats")
 }
 
-
-/*
-func TestProcessingLearn(t *testing.T) {
-
-	output := make(chan string)
-	botMsg := telebot.Message{Text: "!learn 12312 foo bar!"}
-	go processing(botMsg, output)
-	result := <-output
-	assert.Equal(t, result, "[12312] - [foo bar!]", "!learn fail")
-}
-
 func TestProcessingGet(t *testing.T) {
+
+	dbMock := &mockZbotDatabase{
+		level: "666",
+		file: "hola.db",
+		term: "hola",
+		meaning: "foo bar!",
+	}
 
 	output := make(chan string)
 	botMsg := telebot.Message{Text: "? hola"}
-	go processing(botMsg, output)
-	result := <-output
+	result := processing(dbMock, botMsg, output)
 	assert.Equal(t, result, "[hola] - [foo bar!]", "? def fail")
 
 }
 
-
-
 func TestProcessingFind(t *testing.T) {
+
+	dbMock := &mockZbotDatabase{
+		level: "666",
+		file: "hola.db",
+		term: "hola",
+		meaning: "foo bar!",
+	}
+
 	output := make(chan string)
 	botMsg := telebot.Message{Text: "!find hola"}
-	go processing(botMsg, output)
-	result := <-output
+	result := processing(dbMock ,botMsg, output)
 	assert.Equal(t, result, "hola", "!find fail")
 }
 
 func TestProcessingTop(t *testing.T) {
+
+	dbMock := &mockZbotDatabase{
+		level: "666",
+		file: "hola.db",
+		term: "hola",
+		meaning: "foo bar!",
+		find_terms: []string{"hola", "chao", "foo_bar",},
+	}
+
 	output := make(chan string)
 	botMsg := telebot.Message{Text: "!top"}
-	go processing(botMsg, output)
-	result := <-output
+	result := processing(dbMock, botMsg, output)
 	assert.Equal(t, result, "hola chao foo_bar", "!top")
 }
 
 func TestProcessingRand(t *testing.T) {
+
+	dbMock := &mockZbotDatabase{
+		level: "666",
+		file: "hola.db",
+		term: "hola",
+		meaning: "foo bar!",
+		find_terms: []string{"hola", "chao", "foo_bar",},
+		rand_def: definitionItem{term: "hola", meaning:"gatolinux"},
+	}
+
 	output := make(chan string)
 	botMsg := telebot.Message{Text: "!rand"}
-	go processing(botMsg, output)
-	result := <-output
-	assert.Equal(t, result, "[hola] - [gatolinux]", "!rand")
+	result := processing(dbMock, botMsg, output)
+	assert.Equal(t, "[hola] - [gatolinux]", result,  "!rand")
 }
 
-func TestProcessingStats(t *testing.T) {
+func TestProcessingLearn(t *testing.T) {
+
+	dbMock := &mockZbotDatabase{
+		level: "666",
+		file: "hola.db",
+		term: "hola",
+		meaning: "foo bar!",
+		find_terms: []string{"hola", "chao", "foo_bar",},
+		rand_def: definitionItem{term: "hola", meaning:"gatolinux"},
+	}
+
 	output := make(chan string)
-	botMsg := telebot.Message{Text: "!stats"}
-	go processing(botMsg, output)
-	result := <-output
-	assert.Equal(t, result, "Count: 17461", "!stats")
+	botMsg := telebot.Message{
+		Text: "!learn 12312 foo bar!",
+		Sender: telebot.User{FirstName: "ssalvato", Username: "ssalvato"},
+	}
+	result := processing(dbMock, botMsg, output)
+	assert.Equal(t, "[12312] - [foo bar!]", result, "!learn fail")
 }
 
-func TestMessagesProcessing(t *testing.T) {
-	bot.Messages = make(chan telebot.Message)
-	botMsg := [2]telebot.Message{ telebot.Message{Text: "!rand"}, telebot.Message{Text: "any text"}}
-	bot.Messages <- botMsg
-	go messagesProcessing()
 
+func TestProcessingSearch(t *testing.T) {
+
+	dbMock := &mockZbotDatabase{
+		level: "666",
+		file: "hola.db",
+		term: "hola",
+		meaning: "foo bar!",
+		find_terms: []string{"hola", "chao", "foo_bar",},
+		rand_def: definitionItem{term: "hola", meaning:"gatolinux"},
+		search_terms: []string{"hola","chao", "foobar"},
+	}
+
+	output := make(chan string)
+	botMsg := telebot.Message{Text: "!search hola"}
+	result := processing(dbMock, botMsg, output)
+	assert.Equal(t, "hola chao foobar", result,  "!rand")
 }
-*/
+
+func TestProcessingLast(t *testing.T) {
+
+	dbMock := &mockZbotDatabase{
+		level: "666",
+		file: "hola.db",
+		term: "hola",
+		meaning: "foo bar!",
+		find_terms: []string{"hola", "chao", "foo_bar",},
+		rand_def: definitionItem{term: "hola", meaning:"gatolinux"},
+		search_terms: []string{"hola","chao", "foobar"},
+	}
+
+	output := make(chan string)
+	botMsg := telebot.Message{Text: "!last"}
+	result := processing(dbMock, botMsg, output)
+	assert.Equal(t, "[hola] - [foo bar!]", result,  "!rand")
+}
+
+func TestProcessingUserLevel(t *testing.T) {
+
+	dbMock := &mockZbotDatabase{
+		level: "666",
+		file: "hola.db",
+		term: "hola",
+		meaning: "foo bar!",
+		find_terms: []string{"hola", "chao", "foo_bar",},
+		rand_def: definitionItem{term: "hola", meaning:"gatolinux"},
+		search_terms: []string{"hola","chao", "foobar"},
+	}
+
+	output := make(chan string)
+	botMsg := telebot.Message{
+		Text: "!level",
+		Sender: telebot.User{FirstName: "ssalvato", Username: "ssalvato"},
+	}
+	result := processing(dbMock, botMsg, output)
+	assert.Equal(t, "ssalvato level 666", result,  "!rand")
+}

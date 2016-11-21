@@ -112,6 +112,7 @@ func (d *sqlLite) statistics() (string, error) {
 
 	return totalCount, err
 }
+
 func (d *sqlLite) top() ([]definitionItem, error) {
 
 	statement := "SELECT term FROM definitions ORDER BY hits DESC LIMIT 10"
