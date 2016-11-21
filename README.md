@@ -1,5 +1,7 @@
 # zbot-telegram
 
+[![Build Status](https://travis-ci.org/ssalvatori/zbot-telegram-go.svg?branch=master)](https://travis-ci.org/ssalvatori/zbot-telegram-go)
+
 ## requirements
 
 * You need to get an API TOKEN from [BotFather@Telegram](https://core.telegram.org/bots)
