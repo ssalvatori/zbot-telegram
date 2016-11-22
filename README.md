@@ -1,7 +1,7 @@
 # zbot-telegram
 
 [![Build Status](https://travis-ci.org/ssalvatori/zbot-telegram-go.svg?branch=master)](https://travis-ci.org/ssalvatori/zbot-telegram-go)
-[![Coverage Status](https://coveralls.io/repos/github/ssalvatori/zbot-telegram-go/badge.svg?branch=master)](https://coveralls.io/github/ssalvatori/zbot-telegram-go?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/ssalvatori/zbot-telegram-go/badge.svg)](https://coveralls.io/github/ssalvatori/zbot-telegram-go)
 
 ## requirements
 
