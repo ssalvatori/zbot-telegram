@@ -15,6 +15,7 @@ type mockZbotDatabase struct {
 	rand_def definitionItem
 	user telebot.User
 	ignore_list []string
+	user_ignored []userIgnore
 }
 
 func (d *mockZbotDatabase) init() error {
@@ -25,7 +26,7 @@ func (d *mockZbotDatabase) close() {
 }
 
 func (d *mockZbotDatabase) userIgnoreList() ([]userIgnore, error) {
-	return []userIgnore{}, nil
+	return d.user_ignored, nil
 }
 
 func (d *mockZbotDatabase) statistics() (string, error) {

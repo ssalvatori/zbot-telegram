@@ -236,3 +236,44 @@ func TestProcessingUserIgnoreList(t *testing.T) {
 	result := processing(dbMock, botMsg, output)
 	assert.Equal(t, "[ @ssalvato ] since [1231] until [4564]", result,  "!rand")
 }
+
+func TestProcessingUserIgnoreInsert(t *testing.T) {
+
+	dbMock := &mockZbotDatabase{
+		level: "666",
+		file: "hola.db",
+		term: "hola",
+		meaning: "foo bar!",
+		find_terms: []string{"hola", "chao", "foo_bar",},
+		rand_def: definitionItem{term: "hola", meaning:"gatolinux"},
+		search_terms: []string{"hola","chao", "foobar"},
+		user_ignored: []userIgnore{userIgnore{username: "ssalvato", since:"1231", until: "4564"},},
+	}
+
+
+	output := make(chan string)
+	botMsg := telebot.Message{
+		Text: "!ignore rigo",
+		Sender: telebot.User{FirstName: "ssalvato", Username: "ssalvato"},
+	}
+	result := processing(dbMock, botMsg, output)
+	assert.Equal(t, "User [rigo] ignored for 10 minutes", result,  "!rand")
+
+	output = make(chan string)
+	botMsg = telebot.Message{
+		Text: "!ignore ssalvato",
+		Sender: telebot.User{FirstName: "ssalvato", Username: "ssalvato"},
+	}
+	result = processing(dbMock, botMsg, output)
+	assert.Equal(t, "You can't ignore youself", result,  "!ignore")
+
+
+	dbMock.level = "10"
+	output = make(chan string)
+	botMsg = telebot.Message{
+		Text: "!ignore ssalvato",
+		Sender: telebot.User{FirstName: "ssalvato", Username: "ssalvato"},
+	}
+	result = processing(dbMock, botMsg, output)
+	assert.Equal(t, "level not enough (minimum 500 yours 10)", result,  "!ignore")
+}
