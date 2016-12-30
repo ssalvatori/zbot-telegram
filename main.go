@@ -6,7 +6,7 @@ import (
 	"github.com/tucnak/telebot"
 
 	"github.com/ssalvatori/zbot-telegram-go/commands"
-	"github.com/ssalvatori/zbot-telegram-go/database"
+	"github.com/ssalvatori/zbot-telegram-go/db"
 	"os"
 	"time"
 	"regexp"
@@ -27,25 +27,25 @@ func main() {
 		log.Fatal(err)
 	}
 
-	db := &sqlLite{
-		file: dbFile,
+	db := &db.SqlLite{
+		File: dbFile,
 	}
 
-	err = db.init()
-	defer db.close()
+	err = db.Init()
+	defer db.Close()
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	go db.userCleanIgnore()
+	go db.UserCleanIgnore()
 	bot.Messages = make(chan telebot.Message, 1000)
 	go messagesProcessing(db, bot)
 
 	bot.Start(1 * time.Second)
 }
 
-func messagesProcessing(db zbotDatabase, bot *telebot.Bot) {
+func messagesProcessing(db db.ZbotDatabase, bot *telebot.Bot) {
 	output := make(chan string)
 	for message := range bot.Messages {
 
@@ -53,7 +53,7 @@ func messagesProcessing(db zbotDatabase, bot *telebot.Bot) {
 		processingMsg := regexp.MustCompilePOSIX(`^[!|?].*`)
 
 		//check if the user isn't on the ignore_list
-		ignore, err := db.userCheckIgnore(strings.ToLower(message.Sender.Username))
+		ignore, err := db.UserCheckIgnore(strings.ToLower(message.Sender.Username))
 		if err != nil {
 			log.Error(err)
 		}
@@ -68,16 +68,12 @@ func messagesProcessing(db zbotDatabase, bot *telebot.Bot) {
 	}
 }
 
-func sendResponse(bot *telebot.Bot, db zbotDatabase, msg telebot.Message, output chan string) {
+func sendResponse(bot *telebot.Bot, db db.ZbotDatabase, msg telebot.Message, output chan string) {
 	response := processing(db, msg,output)
 	bot.SendMessage(msg.Chat, response, nil)
 }
 
-func processing(db zbotDatabase, msg telebot.Message, output chan string) string {
-	//TODO: check chain responsibility design pattern
-
-	var outputMsg string
-
+func processing(db db.ZbotDatabase, msg telebot.Message, output chan string) string {
 /*	//versionPattern := regexp.MustCompile(`^!version`)
 	learnPattern := regexp.MustCompile(`^!learn\s(\S*)\s(.*)`)
 	getPattern := regexp.MustCompile(`^\?\s(\S*)`)
@@ -89,6 +85,7 @@ func processing(db zbotDatabase, msg telebot.Message, output chan string) string
 	statsPattern := regexp.MustCompile(`^!stats`)
 	//pingPattern := regexp.MustCompile(`^!ping`)*/
 
+	// TODO: how to clean this code
 	commands := &command.PingCommand{
 		Next: &command.VersionCommand{
 			Next: &command.StatsCommand{
@@ -98,7 +95,7 @@ func processing(db zbotDatabase, msg telebot.Message, output chan string) string
 		},
 	}
 
-	outputMsg = commands.ProcessText(msg.Text)
+	outputMsg := commands.ProcessText(msg.Text)
 
 /*	//Levels
 	levelPattern := regexp.MustCompile(`^!level`)
@@ -251,11 +248,11 @@ func processing(db zbotDatabase, msg telebot.Message, output chan string) string
 	return outputMsg
 }
 
-func getTerms(items []definitionItem) ([]string) {
+func getTerms(items []db.DefinitionItem) ([]string) {
 	var terms []string
 	for _,item := range items {
-		if item.term != "" {
-			terms = append(terms, item.term)
+		if item.Term != "" {
+			terms = append(terms, item.Term)
 		} else {
 			return terms
 		}
@@ -263,11 +260,11 @@ func getTerms(items []definitionItem) ([]string) {
 	return terms
 }
 
-func getUserIgnored(users []userIgnore) ([]string) {
+func getUserIgnored(users []db.UserIgnore) ([]string) {
 	var userIgnored []string
 	for _,user := range users {
-		if user.username != "" {
-			userString := fmt.Sprintf("[ @%s ] since [%s] until [%s]", user.username, user.since, user.until)
+		if user.Username != "" {
+			userString := fmt.Sprintf("[ @%s ] since [%s] until [%s]", user.Username, user.Since, user.Until)
 			userIgnored = append(userIgnored, userString)
 		}
 	}

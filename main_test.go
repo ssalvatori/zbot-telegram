@@ -4,14 +4,15 @@ import (
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"github.com/tucnak/telebot"
+	"github.com/ssalvatori/zbot-telegram-go/db"
 )
 
 func TestGetTerms(t *testing.T) {
 
-	var items = []definitionItem {
-		{term: "Term1"},
-		{term: "Term2"},
-		{meaning: ""},
+	var items = []db.DefinitionItem {
+		{Term: "Term1"},
+		{Term: "Term2"},
+		{Meaning: ""},
 	}
 
 	terms := getTerms(items)
@@ -19,11 +20,11 @@ func TestGetTerms(t *testing.T) {
 }
 
 func TestGetUserIgnored(t *testing.T) {
-	var users = []userIgnore {
+	var users = []db.UserIgnore {
 		{
-			username: "rigo",
-			since: "1478126960",
-			until: "1478127560",
+			Username: "rigo",
+			Since: "1478126960",
+			Until: "1478127560",
 		},
 	}
 
@@ -33,9 +34,9 @@ func TestGetUserIgnored(t *testing.T) {
 
 func TestProcessingVersion(t *testing.T) {
 
-	dbMock := &mockZbotDatabase{
-		level: "666",
-		file: "hola.db",
+	dbMock := &db.MockZbotDatabase{
+		Level: "666",
+		File: "hola.db",
 	}
 
 	output := make(chan string)
