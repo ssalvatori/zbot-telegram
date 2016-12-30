@@ -4,6 +4,7 @@ import (
 	"regexp"
 	"github.com/ssalvatori/zbot-telegram-go/db"
 	log "github.com/Sirupsen/logrus"
+	"fmt"
 )
 
 type StatsCommand struct {
@@ -21,7 +22,7 @@ func (handler *StatsCommand) ProcessText(text string) string {
 			log.Error(err)
 			return "Error!"
 		}
-		return statTotal
+		return fmt.Sprintf("Count: %s",statTotal)
 	} else {
 		return handler.Next.ProcessText(text)
 	}

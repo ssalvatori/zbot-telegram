@@ -7,6 +7,45 @@ import (
 	"github.com/ssalvatori/zbot-telegram-go/db"
 )
 
+func TestProcessingVersion(t *testing.T) {
+
+	dbMock := &db.MockZbotDatabase{
+		Level: "666",
+		File: "hola.db",
+	}
+
+	output := make(chan string)
+	botMsg := telebot.Message{Text: "!version"}
+	result := processing(dbMock, botMsg, output)
+	assert.Equal(t, result, "zbot golang version 1.0", "!version fail")
+}
+
+func TestProcessingStats(t *testing.T) {
+
+	dbMock := &db.MockZbotDatabase{
+		Level: "666",
+		File: "hola.db",
+	}
+
+	output := make(chan string)
+	botMsg := telebot.Message{Text: "!stats"}
+	result := processing(dbMock, botMsg, output)
+	assert.Equal(t, result, "Count: 666", "!stats")
+}
+
+func TestProcessingPing(t *testing.T) {
+
+	dbMock := &db.MockZbotDatabase{
+		Level: "666",
+		File: "hola.db",
+	}
+
+	output := make(chan string)
+	botMsg := telebot.Message{Text: "!ping"}
+	result := processing(dbMock,botMsg, output)
+	assert.Equal(t, result, "pong!!", "!ping")
+}
+/*
 func TestGetTerms(t *testing.T) {
 
 	var items = []db.DefinitionItem {
@@ -32,54 +71,21 @@ func TestGetUserIgnored(t *testing.T) {
 	assert.Equal(t, formated, []string{"[ @rigo ] since [1478126960] until [1478127560]"})
 }
 
-func TestProcessingVersion(t *testing.T) {
+
+
+
+
+
+
+
+
+func TestProcessingGet(t *testing.T) {
 
 	dbMock := &db.MockZbotDatabase{
 		Level: "666",
 		File: "hola.db",
-	}
-
-	output := make(chan string)
-	botMsg := telebot.Message{Text: "!version"}
-	result := processing(dbMock, botMsg, output)
-	assert.Equal(t, result, "zbot golang version 1.0", "!version fail")
-}
-
-
-func TestProcessingPing(t *testing.T) {
-
-	dbMock := &mockZbotDatabase{
-		level: "666",
-		file: "hola.db",
-	}
-
-	output := make(chan string)
-	botMsg := telebot.Message{Text: "!ping"}
-	result := processing(dbMock,botMsg, output)
-	assert.Equal(t, result, "pong!!", "!ping")
-}
-
-
-func TestProcessingStats(t *testing.T) {
-
-	dbMock := &mockZbotDatabase{
-		level: "666",
-		file: "hola.db",
-	}
-
-	output := make(chan string)
-	botMsg := telebot.Message{Text: "!stats"}
-	result := processing(dbMock, botMsg, output)
-	assert.Equal(t, result, "Count: 666", "!stats")
-}
-
-func TestProcessingGet(t *testing.T) {
-
-	dbMock := &mockZbotDatabase{
-		level: "666",
-		file: "hola.db",
-		term: "hola",
-		meaning: "foo bar!",
+		Term: "hola",
+		Meaning: "foo bar!",
 	}
 
 	output := make(chan string)
@@ -91,11 +97,11 @@ func TestProcessingGet(t *testing.T) {
 
 func TestProcessingFind(t *testing.T) {
 
-	dbMock := &mockZbotDatabase{
-		level: "666",
-		file: "hola.db",
-		term: "hola",
-		meaning: "foo bar!",
+	dbMock := &db.MockZbotDatabase{
+		Level: "666",
+		File: "hola.db",
+		Term: "hola",
+		Meaning: "foo bar!",
 	}
 
 	output := make(chan string)
@@ -106,12 +112,12 @@ func TestProcessingFind(t *testing.T) {
 
 func TestProcessingTop(t *testing.T) {
 
-	dbMock := &mockZbotDatabase{
-		level: "666",
-		file: "hola.db",
-		term: "hola",
-		meaning: "foo bar!",
-		find_terms: []string{"hola", "chao", "foo_bar",},
+	dbMock := &db.MockZbotDatabase{
+		Level: "666",
+		File: "hola.db",
+		Term: "hola",
+		Meaning: "foo bar!",
+		Find_terms: []string{"hola", "chao", "foo_bar",},
 	}
 
 	output := make(chan string)
@@ -122,13 +128,13 @@ func TestProcessingTop(t *testing.T) {
 
 func TestProcessingRand(t *testing.T) {
 
-	dbMock := &mockZbotDatabase{
-		level: "666",
-		file: "hola.db",
-		term: "hola",
-		meaning: "foo bar!",
-		find_terms: []string{"hola", "chao", "foo_bar",},
-		rand_def: definitionItem{term: "hola", meaning:"gatolinux"},
+	dbMock := &db.MockZbotDatabase{
+		Level: "666",
+		File: "hola.db",
+		Term: "hola",
+		Meaning: "foo bar!",
+		Find_terms: []string{"hola", "chao", "foo_bar",},
+		Rand_def: db.DefinitionItem{Term: "hola", Meaning:"gatolinux"},
 	}
 
 	output := make(chan string)
@@ -139,13 +145,13 @@ func TestProcessingRand(t *testing.T) {
 
 func TestProcessingLearn(t *testing.T) {
 
-	dbMock := &mockZbotDatabase{
-		level: "666",
-		file: "hola.db",
-		term: "hola",
-		meaning: "foo bar!",
-		find_terms: []string{"hola", "chao", "foo_bar",},
-		rand_def: definitionItem{term: "hola", meaning:"gatolinux"},
+	dbMock := &db.MockZbotDatabase{
+		Level: "666",
+		File: "hola.db",
+		Term: "hola",
+		Meaning: "foo bar!",
+		Find_terms: []string{"hola", "chao", "foo_bar",},
+		Rand_def: db.DefinitionItem{Term: "hola", Meaning:"gatolinux"},
 	}
 
 	output := make(chan string)
@@ -160,14 +166,14 @@ func TestProcessingLearn(t *testing.T) {
 
 func TestProcessingSearch(t *testing.T) {
 
-	dbMock := &mockZbotDatabase{
-		level: "666",
-		file: "hola.db",
-		term: "hola",
-		meaning: "foo bar!",
-		find_terms: []string{"hola", "chao", "foo_bar",},
-		rand_def: definitionItem{term: "hola", meaning:"gatolinux"},
-		search_terms: []string{"hola","chao", "foobar"},
+	dbMock := &db.MockZbotDatabase{
+		Level: "666",
+		File: "hola.db",
+		Term: "hola",
+		Meaning: "foo bar!",
+		Find_terms: []string{"hola", "chao", "foo_bar",},
+		Rand_def: db.DefinitionItem{Term: "hola", Meaning:"gatolinux"},
+		Search_terms: []string{"hola","chao", "foobar"},
 	}
 
 	output := make(chan string)
@@ -178,14 +184,14 @@ func TestProcessingSearch(t *testing.T) {
 
 func TestProcessingLast(t *testing.T) {
 
-	dbMock := &mockZbotDatabase{
-		level: "666",
-		file: "hola.db",
-		term: "hola",
-		meaning: "foo bar!",
-		find_terms: []string{"hola", "chao", "foo_bar",},
-		rand_def: definitionItem{term: "hola", meaning:"gatolinux"},
-		search_terms: []string{"hola","chao", "foobar"},
+	dbMock := &db.MockZbotDatabase{
+		Level: "666",
+		File: "hola.db",
+		Term: "hola",
+		Meaning: "foo bar!",
+		Find_terms: []string{"hola", "chao", "foo_bar",},
+		Rand_def: db.DefinitionItem{Term: "hola", Meaning:"gatolinux"},
+		Search_terms: []string{"hola","chao", "foobar"},
 	}
 
 	output := make(chan string)
@@ -196,14 +202,14 @@ func TestProcessingLast(t *testing.T) {
 
 func TestProcessingUserLevel(t *testing.T) {
 
-	dbMock := &mockZbotDatabase{
-		level: "666",
-		file: "hola.db",
-		term: "hola",
-		meaning: "foo bar!",
-		find_terms: []string{"hola", "chao", "foo_bar",},
-		rand_def: definitionItem{term: "hola", meaning:"gatolinux"},
-		search_terms: []string{"hola","chao", "foobar"},
+	dbMock := &db.MockZbotDatabase{
+		Level: "666",
+		File: "hola.db",
+		Term: "hola",
+		Meaning: "foo bar!",
+		Find_terms: []string{"hola", "chao", "foo_bar",},
+		Rand_def: db.DefinitionItem{Term: "hola", Meaning:"gatolinux"},
+		Search_terms: []string{"hola","chao", "foobar"},
 	}
 
 	output := make(chan string)
@@ -217,15 +223,15 @@ func TestProcessingUserLevel(t *testing.T) {
 
 func TestProcessingUserIgnoreList(t *testing.T) {
 
-	dbMock := &mockZbotDatabase{
-		level: "666",
-		file: "hola.db",
-		term: "hola",
-		meaning: "foo bar!",
-		find_terms: []string{"hola", "chao", "foo_bar",},
-		rand_def: definitionItem{term: "hola", meaning:"gatolinux"},
-		search_terms: []string{"hola","chao", "foobar"},
-		user_ignored: []userIgnore{userIgnore{username: "ssalvato", since:"1231", until: "4564"},},
+	dbMock := &db.MockZbotDatabase{
+		Level: "666",
+		File: "hola.db",
+		Term: "hola",
+		Meaning: "foo bar!",
+		Find_terms: []string{"hola", "chao", "foo_bar",},
+		Rand_def: db.DefinitionItem{Term: "hola", Meaning:"gatolinux"},
+		Search_terms: []string{"hola","chao", "foobar"},
+		User_ignored: []db.UserIgnore{db.UserIgnore{Username: "ssalvato", Since:"1231", Until: "4564"},},
 	}
 
 
@@ -240,15 +246,15 @@ func TestProcessingUserIgnoreList(t *testing.T) {
 
 func TestProcessingUserIgnoreInsert(t *testing.T) {
 
-	dbMock := &mockZbotDatabase{
-		level: "666",
-		file: "hola.db",
-		term: "hola",
-		meaning: "foo bar!",
-		find_terms: []string{"hola", "chao", "foo_bar",},
-		rand_def: definitionItem{term: "hola", meaning:"gatolinux"},
-		search_terms: []string{"hola","chao", "foobar"},
-		user_ignored: []userIgnore{userIgnore{username: "ssalvato", since:"1231", until: "4564"},},
+	dbMock := &db.MockZbotDatabase{
+		Level: "666",
+		File: "hola.db",
+		Term: "hola",
+		Meaning: "foo bar!",
+		Find_terms: []string{"hola", "chao", "foo_bar",},
+		Rand_def: db.DefinitionItem{Term: "hola", Meaning:"gatolinux"},
+		Search_terms: []string{"hola","chao", "foobar"},
+		User_ignored: []db.UserIgnore{db.UserIgnore{Username: "ssalvato", Since:"1231", Until: "4564"},},
 	}
 
 
@@ -269,7 +275,7 @@ func TestProcessingUserIgnoreInsert(t *testing.T) {
 	assert.Equal(t, "You can't ignore youself", result,  "!ignore")
 
 
-	dbMock.level = "10"
+	dbMock.Level = "10"
 	output = make(chan string)
 	botMsg = telebot.Message{
 		Text: "!ignore ssalvato",
@@ -277,4 +283,4 @@ func TestProcessingUserIgnoreInsert(t *testing.T) {
 	}
 	result = processing(dbMock, botMsg, output)
 	assert.Equal(t, "level not enough (minimum 500 yours 10)", result,  "!ignore")
-}
+}*/
