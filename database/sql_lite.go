@@ -1,54 +1,19 @@
-package main
+package database
 
 import (
 	"database/sql"
-	"errors"
-	"fmt"
 	log "github.com/Sirupsen/logrus"
-	_ "github.com/mattn/go-sqlite3"
 	"strconv"
-	"strings"
 	"time"
+	"errors"
+	"strings"
+	"fmt"
 )
-
-type zbotDatabase interface {
-	init() error
-	close()
-	statistics() (string, error)
-	top() ([]definitionItem, error)
-	rand() (definitionItem, error)
-	last() (definitionItem, error)
-	get(string) (definitionItem, error)
-	set(definitionItem) error
-	_set(string, definitionItem) (sql.Result, error)
-	find(string) ([]definitionItem, error)
-	search(string) ([]definitionItem, error)
-	userLevel(string) (string, error)
-	userIgnoreInsert(string) error
-	userCheckIgnore(string) (bool, error)
-	userCleanIgnore() error
-	userIgnoreList() ([]userIgnore, error)
-}
-
-type definitionItem struct {
-	term    string
-	meaning string
-	author  string
-	date    string
-	id      int
-}
-
-type userIgnore struct {
-	username string
-	since string
-	until string
-}
 
 type sqlLite struct {
 	db   *sql.DB
 	file string
 }
-
 
 func (d *sqlLite) userIgnoreList() ([]userIgnore, error) {
 	log.Debug("Getting ignore list")
@@ -358,4 +323,5 @@ func (d *sqlLite) userCleanIgnore() error {
 		time.Sleep(5 * time.Minute)
 	}
 }
+
 

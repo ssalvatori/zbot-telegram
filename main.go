@@ -3,14 +3,14 @@ package main
 import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/tucnak/telebot"
+
 	"github.com/ssalvatori/zbot-telegram-go/commands"
+	"github.com/ssalvatori/zbot-telegram-go/database"
 	"os"
-	"regexp"
-	"strconv"
-	"strings"
 	"time"
+	"regexp"
+	"strings"
 )
 
 const version string = "1.0"
@@ -78,7 +78,7 @@ func processing(db zbotDatabase, msg telebot.Message, output chan string) string
 
 	var outputMsg string
 
-	//versionPattern := regexp.MustCompile(`^!version`)
+/*	//versionPattern := regexp.MustCompile(`^!version`)
 	learnPattern := regexp.MustCompile(`^!learn\s(\S*)\s(.*)`)
 	getPattern := regexp.MustCompile(`^\?\s(\S*)`)
 	findPattern := regexp.MustCompile(`^!find\s(\S*)`)
@@ -87,20 +87,20 @@ func processing(db zbotDatabase, msg telebot.Message, output chan string) string
 	lastPattern := regexp.MustCompile(`^!last`)
 	randPattern := regexp.MustCompile(`^!rand`)
 	statsPattern := regexp.MustCompile(`^!stats`)
-	//pingPattern := regexp.MustCompile(`^!ping`)
+	//pingPattern := regexp.MustCompile(`^!ping`)*/
 
 	commands := &command.PingCommand{
 		Next: &command.VersionCommand{
+			Next: &command.StatsCommand{
+				Db: db,
+			},
 			Version: version,
-			Next: &command.StatsCommand{},
 		},
 	}
 
-	result := commands.ProcessText(msg.Text)
-	fmt.Sprintf("%s", result)
+	outputMsg = commands.ProcessText(msg.Text)
 
-
-	//Levels
+/*	//Levels
 	levelPattern := regexp.MustCompile(`^!level`)
 	ignorePattern := regexp.MustCompile(`^!ignore\s(\S*)`)
 	ignoreListPattern := regexp.MustCompile(`^!ignorelist`)
@@ -114,9 +114,9 @@ func processing(db zbotDatabase, msg telebot.Message, output chan string) string
 	} else {
 		author = msg.Sender.FirstName
 		authorIdent = strings.ToLower(msg.Sender.FirstName)
-	}
+	}*/
 
-	switch {
+/*	switch {
 	case ignoreListPattern.MatchString(msg.Text):
 		results, err := db.userIgnoreList()
 		if (err != nil) {
@@ -246,7 +246,7 @@ func processing(db zbotDatabase, msg telebot.Message, output chan string) string
 	default:
 		outputMsg = ""
 		break
-	}
+	}*/
 
 	return outputMsg
 }

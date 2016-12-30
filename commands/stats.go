@@ -2,22 +2,22 @@ package command
 
 import (
 	"regexp"
-	"fmt"
+	"github.com/ssalvatori/zbot-telegram-go/database"
 )
 
 type StatsCommand struct {
-	next HandlerCommand
-	version string
+	Db zbotDatabase
+	Next     HandlerCommand
 }
 
-func (handler *StatsCommand) Process(text string) string {
+func (handler *StatsCommand) ProcessText(text string) string {
 
-	var command string = "^!stats"
+	commandPattern := regexp.MustCompile(`^!stats`)
 
-	if(regexp.MatchString(regexp.MustCompile(command), text)) {
-		return fmt.Sprintf("zbot golang version %s", handler.version)
+	if(commandPattern.MatchString(text)) {
+		return Db.statistics()
 	} else {
-		return handler.next.Process(text)
+		return handler.Next.ProcessText(text)
 	}
 
 }
