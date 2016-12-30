@@ -5,6 +5,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/tucnak/telebot"
+	"github.com/ssalvatori/zbot-telegram-go/commands"
 	"os"
 	"regexp"
 	"strconv"
@@ -77,7 +78,7 @@ func processing(db zbotDatabase, msg telebot.Message, output chan string) string
 
 	var outputMsg string
 
-	versionPattern := regexp.MustCompile(`^!version`)
+	//versionPattern := regexp.MustCompile(`^!version`)
 	learnPattern := regexp.MustCompile(`^!learn\s(\S*)\s(.*)`)
 	getPattern := regexp.MustCompile(`^\?\s(\S*)`)
 	findPattern := regexp.MustCompile(`^!find\s(\S*)`)
@@ -86,7 +87,18 @@ func processing(db zbotDatabase, msg telebot.Message, output chan string) string
 	lastPattern := regexp.MustCompile(`^!last`)
 	randPattern := regexp.MustCompile(`^!rand`)
 	statsPattern := regexp.MustCompile(`^!stats`)
-	pingPattern := regexp.MustCompile(`^!ping`)
+	//pingPattern := regexp.MustCompile(`^!ping`)
+
+	commands := &command.PingCommand{
+		Next: &command.VersionCommand{
+			Version: version,
+			Next: &command.StatsCommand{},
+		},
+	}
+
+	result := commands.ProcessText(msg.Text)
+	fmt.Sprintf("%s", result)
+
 
 	//Levels
 	levelPattern := regexp.MustCompile(`^!level`)
