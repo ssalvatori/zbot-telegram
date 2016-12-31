@@ -17,7 +17,11 @@ func (handler *VersionCommand) ProcessText(text string) string{
 	if(commandPattern.MatchString(text)) {
 		return fmt.Sprintf("zbot golang version %s", handler.Version)
 	} else {
-		return handler.Next.ProcessText(text)
+		if (handler.Next != nil) {
+			return handler.Next.ProcessText(text)
+		} else {
+			return ""
+		}
 	}
 
 }
