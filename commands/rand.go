@@ -12,7 +12,7 @@ type RandCommand struct {
 	Db db.ZbotDatabase
 }
 
-func (handler *RandCommand) ProcessText(text string) string{
+func (handler *RandCommand) ProcessText(text string, user User) string{
 
 	commandPattern := regexp.MustCompile(`^!rand$`)
 	result := ""
@@ -25,7 +25,7 @@ func (handler *RandCommand) ProcessText(text string) string{
 		result = fmt.Sprintf("[%s] - [%s]", randItem.Term, randItem.Meaning)
 	} else {
 		if (handler.Next != nil) {
-			result = handler.Next.ProcessText(text)
+			result = handler.Next.ProcessText(text, user)
 		}
 	}
 	return result

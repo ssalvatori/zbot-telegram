@@ -3,7 +3,13 @@ package command
 import "github.com/ssalvatori/zbot-telegram-go/db"
 
 type HandlerCommand interface {
-	ProcessText(text string) string
+	ProcessText(text string, username User) string
+}
+
+type User struct {
+	Username string
+	Ident string
+	Host string
 }
 
 func getTerms(items []db.DefinitionItem) ([]string) {

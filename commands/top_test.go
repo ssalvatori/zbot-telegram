@@ -14,8 +14,8 @@ func TestTopCommandOK(t *testing.T) {
 		Find_terms: []string{"foo", "bar",},
 		Rand_def: db.DefinitionItem{Term: "foo", Meaning: "bar"},
 	}
-	assert.Equal(t, "foo bar", topCommand.ProcessText("!top"), "Top Command")
-	assert.Equal(t, "", topCommand.ProcessText("!top6"), "Top no next command")
+	assert.Equal(t, "foo bar", topCommand.ProcessText("!top", user), "Top Command")
+	assert.Equal(t, "", topCommand.ProcessText("!top6", user), "Top no next command")
 	topCommand.Next = &FakeCommand{}
-	assert.Equal(t, "Fake OK", topCommand.ProcessText("!top6"), "Top next command")
+	assert.Equal(t, "Fake OK", topCommand.ProcessText("!top6", user), "Top next command")
 }

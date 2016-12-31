@@ -13,8 +13,8 @@ func TestStatsCommandOK(t *testing.T) {
 		Level: "7",
 		Rand_def: db.DefinitionItem{Term: "foo", Meaning: "bar"},
 	}
-	assert.Equal(t, "Count: 7", statsCommand.ProcessText("!stats"), "Stats Command")
-	assert.Equal(t, "", statsCommand.ProcessText("!stats6"), "Stats no next command")
+	assert.Equal(t, "Count: 7", statsCommand.ProcessText("!stats", user), "Stats Command")
+	assert.Equal(t, "", statsCommand.ProcessText("!stats6", user), "Stats no next command")
 	statsCommand.Next = &FakeCommand{}
-	assert.Equal(t, "Fake OK", statsCommand.ProcessText("!stats6"), "Stats next command")
+	assert.Equal(t, "Fake OK", statsCommand.ProcessText("!stats6", user), "Stats next command")
 }

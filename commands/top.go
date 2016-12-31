@@ -13,7 +13,7 @@ type TopCommand struct {
 	Db db.ZbotDatabase
 }
 
-func (handler *TopCommand) ProcessText(text string) string{
+func (handler *TopCommand) ProcessText(text string, user User) string{
 
 	commandPattern := regexp.MustCompile(`^!top$`)
 	result := ""
@@ -26,7 +26,7 @@ func (handler *TopCommand) ProcessText(text string) string{
 		result = fmt.Sprintf(strings.Join(getTerms(items), " "))
 	} else {
 		if (handler.Next != nil) {
-			result = handler.Next.ProcessText(text)
+			result = handler.Next.ProcessText(text, user)
 		}
 	}
 	return result

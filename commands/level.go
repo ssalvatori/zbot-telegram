@@ -7,22 +7,22 @@ import (
 	"fmt"
 )
 
-type StatsCommand struct {
+type LevelCommand struct {
 	Db db.ZbotDatabase
-	Next     HandlerCommand
+	Next HandlerCommand
 }
 
-func (handler *StatsCommand) ProcessText(text string, user User) string {
+func (handler *LevelCommand) ProcessText(text string, user User) string {
 
-	commandPattern := regexp.MustCompile(`^!stats$`)
+	commandPattern := regexp.MustCompile(`^!level$`)
 	result := ""
 
 	if(commandPattern.MatchString(text)) {
-		statTotal, err := handler.Db.Statistics()
+		level, err := handler.Db.UserLevel(user.Username)
 		if err != nil {
 			log.Error(err)
 		}
-		result = fmt.Sprintf("Count: %s",statTotal)
+		result = fmt.Sprintf("%s level %s", user.Username, level)
 	} else {
 		if (handler.Next != nil) {
 			result = handler.Next.ProcessText(text, user)

@@ -13,8 +13,8 @@ func TestLastCommandOK(t *testing.T) {
 		Term: "foo",
 		Meaning: "bar",
 	}
-	assert.Equal(t, "[foo] - [bar]", lastCommand.ProcessText("!last"), "Last Command")
-	assert.Equal(t, "", lastCommand.ProcessText("!last6"), "Last no next command")
+	assert.Equal(t, "[foo] - [bar]", lastCommand.ProcessText("!last", user), "Last Command")
+	assert.Equal(t, "", lastCommand.ProcessText("!last6", user), "Last no next command")
 	lastCommand.Next = &FakeCommand{}
-	assert.Equal(t, "Fake OK", lastCommand.ProcessText("!last6"), "Last next command")
+	assert.Equal(t, "Fake OK", lastCommand.ProcessText("!last6", user), "Last next command")
 }

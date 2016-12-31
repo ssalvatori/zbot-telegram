@@ -13,7 +13,7 @@ type FindCommand struct {
 	Db db.ZbotDatabase
 }
 
-func (handler *FindCommand) ProcessText(text string) string{
+func (handler *FindCommand) ProcessText(text string, user User) string{
 
 	commandPattern := regexp.MustCompile(`^!find\s(\S*)`)
 	result := ""
@@ -27,7 +27,7 @@ func (handler *FindCommand) ProcessText(text string) string{
 		result = fmt.Sprintf("%s", strings.Join(getTerms(results), " "))
 	} else {
 		if (handler.Next != nil) {
-			result = handler.Next.ProcessText(text)
+			result = handler.Next.ProcessText(text, user)
 		}
 	}
 	return result

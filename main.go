@@ -74,11 +74,16 @@ func sendResponse(bot *telebot.Bot, db db.ZbotDatabase, msg telebot.Message, out
 }
 
 func processing(db db.ZbotDatabase, msg telebot.Message, output chan string) string {
-/*
-	learnPattern := regexp.MustCompile(`^!learn\s(\S*)\s(.*)`)
-	findPattern := regexp.MustCompile(`^!find\s(\S*)`)
-	searchPattern := regexp.MustCompile(`^!search\s(\S*)`)
-*/
+
+	user := command.User{}
+
+	if msg.Sender.Username != "" {
+		user.Username = msg.Sender.Username
+		user.Ident = strings.ToLower(msg.Sender.FirstName)
+	} else {
+		user.Username = msg.Sender.FirstName
+		user.Ident = strings.ToLower(msg.Sender.FirstName)
+	}
 
 	// TODO: how to clean this code
 	commands := &command.PingCommand{}
@@ -89,6 +94,9 @@ func processing(db db.ZbotDatabase, msg telebot.Message, output chan string) str
 	lastCommand := &command.LastCommand{Db: db}
 	getCommand := &command.GetCommand{Db: db}
 	findCommand :=  &command.FindCommand{Db: db}
+	searchCommand := &command.SearchCommand{Db: db}
+	learnCommand := &command.LearnCommand{Db: db}
+	levelCommand := &command.LevelCommand{Db: db}
 
 
 	commands.Next = versionCommand
@@ -98,24 +106,18 @@ func processing(db db.ZbotDatabase, msg telebot.Message, output chan string) str
 	topCommand.Next = lastCommand
 	lastCommand.Next = getCommand
 	getCommand.Next = findCommand
+	findCommand.Next = searchCommand
+	searchCommand.Next = learnCommand
+	learnCommand.Next = levelCommand
 
-	outputMsg := commands.ProcessText(msg.Text)
+	outputMsg := commands.ProcessText(msg.Text, user)
 
 /*	//Levels
 	levelPattern := regexp.MustCompile(`^!level`)
 	ignorePattern := regexp.MustCompile(`^!ignore\s(\S*)`)
 	ignoreListPattern := regexp.MustCompile(`^!ignorelist`)
 
-	nowDate := time.Now().Format("2006-01-02")
-	var author string
-	var authorIdent string
-	if msg.Sender.Username != "" {
-		author = msg.Sender.Username
-		authorIdent = strings.ToLower(msg.Sender.FirstName)
-	} else {
-		author = msg.Sender.FirstName
-		authorIdent = strings.ToLower(msg.Sender.FirstName)
-	}*/
+*/
 
 /*	switch {
 	case ignoreListPattern.MatchString(msg.Text):
@@ -153,23 +155,7 @@ func processing(db db.ZbotDatabase, msg telebot.Message, output chan string) str
 		outputMsg = fmt.Sprintf("pong!!")
 		break
 	case learnPattern.MatchString(msg.Text):
-		result := learnPattern.FindStringSubmatch(msg.Text)
-		if author != "" {
-			def := definitionItem{
-				term:    result[1],
-				meaning: result[2],
-				author:  fmt.Sprintf("%s!%s@telegram.bot", author, authorIdent),
-				date:    nowDate,
-			}
-			err := db.set(def)
-			if err != nil {
-				log.Error(err)
-			}
-			outputMsg = fmt.Sprintf("[%s] - [%s]", def.term, def.meaning)
-		} else {
-			spew.Dump(msg.Sender)
-			outputMsg = ""
-		}
+
 		break
 	case getPattern.MatchString(msg.Text):
 		result := getPattern.FindStringSubmatch(msg.Text)

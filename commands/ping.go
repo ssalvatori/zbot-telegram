@@ -8,7 +8,7 @@ type PingCommand struct {
 	Next HandlerCommand
 }
 
-func (handler *PingCommand) ProcessText(text string) string {
+func (handler *PingCommand) ProcessText(text string, user User) string {
 
 	commandPattern := regexp.MustCompile(`^!ping$`)
 	result := ""
@@ -17,7 +17,7 @@ func (handler *PingCommand) ProcessText(text string) string {
 		result = "pong!!"
 	} else {
 		if (handler.Next != nil) {
-			result = handler.Next.ProcessText(text)
+			result = handler.Next.ProcessText(text, user)
 		}
 	}
 	return result
