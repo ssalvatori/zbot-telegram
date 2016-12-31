@@ -7,6 +7,25 @@ import (
 	"github.com/ssalvatori/zbot-telegram-go/db"
 )
 
+func TestBuildUser(t *testing.T) {
+	botMsg := telebot.Message{
+		Sender: telebot.User{FirstName: "Stefano", Username: "Ssalvato"},
+	}
+
+	user := buildUser(botMsg.Sender)
+	assert.Equal(t, "ssalvato", user.Username, "username defined")
+	assert.Equal(t, "stefano", user.Ident, "ident defined")
+
+	botMsg = telebot.Message{
+		Sender: telebot.User{FirstName: "Stefano"},
+	}
+
+	user = buildUser(botMsg.Sender)
+	assert.Equal(t, "stefano", user.Username, "username not defined")
+	assert.Equal(t, user.Ident, "stefano", "ident defined")
+
+}
+
 func TestProcessingVersion(t *testing.T) {
 
 	dbMock := &db.MockZbotDatabase{
@@ -193,105 +212,3 @@ func TestProcessingUserIgnoreInsert(t *testing.T) {
 	result = processing(dbMock, botMsg, output)
 	assert.Equal(t, "level not enough (minimum 100 yours 10)", result,  "!ignore")
 }
-/*
-func TestGetTerms(t *testing.T) {
-
-	var items = []db.DefinitionItem {
-		{Term: "Term1"},
-		{Term: "Term2"},
-		{Meaning: ""},
-	}
-
-	terms := getTerms(items)
-	assert.Equal(t, terms, []string{"Term1", "Term2"} )
-}
-
-func TestGetUserIgnored(t *testing.T) {
-	var users = []db.UserIgnore {
-		{
-			Username: "rigo",
-			Since: "1478126960",
-			Until: "1478127560",
-		},
-	}
-
-	formated := getUserIgnored(users)
-	assert.Equal(t, formated, []string{"[ @rigo ] since [1478126960] until [1478127560]"})
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-func TestProcessingTop(t *testing.T) {
-
-	dbMock := &db.MockZbotDatabase{
-		Level: "666",
-		File: "hola.db",
-		Term: "hola",
-		Meaning: "foo bar!",
-		Find_terms: []string{"hola", "chao", "foo_bar",},
-	}
-
-	output := make(chan string)
-	botMsg := telebot.Message{Text: "!top"}
-	result := processing(dbMock, botMsg, output)
-	assert.Equal(t, result, "hola chao foo_bar", "!top")
-}
-
-
-
-func TestProcessingLearn(t *testing.T) {
-
-	dbMock := &db.MockZbotDatabase{
-		Level: "666",
-		File: "hola.db",
-		Term: "hola",
-		Meaning: "foo bar!",
-		Find_terms: []string{"hola", "chao", "foo_bar",},
-		Rand_def: db.DefinitionItem{Term: "hola", Meaning:"gatolinux"},
-	}
-
-	output := make(chan string)
-	botMsg := telebot.Message{
-		Text: "!learn 12312 foo bar!",
-		Sender: telebot.User{FirstName: "ssalvato", Username: "ssalvato"},
-	}
-	result := processing(dbMock, botMsg, output)
-	assert.Equal(t, "[12312] - [foo bar!]", result, "!learn fail")
-}
-
-
-
-
-func TestProcessingLast(t *testing.T) {
-
-	dbMock := &db.MockZbotDatabase{
-		Level: "666",
-		File: "hola.db",
-		Term: "hola",
-		Meaning: "foo bar!",
-		Find_terms: []string{"hola", "chao", "foo_bar",},
-		Rand_def: db.DefinitionItem{Term: "hola", Meaning:"gatolinux"},
-		Search_terms: []string{"hola","chao", "foobar"},
-	}
-
-	output := make(chan string)
-	botMsg := telebot.Message{Text: "!last"}
-	result := processing(dbMock, botMsg, output)
-	assert.Equal(t, "[hola] - [foo bar!]", result,  "!rand")
-}
-
-
-
-
-
-*/

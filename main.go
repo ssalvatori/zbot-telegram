@@ -15,7 +15,7 @@ import (
 
 const version string = "1.0"
 const dbFile string = "./sample.db"
-const levelIgnore int = 500 //level minimum to ignore a user
+const levelIgnore int = 100 //level minimum to ignore a user
 
 func main() {
 
@@ -27,20 +27,20 @@ func main() {
 		log.Fatal(err)
 	}
 
-	db := &db.SqlLite{
+	database := &db.SqlLite{
 		File: dbFile,
 	}
 
-	err = db.Init()
-	defer db.Close()
+	err = database.Init()
+	defer database.Close()
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	go db.UserCleanIgnore()
+	go database.UserCleanIgnore()
 	bot.Messages = make(chan telebot.Message, 1000)
-	go messagesProcessing(db, bot)
+	go messagesProcessing(database, bot)
 
 	bot.Start(1 * time.Second)
 }
@@ -73,20 +73,24 @@ func sendResponse(bot *telebot.Bot, db db.ZbotDatabase, msg telebot.Message, out
 	bot.SendMessage(msg.Chat, response, nil)
 }
 
-func processing(db db.ZbotDatabase, msg telebot.Message, output chan string) string {
-
+func buildUser(sender telebot.User) command.User {
 	user := command.User{}
+	user.Ident = strings.ToLower(sender.FirstName)
+	user.Username = strings.ToLower(sender.FirstName)
 
-	if msg.Sender.Username != "" {
-		user.Username = msg.Sender.Username
-		user.Ident = strings.ToLower(msg.Sender.FirstName)
-	} else {
-		user.Username = msg.Sender.FirstName
-		user.Ident = strings.ToLower(msg.Sender.FirstName)
+	if sender.Username != "" {
+		user.Username = strings.ToLower(sender.Username)
 	}
 
+	return user
+}
+
+func processing(db db.ZbotDatabase, msg telebot.Message, output chan string) string {
+
+	user := buildUser(msg.Sender);
+
 	var levels = command.Levels {
-		Ignore: 100,
+		Ignore: levelIgnore,
 	}
 
 	// TODO: how to clean this code
@@ -117,117 +121,6 @@ func processing(db db.ZbotDatabase, msg telebot.Message, output chan string) str
 	levelCommand.Next = ignoreCommand
 
 	outputMsg := commands.ProcessText(msg.Text, user)
-
-/*	//Levels
-	ignorePattern := regexp.MustCompile(`^!ignore\s(\S*)`)
-	ignoreListPattern := regexp.MustCompile(`^!ignorelist`)
-
-*/
-
-/*	switch {
-	case ignoreListPattern.MatchString(msg.Text):
-
-		break
-	case ignorePattern.MatchString(msg.Text):
-		result := ignorePattern.FindStringSubmatch(msg.Text)
-		level, err := db.userLevel(msg.Sender.Username)
-		if err != nil {
-			log.Error(err)
-			break
-		}
-		levelInt, _ := strconv.Atoi(level)
-		if levelInt >= levelIgnore {
-			if strings.ToLower(result[1]) != strings.ToLower(msg.Sender.Username) {
-				err := db.userIgnoreInsert(result[1])
-				if err != nil {
-					log.Error(err)
-					break
-				}
-				outputMsg = fmt.Sprintf("User [%s] ignored for 10 minutes", result[1])
-			} else {
-				outputMsg = fmt.Sprintf("You can't ignore youself")
-			}
-		} else {
-			outputMsg = fmt.Sprintf("level not enough (minimum %d yours %s)", levelIgnore, level)
-		}
-		break
-	case pingPattern.MatchString(msg.Text):
-		outputMsg = fmt.Sprintf("pong!!")
-		break
-	case learnPattern.MatchString(msg.Text):
-
-		break
-	case getPattern.MatchString(msg.Text):
-		result := getPattern.FindStringSubmatch(msg.Text)
-		definition, err := db.get(strings.ToLower(result[1]))
-		if err != nil {
-			log.Error(err)
-			break
-		}
-		if definition.term != "" {
-			outputMsg = fmt.Sprintf("[%s] - [%s]", definition.term, definition.meaning)
-		} else {
-			outputMsg = fmt.Sprintf("[%s] Not found!", result[1])
-		}
-		break
-	case findPattern.MatchString(msg.Text):
-
-		break
-	case searchPattern.MatchString(msg.Text):
-		result := searchPattern.FindStringSubmatch(msg.Text)
-		results, err := db.search(result[1])
-		if err != nil {
-			log.Error(err)
-			break
-		}
-		outputMsg = fmt.Sprintf("%s", strings.Join(getTerms(results), " "))
-		break
-	case topPattern.MatchString(msg.Text):
-		items, err := db.top()
-		if err != nil {
-			log.Error(err)
-		}
-		outputMsg = fmt.Sprintf(strings.Join(getTerms(items), " "))
-		break
-	case lastPattern.MatchString(msg.Text):
-		lastItem, err := db.last()
-		if err != nil {
-			log.Error(err)
-			break
-		}
-		outputMsg = fmt.Sprintf("[%s] - [%s]", lastItem.term, lastItem.meaning)
-		break
-	case versionPattern.MatchString(msg.Text):
-		outputMsg = fmt.Sprintf("zbot golang version %s", version)
-		break
-	case randPattern.MatchString(msg.Text):
-		randItem, err := db.rand()
-		if err != nil {
-			log.Error(err)
-			break
-		}
-		outputMsg = fmt.Sprintf("[%s] - [%s]", randItem.term, randItem.meaning)
-		break
-	case statsPattern.MatchString(msg.Text):
-		statTotal, err := db.statistics()
-		if err != nil {
-			log.Error(err)
-			break
-		}
-		outputMsg = fmt.Sprintf("Count: %s", statTotal)
-		break
-	case levelPattern.MatchString(msg.Text):
-		level, err := db.userLevel(msg.Sender.Username)
-		if err != nil {
-			log.Error(err)
-			break
-		}
-		outputMsg = fmt.Sprintf("%s level %s", msg.Sender.Username, level)
-		break
-	default:
-		outputMsg = ""
-		break
-	}*/
 
 	return outputMsg
 }
