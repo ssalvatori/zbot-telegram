@@ -16,5 +16,6 @@ func TestExternalCommandOK(t *testing.T) {
 }
 
 func TestExternalCommandInject(t *testing.T) {
+	externalCommand.Next = nil
 	assert.Equal(t, "",externalCommand.ProcessText("!../../test arg1 arg2 arg3", user), "external")
 }
