@@ -106,7 +106,9 @@ func processing(db db.ZbotDatabase, msg telebot.Message, output chan string) str
 	learnCommand := &command.LearnCommand{Db: db}
 	levelCommand := &command.LevelCommand{Db: db}
 	ignoreCommand := &command.IgnoreCommand{Db: db, Levels: levels}
-
+	externalCommand := &command.ExternalCommand{
+		PathModules: "./modules/",
+	}
 
 	commands.Next = versionCommand
 	versionCommand.Next = statsCommand
@@ -119,6 +121,7 @@ func processing(db db.ZbotDatabase, msg telebot.Message, output chan string) str
 	searchCommand.Next = learnCommand
 	learnCommand.Next = levelCommand
 	levelCommand.Next = ignoreCommand
+	ignoreCommand.Next = externalCommand
 
 	outputMsg := commands.ProcessText(msg.Text, user)
 
