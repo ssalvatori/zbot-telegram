@@ -85,6 +85,10 @@ func processing(db db.ZbotDatabase, msg telebot.Message, output chan string) str
 		user.Ident = strings.ToLower(msg.Sender.FirstName)
 	}
 
+	var levels = command.Levels {
+		Ignore: 100,
+	}
+
 	// TODO: how to clean this code
 	commands := &command.PingCommand{}
 	versionCommand := &command.VersionCommand{Version: version}
@@ -97,7 +101,7 @@ func processing(db db.ZbotDatabase, msg telebot.Message, output chan string) str
 	searchCommand := &command.SearchCommand{Db: db}
 	learnCommand := &command.LearnCommand{Db: db}
 	levelCommand := &command.LevelCommand{Db: db}
-	ignoreCommand := &command.IgnoreCommand{Db: db}
+	ignoreCommand := &command.IgnoreCommand{Db: db, Levels: levels}
 
 
 	commands.Next = versionCommand
