@@ -79,21 +79,21 @@ func processing(db db.ZbotDatabase, msg telebot.Message, output chan string) str
 	getPattern := regexp.MustCompile(`^\?\s(\S*)`)
 	findPattern := regexp.MustCompile(`^!find\s(\S*)`)
 	searchPattern := regexp.MustCompile(`^!search\s(\S*)`)
-	topPattern := regexp.MustCompile(`^!top`)
-	lastPattern := regexp.MustCompile(`^!last`)
-	randPattern := regexp.MustCompile(`^!rand`)
 */
-
 
 	// TODO: how to clean this code
 	commands := &command.PingCommand{}
 	versionCommand := &command.VersionCommand{Version: version}
 	statsCommand := &command.StatsCommand{Db: db}
 	randCommand := &command.RandCommand{Db: db}
+	topCommand := &command.TopCommand{Db: db}
+	lastCommand := &command.LastCommand{Db: db}
 
 	commands.Next = versionCommand
 	versionCommand.Next = statsCommand
 	statsCommand.Next = randCommand
+	randCommand.Next = topCommand
+	topCommand.Next = lastCommand
 
 	outputMsg := commands.ProcessText(msg.Text)
 
@@ -248,17 +248,7 @@ func processing(db db.ZbotDatabase, msg telebot.Message, output chan string) str
 	return outputMsg
 }
 
-func getTerms(items []db.DefinitionItem) ([]string) {
-	var terms []string
-	for _,item := range items {
-		if item.Term != "" {
-			terms = append(terms, item.Term)
-		} else {
-			return terms
-		}
-	}
-	return terms
-}
+
 
 func getUserIgnored(users []db.UserIgnore) ([]string) {
 	var userIgnored []string
