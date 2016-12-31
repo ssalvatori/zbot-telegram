@@ -88,12 +88,14 @@ func processing(db db.ZbotDatabase, msg telebot.Message, output chan string) str
 	randCommand := &command.RandCommand{Db: db}
 	topCommand := &command.TopCommand{Db: db}
 	lastCommand := &command.LastCommand{Db: db}
+	getCommand := &command.GetCommand{Db: db}
 
 	commands.Next = versionCommand
 	versionCommand.Next = statsCommand
 	statsCommand.Next = randCommand
 	randCommand.Next = topCommand
 	topCommand.Next = lastCommand
+	lastCommand.Next = getCommand
 
 	outputMsg := commands.ProcessText(msg.Text)
 

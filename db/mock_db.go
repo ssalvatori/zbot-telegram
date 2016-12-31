@@ -12,6 +12,7 @@ type MockZbotDatabase struct {
 	Meaning      string
 	Find_terms   []string
 	Search_terms []string
+	Not_found bool
 	Rand_def     DefinitionItem
 	User         telebot.User
 	Ignore_list  []string
@@ -60,6 +61,9 @@ func (d *MockZbotDatabase) Find(criteria string) ([]DefinitionItem, error) {
 }
 
 func (d *MockZbotDatabase) Get(term string) (DefinitionItem, error) {
+	if d.Not_found {
+		return DefinitionItem{}, nil
+	}
 	return DefinitionItem{Term: d.Term, Meaning:d.Meaning}, nil
 }
 
