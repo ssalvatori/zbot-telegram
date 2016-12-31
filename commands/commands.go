@@ -17,8 +17,6 @@ func getTerms(items []db.DefinitionItem) ([]string) {
 	for _,item := range items {
 		if item.Term != "" {
 			terms = append(terms, item.Term)
-		} else {
-			return terms
 		}
 	}
 	return terms
