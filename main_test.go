@@ -106,6 +106,50 @@ func TestProcessingSearch(t *testing.T) {
 	result := processing(dbMock, botMsg, output)
 	assert.Equal(t, "hola chao foobar", result,  "!rand")
 }
+
+func TestProcessingUserLevel(t *testing.T) {
+
+	dbMock := &db.MockZbotDatabase{
+		Level: "666",
+		File: "hola.db",
+		Term: "hola",
+		Meaning: "foo bar!",
+		Find_terms: []string{"hola", "chao", "foo_bar",},
+		Rand_def: db.DefinitionItem{Term: "hola", Meaning:"gatolinux"},
+		Search_terms: []string{"hola","chao", "foobar"},
+	}
+
+	output := make(chan string)
+	botMsg := telebot.Message{
+		Text: "!level",
+		Sender: telebot.User{FirstName: "ssalvato", Username: "ssalvato"},
+	}
+	result := processing(dbMock, botMsg, output)
+	assert.Equal(t, "ssalvato level 666", result,  "!rand")
+}
+
+func TestProcessingUserIgnoreList(t *testing.T) {
+
+	dbMock := &db.MockZbotDatabase{
+		Level: "666",
+		File: "hola.db",
+		Term: "hola",
+		Meaning: "foo bar!",
+		Find_terms: []string{"hola", "chao", "foo_bar",},
+		Rand_def: db.DefinitionItem{Term: "hola", Meaning:"gatolinux"},
+		Search_terms: []string{"hola","chao", "foobar"},
+		User_ignored: []db.UserIgnore{db.UserIgnore{Username: "ssalvato", Since:"1231", Until: "4564"},},
+	}
+
+
+	output := make(chan string)
+	botMsg := telebot.Message{
+		Text: "!ignore list",
+		Sender: telebot.User{FirstName: "ssalvato", Username: "ssalvato"},
+	}
+	result := processing(dbMock, botMsg, output)
+	assert.Equal(t, "[ @ssalvato ] since [1231] until [4564]", result,  "!ignore list")
+}
 /*
 func TestGetTerms(t *testing.T) {
 
@@ -203,49 +247,9 @@ func TestProcessingLast(t *testing.T) {
 	assert.Equal(t, "[hola] - [foo bar!]", result,  "!rand")
 }
 
-func TestProcessingUserLevel(t *testing.T) {
-
-	dbMock := &db.MockZbotDatabase{
-		Level: "666",
-		File: "hola.db",
-		Term: "hola",
-		Meaning: "foo bar!",
-		Find_terms: []string{"hola", "chao", "foo_bar",},
-		Rand_def: db.DefinitionItem{Term: "hola", Meaning:"gatolinux"},
-		Search_terms: []string{"hola","chao", "foobar"},
-	}
-
-	output := make(chan string)
-	botMsg := telebot.Message{
-		Text: "!level",
-		Sender: telebot.User{FirstName: "ssalvato", Username: "ssalvato"},
-	}
-	result := processing(dbMock, botMsg, output)
-	assert.Equal(t, "ssalvato level 666", result,  "!rand")
-}
-
-func TestProcessingUserIgnoreList(t *testing.T) {
-
-	dbMock := &db.MockZbotDatabase{
-		Level: "666",
-		File: "hola.db",
-		Term: "hola",
-		Meaning: "foo bar!",
-		Find_terms: []string{"hola", "chao", "foo_bar",},
-		Rand_def: db.DefinitionItem{Term: "hola", Meaning:"gatolinux"},
-		Search_terms: []string{"hola","chao", "foobar"},
-		User_ignored: []db.UserIgnore{db.UserIgnore{Username: "ssalvato", Since:"1231", Until: "4564"},},
-	}
 
 
-	output := make(chan string)
-	botMsg := telebot.Message{
-		Text: "!ignorelist",
-		Sender: telebot.User{FirstName: "ssalvato", Username: "ssalvato"},
-	}
-	result := processing(dbMock, botMsg, output)
-	assert.Equal(t, "[ @ssalvato ] since [1231] until [4564]", result,  "!rand")
-}
+
 
 func TestProcessingUserIgnoreInsert(t *testing.T) {
 

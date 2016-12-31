@@ -97,6 +97,7 @@ func processing(db db.ZbotDatabase, msg telebot.Message, output chan string) str
 	searchCommand := &command.SearchCommand{Db: db}
 	learnCommand := &command.LearnCommand{Db: db}
 	levelCommand := &command.LevelCommand{Db: db}
+	ignoreCommand := &command.IgnoreCommand{Db: db}
 
 
 	commands.Next = versionCommand
@@ -109,11 +110,11 @@ func processing(db db.ZbotDatabase, msg telebot.Message, output chan string) str
 	findCommand.Next = searchCommand
 	searchCommand.Next = learnCommand
 	learnCommand.Next = levelCommand
+	levelCommand.Next = ignoreCommand
 
 	outputMsg := commands.ProcessText(msg.Text, user)
 
 /*	//Levels
-	levelPattern := regexp.MustCompile(`^!level`)
 	ignorePattern := regexp.MustCompile(`^!ignore\s(\S*)`)
 	ignoreListPattern := regexp.MustCompile(`^!ignorelist`)
 
@@ -121,12 +122,7 @@ func processing(db db.ZbotDatabase, msg telebot.Message, output chan string) str
 
 /*	switch {
 	case ignoreListPattern.MatchString(msg.Text):
-		results, err := db.userIgnoreList()
-		if (err != nil) {
-			log.Error(err)
-			break
-		}
-		outputMsg = fmt.Sprintf(strings.Join(getUserIgnored(results), "/n"))
+
 		break
 	case ignorePattern.MatchString(msg.Text):
 		result := ignorePattern.FindStringSubmatch(msg.Text)
@@ -230,17 +226,4 @@ func processing(db db.ZbotDatabase, msg telebot.Message, output chan string) str
 	}*/
 
 	return outputMsg
-}
-
-
-
-func getUserIgnored(users []db.UserIgnore) ([]string) {
-	var userIgnored []string
-	for _,user := range users {
-		if user.Username != "" {
-			userString := fmt.Sprintf("[ @%s ] since [%s] until [%s]", user.Username, user.Since, user.Until)
-			userIgnored = append(userIgnored, userString)
-		}
-	}
-	return userIgnored
 }
