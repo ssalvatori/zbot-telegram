@@ -212,3 +212,45 @@ func TestProcessingUserIgnoreInsert(t *testing.T) {
 	result = processing(dbMock, botMsg, output)
 	assert.Equal(t, "level not enough (minimum 100 yours 10)", result,  "!ignore")
 }
+
+func TestProcessingExternalModuleWithArgs(t *testing.T) {
+
+	dbMock := &db.MockZbotDatabase{
+		Level: "666",
+		File: "hola.db",
+	}
+
+	output := make(chan string)
+	botMsg := telebot.Message{Text: "!test arg1 arg2"}
+	result := processing(dbMock, botMsg, output)
+
+	assert.Equal(t,  "OK arg1 arg2\n", result, "!test module with args")
+}
+
+func TestProcessingExternalModuleWithoutArgs(t *testing.T) {
+
+	dbMock := &db.MockZbotDatabase{
+		Level: "666",
+		File: "hola.db",
+	}
+
+	output := make(chan string)
+	botMsg := telebot.Message{Text: "!test"}
+	result := processing(dbMock, botMsg, output)
+
+	assert.Equal(t,  "OK\n", result, "external module without args")
+}
+
+func TestProcessingExternalModuleNotFound(t *testing.T) {
+
+	dbMock := &db.MockZbotDatabase{
+		Level: "666",
+		File: "hola.db",
+	}
+
+	output := make(chan string)
+	botMsg := telebot.Message{Text: "!external arg1 arg2"}
+	result := processing(dbMock, botMsg, output)
+
+	assert.Equal(t,  "", result, "external module not found")
+}
