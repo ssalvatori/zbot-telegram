@@ -19,5 +19,5 @@ func TestVersionCommandNoNext(t *testing.T) {
 
 func TestVersionCommandNext(t *testing.T) {
 	versionCommand.Next = &FakeCommand{}
-	assert.Equal(t, "", versionCommand.ProcessText("!version6"), "version command no next")
+	assert.Equal(t, "Fake OK", versionCommand.ProcessText("!version6"), "version command no next")
 }

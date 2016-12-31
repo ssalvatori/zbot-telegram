@@ -13,15 +13,15 @@ type VersionCommand struct {
 func (handler *VersionCommand) ProcessText(text string) string{
 
 	commandPattern := regexp.MustCompile(`^!version$`)
+	result := ""
 
 	if(commandPattern.MatchString(text)) {
-		return fmt.Sprintf("zbot golang version %s", handler.Version)
+		result = fmt.Sprintf("zbot golang version %s", handler.Version)
 	} else {
 		if (handler.Next != nil) {
-			return handler.Next.ProcessText(text)
-		} else {
-			return ""
+			result = handler.Next.ProcessText(text)
 		}
 	}
+	return result
 
 }

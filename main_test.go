@@ -45,6 +45,18 @@ func TestProcessingPing(t *testing.T) {
 	result := processing(dbMock,botMsg, output)
 	assert.Equal(t, result, "pong!!", "!ping")
 }
+
+func TestProcessingRand(t *testing.T) {
+
+	dbMock := &db.MockZbotDatabase{
+		Rand_def: db.DefinitionItem{Term: "hola", Meaning:"gatolinux"},
+	}
+
+	output := make(chan string)
+	botMsg := telebot.Message{Text: "!rand"}
+	result := processing(dbMock, botMsg, output)
+	assert.Equal(t, "[hola] - [gatolinux]", result,  "!rand")
+}
 /*
 func TestGetTerms(t *testing.T) {
 
@@ -126,22 +138,7 @@ func TestProcessingTop(t *testing.T) {
 	assert.Equal(t, result, "hola chao foo_bar", "!top")
 }
 
-func TestProcessingRand(t *testing.T) {
 
-	dbMock := &db.MockZbotDatabase{
-		Level: "666",
-		File: "hola.db",
-		Term: "hola",
-		Meaning: "foo bar!",
-		Find_terms: []string{"hola", "chao", "foo_bar",},
-		Rand_def: db.DefinitionItem{Term: "hola", Meaning:"gatolinux"},
-	}
-
-	output := make(chan string)
-	botMsg := telebot.Message{Text: "!rand"}
-	result := processing(dbMock, botMsg, output)
-	assert.Equal(t, "[hola] - [gatolinux]", result,  "!rand")
-}
 
 func TestProcessingLearn(t *testing.T) {
 

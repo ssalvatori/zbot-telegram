@@ -11,15 +11,15 @@ type PingCommand struct {
 func (handler *PingCommand) ProcessText(text string) string {
 
 	commandPattern := regexp.MustCompile(`^!ping$`)
+	result := ""
 
 	if(commandPattern.MatchString(text)) {
-		return "pong!!"
+		result = "pong!!"
 	} else {
 		if (handler.Next != nil) {
-			return handler.Next.ProcessText(text)
-		} else {
-			return ""
+			result = handler.Next.ProcessText(text)
 		}
 	}
+	return result
 }
 

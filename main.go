@@ -74,7 +74,7 @@ func sendResponse(bot *telebot.Bot, db db.ZbotDatabase, msg telebot.Message, out
 }
 
 func processing(db db.ZbotDatabase, msg telebot.Message, output chan string) string {
-/*	//versionPattern := regexp.MustCompile(`^!version`)
+/*
 	learnPattern := regexp.MustCompile(`^!learn\s(\S*)\s(.*)`)
 	getPattern := regexp.MustCompile(`^\?\s(\S*)`)
 	findPattern := regexp.MustCompile(`^!find\s(\S*)`)
@@ -82,18 +82,18 @@ func processing(db db.ZbotDatabase, msg telebot.Message, output chan string) str
 	topPattern := regexp.MustCompile(`^!top`)
 	lastPattern := regexp.MustCompile(`^!last`)
 	randPattern := regexp.MustCompile(`^!rand`)
-	statsPattern := regexp.MustCompile(`^!stats`)
-	//pingPattern := regexp.MustCompile(`^!ping`)*/
+*/
+
 
 	// TODO: how to clean this code
-	commands := &command.PingCommand{
-		Next: &command.VersionCommand{
-			Next: &command.StatsCommand{
-				Db: db,
-			},
-			Version: version,
-		},
-	}
+	commands := &command.PingCommand{}
+	versionCommand := &command.VersionCommand{Version: version}
+	statsCommand := &command.StatsCommand{Db: db}
+	randCommand := &command.RandCommand{Db: db}
+
+	commands.Next = versionCommand
+	versionCommand.Next = statsCommand
+	statsCommand.Next = randCommand
 
 	outputMsg := commands.ProcessText(msg.Text)
 

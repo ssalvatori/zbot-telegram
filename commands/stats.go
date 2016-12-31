@@ -14,7 +14,7 @@ type StatsCommand struct {
 
 func (handler *StatsCommand) ProcessText(text string) string {
 
-	commandPattern := regexp.MustCompile(`^!stats`)
+	commandPattern := regexp.MustCompile(`^!stats$`)
 
 	if(commandPattern.MatchString(text)) {
 		statTotal, err := handler.Db.Statistics()
@@ -24,7 +24,11 @@ func (handler *StatsCommand) ProcessText(text string) string {
 		}
 		return fmt.Sprintf("Count: %s",statTotal)
 	} else {
-		return handler.Next.ProcessText(text)
+		if (handler.Next != nil) {
+			return handler.Next.ProcessText(text)
+		}else {
+			return ""
+		}
 	}
 
 }
