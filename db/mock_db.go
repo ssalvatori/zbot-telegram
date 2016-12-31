@@ -57,7 +57,10 @@ func (d *MockZbotDatabase) Set(def DefinitionItem) error {
 }
 
 func (d *MockZbotDatabase) Find(criteria string) ([]DefinitionItem, error) {
-	return []DefinitionItem{DefinitionItem{Term: d.Term}}, nil
+	if d.Not_found {
+		return []DefinitionItem{},  nil
+	}
+	return []DefinitionItem{{Term: d.Term}}, nil
 }
 
 func (d *MockZbotDatabase) Get(term string) (DefinitionItem, error) {

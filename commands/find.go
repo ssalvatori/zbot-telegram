@@ -4,26 +4,27 @@ import (
 	"regexp"
 	"fmt"
 	"github.com/ssalvatori/zbot-telegram-go/db"
-	log "github.com/Sirupsen/logrus"
 	"strings"
+	log "github.com/Sirupsen/logrus"
 )
 
-type TopCommand struct {
+type FindCommand struct {
 	Next HandlerCommand
 	Db db.ZbotDatabase
 }
 
-func (handler *TopCommand) ProcessText(text string) string{
+func (handler *FindCommand) ProcessText(text string) string{
 
-	commandPattern := regexp.MustCompile(`^!top$`)
+	commandPattern := regexp.MustCompile(`^!find\s(\S*)`)
 	result := ""
 
 	if(commandPattern.MatchString(text)) {
-		items, err := handler.Db.Top()
+		term := commandPattern.FindStringSubmatch(text)
+		results, err := handler.Db.Find(term[1])
 		if err != nil {
 			log.Error(err)
 		}
-		result = fmt.Sprintf(strings.Join(getTerms(items), " "))
+		result = fmt.Sprintf("%s", strings.Join(getTerms(results), " "))
 	} else {
 		if (handler.Next != nil) {
 			result = handler.Next.ProcessText(text)

@@ -73,6 +73,21 @@ func TestProcessingGet(t *testing.T) {
 	assert.Equal(t, result, "[hola] - [foo bar!]", "? def fail")
 
 }
+
+func TestProcessingFind(t *testing.T) {
+
+	dbMock := &db.MockZbotDatabase{
+		Level: "666",
+		File: "hola.db",
+		Term: "hola",
+		Meaning: "foo bar!",
+	}
+
+	output := make(chan string)
+	botMsg := telebot.Message{Text: "!find hola"}
+	result := processing(dbMock ,botMsg, output)
+	assert.Equal(t, result, "hola", "!find fail")
+}
 /*
 func TestGetTerms(t *testing.T) {
 
@@ -109,20 +124,7 @@ func TestGetUserIgnored(t *testing.T) {
 
 
 
-func TestProcessingFind(t *testing.T) {
 
-	dbMock := &db.MockZbotDatabase{
-		Level: "666",
-		File: "hola.db",
-		Term: "hola",
-		Meaning: "foo bar!",
-	}
-
-	output := make(chan string)
-	botMsg := telebot.Message{Text: "!find hola"}
-	result := processing(dbMock ,botMsg, output)
-	assert.Equal(t, result, "hola", "!find fail")
-}
 
 func TestProcessingTop(t *testing.T) {
 

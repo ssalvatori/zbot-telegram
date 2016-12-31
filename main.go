@@ -76,7 +76,6 @@ func sendResponse(bot *telebot.Bot, db db.ZbotDatabase, msg telebot.Message, out
 func processing(db db.ZbotDatabase, msg telebot.Message, output chan string) string {
 /*
 	learnPattern := regexp.MustCompile(`^!learn\s(\S*)\s(.*)`)
-	getPattern := regexp.MustCompile(`^\?\s(\S*)`)
 	findPattern := regexp.MustCompile(`^!find\s(\S*)`)
 	searchPattern := regexp.MustCompile(`^!search\s(\S*)`)
 */
@@ -89,6 +88,8 @@ func processing(db db.ZbotDatabase, msg telebot.Message, output chan string) str
 	topCommand := &command.TopCommand{Db: db}
 	lastCommand := &command.LastCommand{Db: db}
 	getCommand := &command.GetCommand{Db: db}
+	findCommand :=  &command.FindCommand{Db: db}
+
 
 	commands.Next = versionCommand
 	versionCommand.Next = statsCommand
@@ -96,6 +97,7 @@ func processing(db db.ZbotDatabase, msg telebot.Message, output chan string) str
 	randCommand.Next = topCommand
 	topCommand.Next = lastCommand
 	lastCommand.Next = getCommand
+	getCommand.Next = findCommand
 
 	outputMsg := commands.ProcessText(msg.Text)
 
@@ -183,13 +185,7 @@ func processing(db db.ZbotDatabase, msg telebot.Message, output chan string) str
 		}
 		break
 	case findPattern.MatchString(msg.Text):
-		result := findPattern.FindStringSubmatch(msg.Text)
-		results, err := db.find(result[1])
-		if err != nil {
-			log.Error(err)
-			break
-		}
-		outputMsg = fmt.Sprintf("%s", strings.Join(getTerms(results), " "))
+
 		break
 	case searchPattern.MatchString(msg.Text):
 		result := searchPattern.FindStringSubmatch(msg.Text)
