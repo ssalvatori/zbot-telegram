@@ -18,6 +18,7 @@ type MockZbotDatabase struct {
 	User         telebot.User
 	Ignore_list  []string
 	User_ignored []UserIgnore
+	Ignore_User  bool
 }
 
 func (d *MockZbotDatabase) Init() error {
@@ -91,8 +92,7 @@ func (d *MockZbotDatabase) UserLevel(str string) (string, error) {
 }
 
 func (d *MockZbotDatabase) UserCheckIgnore(str string) (bool, error) {
-	var ignore = false
-	return ignore, nil
+	return d.Ignore_User, nil
 }
 
 func (d *MockZbotDatabase) UserIgnoreInsert(username string) error {
