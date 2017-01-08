@@ -1,15 +1,15 @@
 package command
 
 import (
-	"regexp"
-	"github.com/ssalvatori/zbot-telegram-go/db"
-	log "github.com/Sirupsen/logrus"
 	"fmt"
+	log "github.com/Sirupsen/logrus"
+	"github.com/ssalvatori/zbot-telegram-go/db"
+	"regexp"
 )
 
 type StatsCommand struct {
-	Db db.ZbotDatabase
-	Next     HandlerCommand
+	Db   db.ZbotDatabase
+	Next HandlerCommand
 }
 
 func (handler *StatsCommand) ProcessText(text string, user User) string {
@@ -17,17 +17,16 @@ func (handler *StatsCommand) ProcessText(text string, user User) string {
 	commandPattern := regexp.MustCompile(`^!stats$`)
 	result := ""
 
-	if(commandPattern.MatchString(text)) {
+	if commandPattern.MatchString(text) {
 		statTotal, err := handler.Db.Statistics()
 		if err != nil {
 			log.Error(err)
 		}
-		result = fmt.Sprintf("Count: %s",statTotal)
+		result = fmt.Sprintf("Count: %s", statTotal)
 	} else {
-		if (handler.Next != nil) {
+		if handler.Next != nil {
 			result = handler.Next.ProcessText(text, user)
 		}
 	}
 	return result
 }
-

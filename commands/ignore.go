@@ -1,29 +1,28 @@
 package command
 
 import (
-	"regexp"
 	"fmt"
-	"github.com/ssalvatori/zbot-telegram-go/db"
-	"strings"
 	log "github.com/Sirupsen/logrus"
+	"github.com/ssalvatori/zbot-telegram-go/db"
+	"regexp"
 	"strconv"
+	"strings"
 )
 
 type Levels struct {
 	Ignore int
 }
 type IgnoreCommand struct {
-	Next HandlerCommand
-	Db db.ZbotDatabase
+	Next   HandlerCommand
+	Db     db.ZbotDatabase
 	Levels Levels
 }
 
-func (handler *IgnoreCommand) ProcessText(text string, user User) string{
+func (handler *IgnoreCommand) ProcessText(text string, user User) string {
 	commandPattern := regexp.MustCompile(`^!ignore\s(\S*)(\s(\S*))?`)
 	result := ""
 
-
-	if(commandPattern.MatchString(text)) {
+	if commandPattern.MatchString(text) {
 		args := commandPattern.FindStringSubmatch(text)
 
 		switch args[1] {
@@ -32,7 +31,7 @@ func (handler *IgnoreCommand) ProcessText(text string, user User) string{
 			break
 		case "list":
 			ignoredUsers, err := handler.Db.UserIgnoreList()
-			if (err != nil) {
+			if err != nil {
 				log.Error(err)
 			}
 			result = fmt.Sprintf(strings.Join(getUserIgnored(ignoredUsers), "/n"))
@@ -59,16 +58,16 @@ func (handler *IgnoreCommand) ProcessText(text string, user User) string{
 			break
 		}
 	} else {
-		if (handler.Next != nil) {
+		if handler.Next != nil {
 			result = handler.Next.ProcessText(text, user)
 		}
 	}
 	return result
 }
 
-func getUserIgnored(users []db.UserIgnore) ([]string) {
+func getUserIgnored(users []db.UserIgnore) []string {
 	var userIgnored []string
-	for _,user := range users {
+	for _, user := range users {
 		if user.Username != "" {
 			userString := fmt.Sprintf("[ @%s ] since [%s] until [%s]", user.Username, user.Since, user.Until)
 			userIgnored = append(userIgnored, userString)
@@ -76,4 +75,3 @@ func getUserIgnored(users []db.UserIgnore) ([]string) {
 	}
 	return userIgnored
 }
-

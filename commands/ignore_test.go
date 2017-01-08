@@ -1,9 +1,9 @@
 package command
 
 import (
+	"github.com/ssalvatori/zbot-telegram-go/db"
 	"github.com/stretchr/testify/assert"
 	"testing"
-	"github.com/ssalvatori/zbot-telegram-go/db"
 )
 
 var ignoreCommand = IgnoreCommand{
@@ -18,8 +18,8 @@ func TestIgnoreCommandHelp(t *testing.T) {
 func TestIgnoreCommandList(t *testing.T) {
 	ignoreCommand.Db = &db.MockZbotDatabase{
 		User_ignored: []db.UserIgnore{
-			{Username: "rigo", Since: "12", Until: "12",},
-			{Username: "jav", Since: "32", Until: "32",},
+			{Username: "rigo", Since: "12", Until: "12"},
+			{Username: "jav", Since: "32", Until: "32"},
 		},
 	}
 	expected := "[ @rigo ] since [12] until [12]/n[ @jav ] since [32] until [32]"
@@ -30,8 +30,8 @@ func TestIgnoreCommandAdd(t *testing.T) {
 	ignoreCommand.Db = &db.MockZbotDatabase{
 		Level: "1000",
 		User_ignored: []db.UserIgnore{
-			{Username: "rigo", Since: "12", Until: "12",},
-			{Username: "jav", Since: "32", Until: "32",},
+			{Username: "rigo", Since: "12", Until: "12"},
+			{Username: "jav", Since: "32", Until: "32"},
 		},
 	}
 	expected := "User [rigo] ignored for 10 minutes"
