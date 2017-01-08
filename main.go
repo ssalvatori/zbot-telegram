@@ -2,15 +2,17 @@ package main
 
 import (
 	"fmt"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/tucnak/telebot"
 
-	"github.com/ssalvatori/zbot-telegram-go/commands"
-	"github.com/ssalvatori/zbot-telegram-go/db"
 	"os"
-	"time"
 	"regexp"
 	"strings"
+	"time"
+
+	"github.com/ssalvatori/zbot-telegram-go/commands"
+	"github.com/ssalvatori/zbot-telegram-go/db"
 )
 
 const version string = "1.0"
@@ -69,7 +71,7 @@ func messagesProcessing(db db.ZbotDatabase, bot *telebot.Bot) {
 }
 
 func sendResponse(bot *telebot.Bot, db db.ZbotDatabase, msg telebot.Message, output chan string) {
-	response := processing(db, msg,output)
+	response := processing(db, msg, output)
 	bot.SendMessage(msg.Chat, response, nil)
 }
 
@@ -87,9 +89,9 @@ func buildUser(sender telebot.User) command.User {
 
 func processing(db db.ZbotDatabase, msg telebot.Message, output chan string) string {
 
-	user := buildUser(msg.Sender);
+	user := buildUser(msg.Sender)
 
-	var levels = command.Levels {
+	var levels = command.Levels{
 		Ignore: levelIgnore,
 	}
 
@@ -101,7 +103,7 @@ func processing(db db.ZbotDatabase, msg telebot.Message, output chan string) str
 	topCommand := &command.TopCommand{Db: db}
 	lastCommand := &command.LastCommand{Db: db}
 	getCommand := &command.GetCommand{Db: db}
-	findCommand :=  &command.FindCommand{Db: db}
+	findCommand := &command.FindCommand{Db: db}
 	searchCommand := &command.SearchCommand{Db: db}
 	learnCommand := &command.LearnCommand{Db: db}
 	levelCommand := &command.LevelCommand{Db: db}

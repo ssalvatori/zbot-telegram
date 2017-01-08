@@ -2,12 +2,13 @@ package db
 
 import (
 	"database/sql"
-	log "github.com/Sirupsen/logrus"
-	"strconv"
-	"time"
 	"errors"
-	"strings"
 	"fmt"
+	"strconv"
+	"strings"
+	"time"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 type SqlLite struct {
@@ -323,5 +324,3 @@ func (d *SqlLite) UserCleanIgnore() error {
 		time.Sleep(5 * time.Minute)
 	}
 }
-
-

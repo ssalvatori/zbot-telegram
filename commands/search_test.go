@@ -1,9 +1,9 @@
 package command
 
 import (
+	"github.com/ssalvatori/zbot-telegram-go/db"
 	"github.com/stretchr/testify/assert"
 	"testing"
-	"github.com/ssalvatori/zbot-telegram-go/db"
 )
 
 var searchCommand = SearchCommand{}
@@ -11,7 +11,7 @@ var searchCommand = SearchCommand{}
 func TestSearchCommandOK(t *testing.T) {
 
 	searchCommand.Db = &db.MockZbotDatabase{
-		Search_terms: []string{"foo", "bar",},
+		Search_terms: []string{"foo", "bar"},
 	}
 	assert.Equal(t, "foo bar", searchCommand.ProcessText("!search foo", user), "Search Command")
 	searchCommand.Db = &db.MockZbotDatabase{

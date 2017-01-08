@@ -1,9 +1,9 @@
 package command
 
 import (
+	"github.com/ssalvatori/zbot-telegram-go/db"
 	"github.com/stretchr/testify/assert"
 	"testing"
-	"github.com/ssalvatori/zbot-telegram-go/db"
 )
 
 var getCommand = GetCommand{}
@@ -11,7 +11,7 @@ var getCommand = GetCommand{}
 func TestGetCommandOK(t *testing.T) {
 
 	getCommand.Db = &db.MockZbotDatabase{
-		Term: "foo",
+		Term:    "foo",
 		Meaning: "bar",
 	}
 	assert.Equal(t, "[foo] - [bar]", getCommand.ProcessText("? foo", user), "Last Command")

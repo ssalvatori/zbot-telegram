@@ -1,9 +1,10 @@
 package command
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
 	"github.com/ssalvatori/zbot-telegram-go/db"
+	"github.com/stretchr/testify/assert"
 )
 
 var levelCommand = LevelCommand{}
