@@ -19,7 +19,8 @@ type IgnoreCommand struct {
 	Levels Levels
 }
 
-const dateFormat string = "02-01-2006 15:04:05" //dd-mm-yyyy hh:ii:ss
+const dateFormat string = "02-01-2006 15:04:05 MST" //dd-mm-yyyy hh:ii:ss TZ
+//const dateFormat string = time.RFC850
 
 func (handler *IgnoreCommand) ProcessText(text string, user User) string {
 	commandPattern := regexp.MustCompile(`^!ignore\s(\S*)(\s(\S*))?`)
@@ -81,10 +82,11 @@ func getUserIgnored(users []db.UserIgnore) []string {
 }
 
 func convertDates(since string, until string) (string, string) {
+	time.LoadLocation("UTC")
 
 	i, err := strconv.ParseInt(since, 10, 64)
-	sinceFormated := time.Unix(1, 0)
-	untilFormated := time.Unix(100, 0)
+	sinceFormated := time.Unix(100, 0)
+	untilFormated := time.Unix(600, 0)
 	if err != nil {
 		log.Error("converting ignore time (since)")
 	} else {
@@ -98,5 +100,5 @@ func convertDates(since string, until string) (string, string) {
 		untilFormated = time.Unix(i, 0)
 	}
 
-	return sinceFormated.Format(dateFormat), untilFormated.Format(dateFormat)
+	return sinceFormated.UTC().Format(dateFormat), untilFormated.UTC().Format(dateFormat)
 }

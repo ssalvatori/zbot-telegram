@@ -160,7 +160,7 @@ func TestProcessingUserIgnoreList(t *testing.T) {
 		Sender: telebot.User{FirstName: "ssalvato", Username: "ssalvato"},
 	}
 	result := processing(dbMock, botMsg)
-	assert.Equal(t, "[ @ssalvato ] since [31-12-1969 21:20:31] until [31-12-1969 22:16:04]", result, "!ignore list")
+	assert.Equal(t, "[ @ssalvato ] since [01-01-1970 00:20:31 UTC] until [01-01-1970 01:16:04 UTC]", result, "!ignore list")
 }
 
 func TestProcessingUserIgnoreInsert(t *testing.T) {
@@ -225,7 +225,6 @@ func TestProcessingExternalModuleWithoutArgs(t *testing.T) {
 	assert.Equal(t, "OK\n", result, "external module without args")
 }
 
-/*
 func TestProcessingExternalModuleNotFound(t *testing.T) {
 
 	dbMock := &db.MockZbotDatabase{
@@ -239,6 +238,7 @@ func TestProcessingExternalModuleNotFound(t *testing.T) {
 	assert.Equal(t, "", result, "external module not found")
 }
 
+/*
 func TestMessagesProcessing(t *testing.T) {
 	dbMock := &db.MockZbotDatabase{
 		Ignore_User: true,
