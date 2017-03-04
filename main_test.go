@@ -1,10 +1,10 @@
 package main
 
 import (
-	"github.com/stretchr/testify/assert"
-	"testing"
-	"github.com/tucnak/telebot"
 	"github.com/ssalvatori/zbot-telegram-go/db"
+	"github.com/stretchr/testify/assert"
+	"github.com/tucnak/telebot"
+	"testing"
 )
 
 func TestBuildUser(t *testing.T) {
@@ -30,7 +30,7 @@ func TestProcessingVersion(t *testing.T) {
 
 	dbMock := &db.MockZbotDatabase{
 		Level: "666",
-		File: "hola.db",
+		File:  "hola.db",
 	}
 
 	output := make(chan string)
@@ -43,7 +43,7 @@ func TestProcessingStats(t *testing.T) {
 
 	dbMock := &db.MockZbotDatabase{
 		Level: "666",
-		File: "hola.db",
+		File:  "hola.db",
 	}
 
 	output := make(chan string)
@@ -56,33 +56,33 @@ func TestProcessingPing(t *testing.T) {
 
 	dbMock := &db.MockZbotDatabase{
 		Level: "666",
-		File: "hola.db",
+		File:  "hola.db",
 	}
 
 	output := make(chan string)
 	botMsg := telebot.Message{Text: "!ping"}
-	result := processing(dbMock,botMsg, output)
+	result := processing(dbMock, botMsg, output)
 	assert.Equal(t, result, "pong!!", "!ping")
 }
 
 func TestProcessingRand(t *testing.T) {
 
 	dbMock := &db.MockZbotDatabase{
-		Rand_def: db.DefinitionItem{Term: "hola", Meaning:"gatolinux"},
+		Rand_def: db.DefinitionItem{Term: "hola", Meaning: "gatolinux"},
 	}
 
 	output := make(chan string)
 	botMsg := telebot.Message{Text: "!rand"}
 	result := processing(dbMock, botMsg, output)
-	assert.Equal(t, "[hola] - [gatolinux]", result,  "!rand")
+	assert.Equal(t, "[hola] - [gatolinux]", result, "!rand")
 }
 
 func TestProcessingGet(t *testing.T) {
 
 	dbMock := &db.MockZbotDatabase{
-		Level: "666",
-		File: "hola.db",
-		Term: "hola",
+		Level:   "666",
+		File:    "hola.db",
+		Term:    "hola",
 		Meaning: "foo bar!",
 	}
 
@@ -96,161 +96,158 @@ func TestProcessingGet(t *testing.T) {
 func TestProcessingFind(t *testing.T) {
 
 	dbMock := &db.MockZbotDatabase{
-		Level: "666",
-		File: "hola.db",
-		Term: "hola",
+		Level:   "666",
+		File:    "hola.db",
+		Term:    "hola",
 		Meaning: "foo bar!",
 	}
 
 	output := make(chan string)
 	botMsg := telebot.Message{Text: "!find hola"}
-	result := processing(dbMock ,botMsg, output)
+	result := processing(dbMock, botMsg, output)
 	assert.Equal(t, result, "hola", "!find fail")
 }
 
 func TestProcessingSearch(t *testing.T) {
 
 	dbMock := &db.MockZbotDatabase{
-		Level: "666",
-		File: "hola.db",
-		Term: "hola",
-		Meaning: "foo bar!",
-		Find_terms: []string{"hola", "chao", "foo_bar",},
-		Rand_def: db.DefinitionItem{Term: "hola", Meaning:"gatolinux"},
-		Search_terms: []string{"hola","chao", "foobar"},
+		Level:        "666",
+		File:         "hola.db",
+		Term:         "hola",
+		Meaning:      "foo bar!",
+		Find_terms:   []string{"hola", "chao", "foo_bar"},
+		Rand_def:     db.DefinitionItem{Term: "hola", Meaning: "gatolinux"},
+		Search_terms: []string{"hola", "chao", "foobar"},
 	}
 
 	output := make(chan string)
 	botMsg := telebot.Message{Text: "!search hola"}
 	result := processing(dbMock, botMsg, output)
-	assert.Equal(t, "hola chao foobar", result,  "!rand")
+	assert.Equal(t, "hola chao foobar", result, "!rand")
 }
 
 func TestProcessingUserLevel(t *testing.T) {
 
 	dbMock := &db.MockZbotDatabase{
-		Level: "666",
-		File: "hola.db",
-		Term: "hola",
-		Meaning: "foo bar!",
-		Find_terms: []string{"hola", "chao", "foo_bar",},
-		Rand_def: db.DefinitionItem{Term: "hola", Meaning:"gatolinux"},
-		Search_terms: []string{"hola","chao", "foobar"},
+		Level:        "666",
+		File:         "hola.db",
+		Term:         "hola",
+		Meaning:      "foo bar!",
+		Find_terms:   []string{"hola", "chao", "foo_bar"},
+		Rand_def:     db.DefinitionItem{Term: "hola", Meaning: "gatolinux"},
+		Search_terms: []string{"hola", "chao", "foobar"},
 	}
 
 	output := make(chan string)
 	botMsg := telebot.Message{
-		Text: "!level",
+		Text:   "!level",
 		Sender: telebot.User{FirstName: "ssalvato", Username: "ssalvato"},
 	}
 	result := processing(dbMock, botMsg, output)
-	assert.Equal(t, "ssalvato level 666", result,  "!rand")
+	assert.Equal(t, "ssalvato level 666", result, "!rand")
 }
 
 func TestProcessingUserIgnoreList(t *testing.T) {
 
 	dbMock := &db.MockZbotDatabase{
-		Level: "666",
-		File: "hola.db",
-		Term: "hola",
-		Meaning: "foo bar!",
-		Find_terms: []string{"hola", "chao", "foo_bar",},
-		Rand_def: db.DefinitionItem{Term: "hola", Meaning:"gatolinux"},
-		Search_terms: []string{"hola","chao", "foobar"},
+		Level:        "666",
+		File:         "hola.db",
+		Term:         "hola",
+		Meaning:      "foo bar!",
+		Find_terms:   []string{"hola", "chao", "foo_bar"},
+		Rand_def:     db.DefinitionItem{Term: "hola", Meaning: "gatolinux"},
+		Search_terms: []string{"hola", "chao", "foobar"},
 		User_ignored: []db.UserIgnore{
-			{Username: "ssalvato", Since:"1231", Until: "4564"},
+			{Username: "ssalvato", Since: "1231", Until: "4564"},
 		},
 	}
 
-
 	output := make(chan string)
 	botMsg := telebot.Message{
-		Text: "!ignore list",
+		Text:   "!ignore list",
 		Sender: telebot.User{FirstName: "ssalvato", Username: "ssalvato"},
 	}
 	result := processing(dbMock, botMsg, output)
-	assert.Equal(t, "[ @ssalvato ] since [1231] until [4564]", result,  "!ignore list")
+	assert.Equal(t, "[ @ssalvato ] since [1231] until [4564]", result, "!ignore list")
 }
 
 func TestProcessingUserIgnoreInsert(t *testing.T) {
 
 	dbMock := &db.MockZbotDatabase{
-		Level: "666",
-		File: "hola.db",
-		Term: "hola",
-		Meaning: "foo bar!",
-		Find_terms: []string{"hola", "chao", "foo_bar",},
-		Rand_def: db.DefinitionItem{Term: "hola", Meaning:"gatolinux"},
-		Search_terms: []string{"hola","chao", "foobar"},
-		User_ignored: []db.UserIgnore{{Username: "ssalvatori", Since:"1231", Until: "4564"},},
+		Level:        "666",
+		File:         "hola.db",
+		Term:         "hola",
+		Meaning:      "foo bar!",
+		Find_terms:   []string{"hola", "chao", "foo_bar"},
+		Rand_def:     db.DefinitionItem{Term: "hola", Meaning: "gatolinux"},
+		Search_terms: []string{"hola", "chao", "foobar"},
+		User_ignored: []db.UserIgnore{{Username: "ssalvatori", Since: "1231", Until: "4564"}},
 	}
-
 
 	output := make(chan string)
 	botMsg := telebot.Message{
-		Text: "!ignore add rigo",
+		Text:   "!ignore add rigo",
 		Sender: telebot.User{FirstName: "ssalvatori", Username: "ssalvatori"},
 	}
 	result := processing(dbMock, botMsg, output)
-	assert.Equal(t, "User [rigo] ignored for 10 minutes", result,  "!ignore add OK")
+	assert.Equal(t, "User [rigo] ignored for 10 minutes", result, "!ignore add OK")
 
 	output = make(chan string)
 	botMsg = telebot.Message{
-		Text: "!ignore add ssalvatori",
+		Text:   "!ignore add ssalvatori",
 		Sender: telebot.User{FirstName: "ssalvatori", Username: "ssalvatori"},
 	}
 	result = processing(dbMock, botMsg, output)
-	assert.Equal(t, "You can't ignore youself", result,  "!ignore add myself")
-
+	assert.Equal(t, "You can't ignore youself", result, "!ignore add myself")
 
 	dbMock.Level = "10"
 	output = make(chan string)
 	botMsg = telebot.Message{
-		Text: "!ignore add ssalvato",
+		Text:   "!ignore add ssalvato",
 		Sender: telebot.User{FirstName: "ssalvato", Username: "ssalvato"},
 	}
 	result = processing(dbMock, botMsg, output)
-	assert.Equal(t, "level not enough (minimum 100 yours 10)", result,  "!ignore")
+	assert.Equal(t, "level not enough (minimum 100 yours 10)", result, "!ignore")
 }
 
 func TestProcessingExternalModuleWithArgs(t *testing.T) {
 
 	dbMock := &db.MockZbotDatabase{
 		Level: "666",
-		File: "hola.db",
+		File:  "hola.db",
 	}
 
 	output := make(chan string)
 	botMsg := telebot.Message{Text: "!test arg1 arg2"}
 	result := processing(dbMock, botMsg, output)
 
-	assert.Equal(t,  "OK arg1 arg2\n", result, "!test module with args")
+	assert.Equal(t, "OK arg1 arg2\n", result, "!test module with args")
 }
 
 func TestProcessingExternalModuleWithoutArgs(t *testing.T) {
 
 	dbMock := &db.MockZbotDatabase{
 		Level: "666",
-		File: "hola.db",
+		File:  "hola.db",
 	}
 
 	output := make(chan string)
 	botMsg := telebot.Message{Text: "!test"}
 	result := processing(dbMock, botMsg, output)
 
-	assert.Equal(t,  "OK\n", result, "external module without args")
+	assert.Equal(t, "OK\n", result, "external module without args")
 }
 
 func TestProcessingExternalModuleNotFound(t *testing.T) {
 
 	dbMock := &db.MockZbotDatabase{
 		Level: "666",
-		File: "hola.db",
+		File:  "hola.db",
 	}
 
 	output := make(chan string)
 	botMsg := telebot.Message{Text: "!external arg1 arg2"}
 	result := processing(dbMock, botMsg, output)
 
-	assert.Equal(t,  "", result, "external module not found")
+	assert.Equal(t, "", result, "external module not found")
 }

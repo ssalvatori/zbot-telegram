@@ -21,7 +21,6 @@ type ZbotDatabase interface {
 	UserIgnoreList() ([]UserIgnore, error)
 }
 
-
 type DefinitionItem struct {
 	Term    string
 	Meaning string
@@ -32,6 +31,6 @@ type DefinitionItem struct {
 
 type UserIgnore struct {
 	Username string
-	Since string
-	Until string
+	Since    string
+	Until    string
 }

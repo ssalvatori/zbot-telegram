@@ -2,12 +2,15 @@ package db
 
 import (
 	"database/sql"
-	log "github.com/Sirupsen/logrus"
-	"strconv"
-	"time"
 	"errors"
-	"strings"
 	"fmt"
+	"strconv"
+	"strings"
+	"time"
+
+	_ "github.com/mattn/go-sqlite3"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 type SqlLite struct {
@@ -102,8 +105,8 @@ func (d *SqlLite) Top() ([]DefinitionItem, error) {
 func (d *SqlLite) Rand() (DefinitionItem, error) {
 	var def DefinitionItem
 
-	sql := "SELECT term, meaning FROM definitions ORDER BY random() LIMIT 1"
-	rows, err := d.Db.Query(sql)
+	statement := "SELECT term, meaning FROM definitions ORDER BY random() LIMIT 1"
+	rows, err := d.Db.Query(statement)
 	if err != nil {
 		return def, err
 	}
@@ -323,5 +326,3 @@ func (d *SqlLite) UserCleanIgnore() error {
 		time.Sleep(5 * time.Minute)
 	}
 }
-
-

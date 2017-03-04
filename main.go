@@ -2,15 +2,17 @@ package main
 
 import (
 	"fmt"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/tucnak/telebot"
 
-	"github.com/ssalvatori/zbot-telegram-go/commands"
-	"github.com/ssalvatori/zbot-telegram-go/db"
 	"os"
-	"time"
 	"regexp"
 	"strings"
+	"time"
+
+	"github.com/ssalvatori/zbot-telegram-go/commands"
+	"github.com/ssalvatori/zbot-telegram-go/db"
 )
 
 const version string = "1.0"
@@ -21,6 +23,7 @@ func main() {
 
 	log.Info("Loading zbot-telegram")
 	log.SetLevel(log.DebugLevel)
+	log.SetFormatter(&log.JSONFormatter{})
 
 	bot, err := telebot.NewBot(os.Getenv("BOT_TOKEN"))
 	if err != nil {
@@ -53,13 +56,14 @@ func messagesProcessing(db db.ZbotDatabase, bot *telebot.Bot) {
 		processingMsg := regexp.MustCompilePOSIX(`^[!|?].*`)
 
 		//check if the user isn't on the ignore_list
+		log.Debug(fmt.Sprintf("Checking user [%s] ", strings.ToLower(message.Sender.Username)))
 		ignore, err := db.UserCheckIgnore(strings.ToLower(message.Sender.Username))
 		if err != nil {
 			log.Error(err)
 		}
 		if !ignore {
 			if processingMsg.MatchString(message.Text) {
-				log.Printf("Received a message from %s with the text: %s\n", message.Sender.Username, message.Text)
+				log.Debug(fmt.Sprintf("Received a message from %s with the text: %s", message.Sender.Username, message.Text))
 				go sendResponse(bot, db, message, output)
 			}
 		} else {
@@ -69,7 +73,7 @@ func messagesProcessing(db db.ZbotDatabase, bot *telebot.Bot) {
 }
 
 func sendResponse(bot *telebot.Bot, db db.ZbotDatabase, msg telebot.Message, output chan string) {
-	response := processing(db, msg,output)
+	response := processing(db, msg)
 	bot.SendMessage(msg.Chat, response, nil)
 }
 
@@ -85,11 +89,11 @@ func buildUser(sender telebot.User) command.User {
 	return user
 }
 
-func processing(db db.ZbotDatabase, msg telebot.Message, output chan string) string {
+func processing(db db.ZbotDatabase, msg telebot.Message) string {
 
-	user := buildUser(msg.Sender);
+	user := buildUser(msg.Sender)
 
-	var levels = command.Levels {
+	var levels = command.Levels{
 		Ignore: levelIgnore,
 	}
 
@@ -101,7 +105,7 @@ func processing(db db.ZbotDatabase, msg telebot.Message, output chan string) str
 	topCommand := &command.TopCommand{Db: db}
 	lastCommand := &command.LastCommand{Db: db}
 	getCommand := &command.GetCommand{Db: db}
-	findCommand :=  &command.FindCommand{Db: db}
+	findCommand := &command.FindCommand{Db: db}
 	searchCommand := &command.SearchCommand{Db: db}
 	learnCommand := &command.LearnCommand{Db: db}
 	levelCommand := &command.LevelCommand{Db: db}

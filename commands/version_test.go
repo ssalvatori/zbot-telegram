@@ -1,8 +1,8 @@
 package command
 
 import (
-	"testing"
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 var versionCommand = VersionCommand{

@@ -1,9 +1,9 @@
 package command
 
 import (
+	"github.com/ssalvatori/zbot-telegram-go/db"
 	"github.com/stretchr/testify/assert"
 	"testing"
-	"github.com/ssalvatori/zbot-telegram-go/db"
 )
 
 var findCommand = FindCommand{}
@@ -11,7 +11,7 @@ var findCommand = FindCommand{}
 func TestFindCommandOK(t *testing.T) {
 
 	findCommand.Db = &db.MockZbotDatabase{
-		Term: "bar",
+		Term:    "bar",
 		Meaning: "bar",
 	}
 	assert.Equal(t, "bar", findCommand.ProcessText("!find foo", user), "Last Command")

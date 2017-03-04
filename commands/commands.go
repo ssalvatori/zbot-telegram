@@ -8,13 +8,13 @@ type HandlerCommand interface {
 
 type User struct {
 	Username string
-	Ident string
-	Host string
+	Ident    string
+	Host     string
 }
 
-func getTerms(items []db.DefinitionItem) ([]string) {
+func getTerms(items []db.DefinitionItem) []string {
 	var terms []string
-	for _,item := range items {
+	for _, item := range items {
 		if item.Term != "" {
 			terms = append(terms, item.Term)
 		}
