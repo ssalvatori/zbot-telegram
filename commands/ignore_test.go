@@ -44,3 +44,14 @@ func TestIgnoreCommandAdd(t *testing.T) {
 	}
 	assert.Equal(t, "level not enough (minimum 1000 yours 10)", ignoreCommand.ProcessText("!ignore add rigo", user), "Ignore add no enough level")
 }
+
+func TestConvertDates(t *testing.T) {
+
+	since := "1488644480"
+	until := "1488645080"
+
+	sinceFormated, untilFormated := convertDates(since, until)
+
+	assert.Equal(t, "2017-03-04T13:21:20-03:00", sinceFormated, "format ok")
+	assert.Equal(t, "2017-03-04T13:31:20-03:00", untilFormated, "format ok")
+}

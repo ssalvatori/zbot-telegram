@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Levels struct {
@@ -27,7 +28,7 @@ func (handler *IgnoreCommand) ProcessText(text string, user User) string {
 
 		switch args[1] {
 		case "help":
-			result = "*!ignore* Options available: \n list (show all user ignored) add <username> (ignore a user for 10 minutes)"
+			result = "*!ignore* Options available: \n list (show all user ignored) \n add <username> (ignore a user for 10 minutes)"
 			break
 		case "list":
 			ignoredUsers, err := handler.Db.UserIgnoreList()
@@ -66,12 +67,34 @@ func (handler *IgnoreCommand) ProcessText(text string, user User) string {
 }
 
 func getUserIgnored(users []db.UserIgnore) []string {
-	var userIgnored []string
-	for _, user := range users {
-		if user.Username != "" {
-			userString := fmt.Sprintf("[ @%s ] since [%s] until [%s]", user.Username, user.Since, user.Until)
-			userIgnored = append(userIgnored, userString)
+	var usersIgnored []string
+	for _, userIgnore := range users {
+		if userIgnore.Username != "" {
+			since, until := convertDates(userIgnore.Since, userIgnore.Until)
+			userString := fmt.Sprintf("[ @%s ] since [%s] until [%s]", userIgnore.Username, since, until)
+			usersIgnored = append(usersIgnored, userString)
 		}
 	}
-	return userIgnored
+	return usersIgnored
+}
+
+func convertDates(since string, until string) (string, string) {
+
+	i, err := strconv.ParseInt(since, 10, 64)
+	sinceFormated := time.Unix(1, 0)
+	untilFormated := time.Unix(100, 0)
+	if err != nil {
+		log.Error("converting ignore time (since)")
+	} else {
+		sinceFormated = time.Unix(i, 0)
+	}
+
+	i, err = strconv.ParseInt(until, 10, 64)
+	if err != nil {
+		log.Error("converting ignore time (until)")
+	} else {
+		untilFormated = time.Unix(i, 0)
+	}
+
+	return sinceFormated.Format(time.RFC3339), untilFormated.Format(time.RFC3339)
 }
