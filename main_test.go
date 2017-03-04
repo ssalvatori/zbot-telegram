@@ -160,7 +160,7 @@ func TestProcessingUserIgnoreList(t *testing.T) {
 		Sender: telebot.User{FirstName: "ssalvato", Username: "ssalvato"},
 	}
 	result := processing(dbMock, botMsg)
-	assert.Equal(t, "[ @ssalvato ] since [1969-12-31T21:20:31-03:00] until [1969-12-31T22:16:04-03:00]", result, "!ignore list")
+	assert.Equal(t, "[ @ssalvato ] since [31-12-1969 21:20:31] until [31-12-1969 22:16:04]", result, "!ignore list")
 }
 
 func TestProcessingUserIgnoreInsert(t *testing.T) {

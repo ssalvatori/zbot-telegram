@@ -17,7 +17,8 @@ import (
 
 const version string = "1.0"
 const dbFile string = "./sample.db"
-const levelIgnore int = 100 //level minimum to ignore a user
+const levelIgnore int = 100                     //level minimum to ignore a user
+const dateFormat string = "02-01-2006 15:04:05" //dd-mm-yyyy hh:ii:ss
 
 func main() {
 

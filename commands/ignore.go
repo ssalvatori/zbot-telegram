@@ -19,6 +19,8 @@ type IgnoreCommand struct {
 	Levels Levels
 }
 
+const dateFormat string = "02-01-2006 15:04:05" //dd-mm-yyyy hh:ii:ss
+
 func (handler *IgnoreCommand) ProcessText(text string, user User) string {
 	commandPattern := regexp.MustCompile(`^!ignore\s(\S*)(\s(\S*))?`)
 	result := ""
@@ -96,5 +98,5 @@ func convertDates(since string, until string) (string, string) {
 		untilFormated = time.Unix(i, 0)
 	}
 
-	return sinceFormated.Format(time.RFC3339), untilFormated.Format(time.RFC3339)
+	return sinceFormated.Format(dateFormat), untilFormated.Format(dateFormat)
 }
