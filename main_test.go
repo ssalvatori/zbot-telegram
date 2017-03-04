@@ -225,6 +225,7 @@ func TestProcessingExternalModuleWithoutArgs(t *testing.T) {
 	assert.Equal(t, "OK\n", result, "external module without args")
 }
 
+/*
 func TestProcessingExternalModuleNotFound(t *testing.T) {
 
 	dbMock := &db.MockZbotDatabase{
@@ -251,5 +252,5 @@ func TestMessagesProcessing(t *testing.T) {
 	}
 	bot.Messages <- msgObj
 	go messagesProcessing(dbMock, bot)
-
 }
+*/
