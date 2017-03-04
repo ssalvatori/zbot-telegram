@@ -1,38 +1,41 @@
 package command
 
 import (
-	"regexp"
 	"fmt"
-	"github.com/ssalvatori/zbot-telegram-go/db"
-	"strings"
 	log "github.com/Sirupsen/logrus"
+	"github.com/ssalvatori/zbot-telegram-go/db"
+	"regexp"
 	"strconv"
+	"strings"
+	"time"
 )
 
 type Levels struct {
 	Ignore int
 }
 type IgnoreCommand struct {
-	Next HandlerCommand
-	Db db.ZbotDatabase
+	Next   HandlerCommand
+	Db     db.ZbotDatabase
 	Levels Levels
 }
 
-func (handler *IgnoreCommand) ProcessText(text string, user User) string{
+const dateFormat string = "02-01-2006 15:04:05 MST" //dd-mm-yyyy hh:ii:ss TZ
+//const dateFormat string = time.RFC850
+
+func (handler *IgnoreCommand) ProcessText(text string, user User) string {
 	commandPattern := regexp.MustCompile(`^!ignore\s(\S*)(\s(\S*))?`)
 	result := ""
 
-
-	if(commandPattern.MatchString(text)) {
+	if commandPattern.MatchString(text) {
 		args := commandPattern.FindStringSubmatch(text)
 
 		switch args[1] {
 		case "help":
-			result = "*!ignore* Options available: \n list (show all user ignored) add <username> (ignore a user for 10 minutes)"
+			result = "*!ignore* Options available: \n list (show all user ignored) \n add <username> (ignore a user for 10 minutes)"
 			break
 		case "list":
 			ignoredUsers, err := handler.Db.UserIgnoreList()
-			if (err != nil) {
+			if err != nil {
 				log.Error(err)
 			}
 			result = fmt.Sprintf(strings.Join(getUserIgnored(ignoredUsers), "/n"))
@@ -59,21 +62,43 @@ func (handler *IgnoreCommand) ProcessText(text string, user User) string{
 			break
 		}
 	} else {
-		if (handler.Next != nil) {
+		if handler.Next != nil {
 			result = handler.Next.ProcessText(text, user)
 		}
 	}
 	return result
 }
 
-func getUserIgnored(users []db.UserIgnore) ([]string) {
-	var userIgnored []string
-	for _,user := range users {
-		if user.Username != "" {
-			userString := fmt.Sprintf("[ @%s ] since [%s] until [%s]", user.Username, user.Since, user.Until)
-			userIgnored = append(userIgnored, userString)
+func getUserIgnored(users []db.UserIgnore) []string {
+	var usersIgnored []string
+	for _, userIgnore := range users {
+		if userIgnore.Username != "" {
+			since, until := convertDates(userIgnore.Since, userIgnore.Until)
+			userString := fmt.Sprintf("[ @%s ] since [%s] until [%s]", userIgnore.Username, since, until)
+			usersIgnored = append(usersIgnored, userString)
 		}
 	}
-	return userIgnored
+	return usersIgnored
 }
 
+func convertDates(since string, until string) (string, string) {
+	time.LoadLocation("UTC")
+
+	i, err := strconv.ParseInt(since, 10, 64)
+	sinceFormated := time.Unix(100, 0)
+	untilFormated := time.Unix(600, 0)
+	if err != nil {
+		log.Error("converting ignore time (since)")
+	} else {
+		sinceFormated = time.Unix(i, 0)
+	}
+
+	i, err = strconv.ParseInt(until, 10, 64)
+	if err != nil {
+		log.Error("converting ignore time (until)")
+	} else {
+		untilFormated = time.Unix(i, 0)
+	}
+
+	return sinceFormated.UTC().Format(dateFormat), untilFormated.UTC().Format(dateFormat)
+}

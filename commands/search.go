@@ -1,24 +1,24 @@
 package command
 
 import (
-	"regexp"
 	"fmt"
-	"github.com/ssalvatori/zbot-telegram-go/db"
-	"strings"
 	log "github.com/Sirupsen/logrus"
+	"github.com/ssalvatori/zbot-telegram-go/db"
+	"regexp"
+	"strings"
 )
 
 type SearchCommand struct {
 	Next HandlerCommand
-	Db db.ZbotDatabase
+	Db   db.ZbotDatabase
 }
 
-func (handler *SearchCommand) ProcessText(text string, user User) string{
+func (handler *SearchCommand) ProcessText(text string, user User) string {
 
 	commandPattern := regexp.MustCompile(`^!search\s(\S*)`)
 	result := ""
 
-	if(commandPattern.MatchString(text)) {
+	if commandPattern.MatchString(text) {
 		term := commandPattern.FindStringSubmatch(text)
 		results, err := handler.Db.Search(term[1])
 		if err != nil {
@@ -26,7 +26,7 @@ func (handler *SearchCommand) ProcessText(text string, user User) string{
 		}
 		result = fmt.Sprintf("%s", strings.Join(getTerms(results), " "))
 	} else {
-		if (handler.Next != nil) {
+		if handler.Next != nil {
 			result = handler.Next.ProcessText(text, user)
 		}
 	}
