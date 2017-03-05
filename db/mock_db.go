@@ -102,3 +102,7 @@ func (d *MockZbotDatabase) UserIgnoreInsert(username string) error {
 func (d *MockZbotDatabase) UserCleanIgnore() error {
 	return nil
 }
+
+func (d *MockZbotDatabase) Lock(item DefinitionItem) error {
+	return nil
+}

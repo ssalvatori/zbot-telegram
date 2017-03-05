@@ -42,7 +42,7 @@ func TestIgnoreCommandAdd(t *testing.T) {
 	ignoreCommand.Db = &db.MockZbotDatabase{
 		Level: "10",
 	}
-	assert.Equal(t, "level not enough (minimum 1000 yours 10)", ignoreCommand.ProcessText("!ignore add rigo", user), "Ignore add no enough level")
+	assert.Equal(t, "Your level is not enough < 1000", ignoreCommand.ProcessText("!ignore add rigo", user), "Ignore add no enough level")
 }
 
 func TestConvertDates(t *testing.T) {

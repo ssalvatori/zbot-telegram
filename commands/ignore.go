@@ -12,6 +12,7 @@ import (
 
 type Levels struct {
 	Ignore int
+	Lock   int
 }
 type IgnoreCommand struct {
 	Next   HandlerCommand
@@ -20,7 +21,6 @@ type IgnoreCommand struct {
 }
 
 const dateFormat string = "02-01-2006 15:04:05 MST" //dd-mm-yyyy hh:ii:ss TZ
-//const dateFormat string = time.RFC850
 
 func (handler *IgnoreCommand) ProcessText(text string, user User) string {
 	commandPattern := regexp.MustCompile(`^!ignore\s(\S*)(\s(\S*))?`)
@@ -41,12 +41,7 @@ func (handler *IgnoreCommand) ProcessText(text string, user User) string {
 			result = fmt.Sprintf(strings.Join(getUserIgnored(ignoredUsers), "/n"))
 			break
 		case "add":
-			level, err := handler.Db.UserLevel(user.Username)
-			if err != nil {
-				log.Error(err)
-			}
-			levelInt, _ := strconv.Atoi(level)
-			if levelInt >= handler.Levels.Ignore {
+			if IsUserAllow(handler.Db, user.Username, handler.Levels.Ignore) {
 				if strings.ToLower(args[3]) != strings.ToLower(user.Username) {
 					err := handler.Db.UserIgnoreInsert(args[3])
 					if err != nil {
@@ -57,7 +52,7 @@ func (handler *IgnoreCommand) ProcessText(text string, user User) string {
 					result = fmt.Sprintf("You can't ignore youself")
 				}
 			} else {
-				result = fmt.Sprintf("level not enough (minimum %d yours %s)", handler.Levels.Ignore, level)
+				result = fmt.Sprintf("Your level is not enough < %d", handler.Levels.Ignore)
 			}
 			break
 		}

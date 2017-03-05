@@ -30,3 +30,14 @@ func TestGetTerms(t *testing.T) {
 	var terms []string
 	assert.Equal(t, terms, getTerms([]db.DefinitionItem{}))
 }
+
+func TestIsUserAllow(t *testing.T) {
+	var levelCommand = LevelCommand{}
+
+	levelCommand.Db = &db.MockZbotDatabase{
+		Level: "1000",
+	}
+
+	assert.True(t, IsUserAllow(levelCommand.Db, "ssalvatori", 10), "User has enough level")
+	assert.False(t, IsUserAllow(levelCommand.Db, "ssalvatori", 10000), "User not has enough level")
+}

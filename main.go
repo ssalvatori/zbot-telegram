@@ -17,7 +17,11 @@ import (
 
 const version string = "1.0"
 const dbFile string = "./sample.db"
-const levelIgnore int = 100 //level minimum to ignore a user
+
+var levelsConfig = command.Levels{
+	Ignore: 100,
+	Lock:   1000,
+}
 
 func main() {
 
@@ -93,10 +97,6 @@ func processing(db db.ZbotDatabase, msg telebot.Message) string {
 
 	user := buildUser(msg.Sender)
 
-	var levels = command.Levels{
-		Ignore: levelIgnore,
-	}
-
 	// TODO: how to clean this code
 	commands := &command.PingCommand{}
 	versionCommand := &command.VersionCommand{Version: version}
@@ -109,7 +109,8 @@ func processing(db db.ZbotDatabase, msg telebot.Message) string {
 	searchCommand := &command.SearchCommand{Db: db}
 	learnCommand := &command.LearnCommand{Db: db}
 	levelCommand := &command.LevelCommand{Db: db}
-	ignoreCommand := &command.IgnoreCommand{Db: db, Levels: levels}
+	ignoreCommand := &command.IgnoreCommand{Db: db, Levels: levelsConfig}
+	lockCommand := &command.LockCommand{Db: db, Levels: levelsConfig}
 	externalCommand := &command.ExternalCommand{
 		PathModules: "./modules/",
 	}
@@ -125,6 +126,8 @@ func processing(db db.ZbotDatabase, msg telebot.Message) string {
 	searchCommand.Next = learnCommand
 	learnCommand.Next = levelCommand
 	levelCommand.Next = ignoreCommand
+	lockCommand.Next = lockCommand
+
 	ignoreCommand.Next = externalCommand
 
 	outputMsg := commands.ProcessText(msg.Text, user)
