@@ -1,6 +1,10 @@
 package command
 
-import "github.com/ssalvatori/zbot-telegram-go/db"
+import (
+	log "github.com/Sirupsen/logrus"
+	"github.com/ssalvatori/zbot-telegram-go/db"
+	"strconv"
+)
 
 type HandlerCommand interface {
 	ProcessText(text string, username User) string
@@ -20,4 +24,24 @@ func getTerms(items []db.DefinitionItem) []string {
 		}
 	}
 	return terms
+}
+
+func IsUserAllow(Db db.ZbotDatabase, username string, level int) bool {
+	result := false
+
+	userLevel, err := Db.UserLevel(username)
+	if err != nil {
+		log.Error(err)
+		return false
+	}
+	userLevelInt, err := strconv.Atoi(userLevel)
+	if err != nil {
+		log.Error(err)
+		return false
+	}
+	if userLevelInt >= level {
+		result = true
+	}
+
+	return result
 }

@@ -19,6 +19,8 @@ type ZbotDatabase interface {
 	UserCheckIgnore(string) (bool, error)
 	UserCleanIgnore() error
 	UserIgnoreList() ([]UserIgnore, error)
+
+	Lock(DefinitionItem) error
 }
 
 type DefinitionItem struct {

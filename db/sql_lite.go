@@ -326,3 +326,22 @@ func (d *SqlLite) UserCleanIgnore() error {
 		time.Sleep(5 * time.Minute)
 	}
 }
+
+func (d *SqlLite) Lock(item DefinitionItem) error {
+
+	statement := "UPDATE definitions SET locked = 1, locked_by = ? WHERE term = ?"
+
+	stmt, err := d.Db.Prepare(statement)
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+
+	_, err = stmt.Exec(item.Author, item.Term)
+	if err != nil {
+		return err
+	}
+
+	return nil
+
+}

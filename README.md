@@ -26,7 +26,8 @@ CREATE TABLE `definitions` (
     active INTEGER DEFAULT 1, 
     date TEXT DEFAULT '0000-00-00', 
     hits INTEGER DEFAULT 0, 
-    link INTEGER 
+    link INTEGER ,
+    locked_by TEXT
 )
 ```
 

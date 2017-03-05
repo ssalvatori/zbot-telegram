@@ -196,7 +196,7 @@ func TestProcessingUserIgnoreInsert(t *testing.T) {
 		Sender: telebot.User{FirstName: "ssalvato", Username: "ssalvato"},
 	}
 	result = processing(dbMock, botMsg)
-	assert.Equal(t, "level not enough (minimum 100 yours 10)", result, "!ignore")
+	assert.Equal(t, "Your level is not enough < 100", result, "!ignore")
 }
 
 func TestProcessingExternalModuleWithArgs(t *testing.T) {
