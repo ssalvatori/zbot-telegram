@@ -55,14 +55,3 @@ func TestConvertDates(t *testing.T) {
 	assert.Equal(t, "04-03-2017 16:21:20 UTC", sinceFormated, "format ok")
 	assert.Equal(t, "04-03-2017 16:31:20 UTC", untilFormated, "format ok")
 }
-
-func TestConvertDates(t *testing.T) {
-
-	since := "1488644480"
-	until := "1488645080"
-
-	sinceFormated, untilFormated := convertDates(since, until)
-
-	assert.Equal(t, "04-03-2017 16:21:20 UTC", sinceFormated, "format ok")
-	assert.Equal(t, "04-03-2017 16:31:20 UTC", untilFormated, "format ok")
-}
