@@ -11,6 +11,8 @@ type MockZbotDatabase struct {
 	File         string
 	Term         string
 	Meaning      string
+	Author string
+	Date string
 	Find_terms   []string
 	Search_terms []string
 	Not_found    bool
@@ -69,7 +71,7 @@ func (d *MockZbotDatabase) Get(term string) (DefinitionItem, error) {
 	if d.Not_found {
 		return DefinitionItem{}, nil
 	}
-	return DefinitionItem{Term: d.Term, Meaning: d.Meaning}, nil
+	return DefinitionItem{Term: d.Term, Meaning: d.Meaning, Author: d.Author, Date: d.Date}, nil
 }
 
 func (d *MockZbotDatabase) _set(term string, def DefinitionItem) (sql.Result, error) {
