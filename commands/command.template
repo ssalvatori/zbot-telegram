@@ -1,0 +1,34 @@
+package command
+
+import (
+	"fmt"
+	log "github.com/Sirupsen/logrus"
+	"github.com/ssalvatori/zbot-telegram-go/db"
+	"regexp"
+	"time"
+)
+
+type TemplateCommand struct {
+	Next   HandlerCommand
+	Db     db.ZbotDatabase
+	Levels Levels
+}
+
+func (handler *TemplateCommand) ProcessText(text string, user User) string {
+
+	commandPattern := regexp.MustCompile(`^!command\s(\S*)\s(.*)`)
+	result := ""
+
+	if commandPattern.MatchString(text) {
+		if IsUserAllow(handler.Db, user.Username, handler.Levels.Template) {
+			term := commandPattern.FindStringSubmatch(text)
+
+		}
+	} else {
+		if handler.Next != nil {
+			result = handler.Next.ProcessText(text, user)
+		}
+	}
+
+	return result
+}

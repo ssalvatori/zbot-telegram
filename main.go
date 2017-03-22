@@ -23,6 +23,7 @@ var levelsConfig = command.Levels{
 	Lock:   1000,
 	Learn:  0,
 	Append: 0,
+	Forget: 1000,
 }
 
 func main() {
@@ -115,10 +116,10 @@ func processing(db db.ZbotDatabase, msg telebot.Message) string {
 	lockCommand := &command.LockCommand{Db: db, Levels: levelsConfig}
 	appendCommand := &command.AppendCommand{Db: db, Levels: levelsConfig}
 	whoCommand := &command.WhoCommand{Db: db, Levels: levelsConfig}
+	forgetCommand := &command.ForgetCommand{Db: db, Levels: levelsConfig}
 
 	/*
 		TODO: create new modules
-		!forget <term>
 		!level add <username>
 		!level del <username>
 	*/
@@ -140,7 +141,8 @@ func processing(db db.ZbotDatabase, msg telebot.Message) string {
 	levelCommand.Next = lockCommand
 	lockCommand.Next = appendCommand
 	appendCommand.Next = whoCommand
-	whoCommand.Next = ignoreCommand
+	whoCommand.Next = forgetCommand
+	forgetCommand.Next = ignoreCommand
 	ignoreCommand.Next = externalCommand
 
 	outputMsg := commands.ProcessText(msg.Text, user)

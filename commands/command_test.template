@@ -1,0 +1,43 @@
+package command
+
+import (
+	"testing"
+	"github.com/ssalvatori/zbot-telegram-go/db"
+	"github.com/stretchr/testify/assert"
+)
+
+var templateCommand = TemplateCommand{}
+
+func TestTemplateCommandOK(t *testing.T) {
+
+	templateCommand.Db = &db.MockZbotDatabase{
+		Term:    "foo",
+		Meaning: "bar",
+		Level: "100",
+	}
+	templateCommand.Levels = Levels{
+		Ignore:10,
+		Append:10,
+		Learn:10,
+		Lock:10,
+	}
+
+	assert.Equal(t, "[foo] = [bar]", templateCommand.ProcessText("!command foo bar", user), "Template Command")
+}
+
+func TestTemplateCommandNoLevel(t *testing.T) {
+
+	templateCommand.Db = &db.MockZbotDatabase{
+		Term:    "foo",
+		Meaning: "bar",
+		Level: "5",
+	}
+	templateCommand.Levels = Levels{
+		Ignore:10,
+		Append:10,
+		Learn:10,
+		Lock:10,
+	}
+
+	assert.Equal(t, "", templateCommand.ProcessText("!command foo bar", user), "Template Command No Level")
+}

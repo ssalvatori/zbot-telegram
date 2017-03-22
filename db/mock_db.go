@@ -112,3 +112,7 @@ func (d *MockZbotDatabase) Lock(item DefinitionItem) error {
 func (d *MockZbotDatabase) Append(item DefinitionItem) error {
 	return nil
 }
+
+func (d *MockZbotDatabase) Forget(item DefinitionItem) error {
+	return nil
+}

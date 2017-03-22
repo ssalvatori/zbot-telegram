@@ -358,3 +358,20 @@ func (d *SqlLite) Lock(item DefinitionItem) error {
 	return nil
 
 }
+
+func (d *SqlLite) Forget(item DefinitionItem) error {
+	statement := "DELETE definitions WHERE term = ? LIMIT 1"
+
+	stmt, err := d.Db.Prepare(statement)
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+
+	_, err = stmt.Exec(item.Term)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

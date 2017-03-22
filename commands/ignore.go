@@ -15,6 +15,7 @@ type Levels struct {
 	Lock   int
 	Append int
 	Learn  int
+	Forget int
 }
 type IgnoreCommand struct {
 	Next   HandlerCommand

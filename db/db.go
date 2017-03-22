@@ -15,6 +15,7 @@ type ZbotDatabase interface {
 	_set(string, DefinitionItem) (sql.Result, error)
 	Find(string) ([]DefinitionItem, error)
 	Search(string) ([]DefinitionItem, error)
+	Forget(DefinitionItem) error
 	UserLevel(string) (string, error)
 	UserIgnoreInsert(string) error
 	UserCheckIgnore(string) (bool, error)
