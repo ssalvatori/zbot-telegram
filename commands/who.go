@@ -7,31 +7,28 @@ import (
 	"regexp"
 )
 
-type LockCommand struct {
+type WhoCommand struct {
 	Next   HandlerCommand
 	Db     db.ZbotDatabase
 	Levels Levels
 }
 
-func (handler *LockCommand) ProcessText(text string, user User) string {
+func (handler *WhoCommand) ProcessText(text string, user User) string {
 
-	commandPattern := regexp.MustCompile(`^!lock\s(\S*)$`)
+	commandPattern := regexp.MustCompile(`^!who\s(\S*)$`)
 	result := ""
 
 	if commandPattern.MatchString(text) {
-		if IsUserAllow(handler.Db, user.Username, handler.Levels.Lock) {
+		if IsUserAllow(handler.Db, user.Username, handler.Levels.Append) {
 			term := commandPattern.FindStringSubmatch(text)
 			def := db.DefinitionItem{
-				Author: user.Username,
-				Term:   term[0],
+				Term: term[1],
 			}
-			err := handler.Db.Lock(def)
+			Item, err := handler.Db.Get(def.Term)
 			if err != nil {
 				log.Error(err)
 			}
-
-		} else {
-			result = fmt.Sprintf("Your level is not enough < %s", handler.Levels.Lock)
+			result = fmt.Sprintf("[%s] by [%s] on [%s]", Item.Term, Item.Author, Item.Date)
 		}
 	} else {
 		if handler.Next != nil {

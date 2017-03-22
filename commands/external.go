@@ -11,6 +11,7 @@ import (
 type ExternalCommand struct {
 	PathModules string
 	Next        HandlerCommand
+	Levels      Levels
 }
 
 func (handler *ExternalCommand) ProcessText(text string, user User) string {

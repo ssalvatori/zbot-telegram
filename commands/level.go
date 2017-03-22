@@ -9,8 +9,9 @@ import (
 )
 
 type LevelCommand struct {
-	Db   db.ZbotDatabase
-	Next HandlerCommand
+	Db     db.ZbotDatabase
+	Next   HandlerCommand
+	Levels Levels
 }
 
 func (handler *LevelCommand) ProcessText(text string, user User) string {

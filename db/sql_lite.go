@@ -141,8 +141,8 @@ func (d *SqlLite) Last() (DefinitionItem, error) {
 }
 func (d *SqlLite) Get(term string) (DefinitionItem, error) {
 	var def DefinitionItem
-	statement := "SELECT id, term, meaning FROM definitions WHERE term = ? COLLATE NOCASE LIMIT 1"
-	err := d.Db.QueryRow(statement, term).Scan(&def.Id, &def.Term, &def.Meaning)
+	statement := "SELECT id, term, meaning, author, date FROM definitions WHERE term = ? COLLATE NOCASE LIMIT 1"
+	err := d.Db.QueryRow(statement, term).Scan(&def.Id, &def.Term, &def.Meaning, &def.Author, &def.Date)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return DefinitionItem{Term: "", Meaning: ""}, nil
@@ -197,6 +197,19 @@ func (d *SqlLite) Set(def DefinitionItem) error {
 	}
 	return nil
 
+}
+
+func (d *SqlLite) Append(def DefinitionItem) error {
+	statement := "UPDATE definitions SET meaning = meaning || ?, date = ?, author = ? WHERE term = ?"
+	stmt, err := d.Db.Prepare(statement)
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = stmt.Exec(fmt.Sprintf(" %s", def.Meaning), def.Date, def.Author, def.Term)
+	if err != nil {
+		log.Error(err.Error())
+	}
+	return nil
 }
 
 func (d *SqlLite) Find(criteria string) ([]DefinitionItem, error) {

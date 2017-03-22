@@ -9,8 +9,9 @@ import (
 )
 
 type SearchCommand struct {
-	Next HandlerCommand
-	Db   db.ZbotDatabase
+	Next   HandlerCommand
+	Db     db.ZbotDatabase
+	Levels Levels
 }
 
 func (handler *SearchCommand) ProcessText(text string, user User) string {

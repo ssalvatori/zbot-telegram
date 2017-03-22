@@ -5,7 +5,8 @@ import (
 )
 
 type PingCommand struct {
-	Next HandlerCommand
+	Next   HandlerCommand
+	Levels Levels
 }
 
 func (handler *PingCommand) ProcessText(text string, user User) string {

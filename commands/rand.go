@@ -8,8 +8,9 @@ import (
 )
 
 type RandCommand struct {
-	Next HandlerCommand
-	Db   db.ZbotDatabase
+	Next   HandlerCommand
+	Db     db.ZbotDatabase
+	Levels Levels
 }
 
 func (handler *RandCommand) ProcessText(text string, user User) string {

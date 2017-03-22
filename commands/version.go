@@ -8,6 +8,7 @@ import (
 type VersionCommand struct {
 	Next    HandlerCommand
 	Version string
+	Levels  Levels
 }
 
 func (handler *VersionCommand) ProcessText(text string, user User) string {

@@ -9,8 +9,9 @@ import (
 )
 
 type LearnCommand struct {
-	Next HandlerCommand
-	Db   db.ZbotDatabase
+	Next   HandlerCommand
+	Db     db.ZbotDatabase
+	Levels Levels
 }
 
 func (handler *LearnCommand) ProcessText(text string, user User) string {

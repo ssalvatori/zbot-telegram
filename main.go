@@ -21,6 +21,8 @@ const dbFile string = "./sample.db"
 var levelsConfig = command.Levels{
 	Ignore: 100,
 	Lock:   1000,
+	Learn:  0,
+	Append: 0,
 }
 
 func main() {
@@ -100,17 +102,27 @@ func processing(db db.ZbotDatabase, msg telebot.Message) string {
 	// TODO: how to clean this code
 	commands := &command.PingCommand{}
 	versionCommand := &command.VersionCommand{Version: version}
-	statsCommand := &command.StatsCommand{Db: db}
-	randCommand := &command.RandCommand{Db: db}
-	topCommand := &command.TopCommand{Db: db}
-	lastCommand := &command.LastCommand{Db: db}
-	getCommand := &command.GetCommand{Db: db}
-	findCommand := &command.FindCommand{Db: db}
-	searchCommand := &command.SearchCommand{Db: db}
-	learnCommand := &command.LearnCommand{Db: db}
-	levelCommand := &command.LevelCommand{Db: db}
+	statsCommand := &command.StatsCommand{Db: db, Levels: levelsConfig}
+	randCommand := &command.RandCommand{Db: db, Levels: levelsConfig}
+	topCommand := &command.TopCommand{Db: db, Levels: levelsConfig}
+	lastCommand := &command.LastCommand{Db: db, Levels: levelsConfig}
+	getCommand := &command.GetCommand{Db: db, Levels: levelsConfig}
+	findCommand := &command.FindCommand{Db: db, Levels: levelsConfig}
+	searchCommand := &command.SearchCommand{Db: db, Levels: levelsConfig}
+	learnCommand := &command.LearnCommand{Db: db, Levels: levelsConfig}
+	levelCommand := &command.LevelCommand{Db: db, Levels: levelsConfig}
 	ignoreCommand := &command.IgnoreCommand{Db: db, Levels: levelsConfig}
 	lockCommand := &command.LockCommand{Db: db, Levels: levelsConfig}
+	appendCommand := &command.AppendCommand{Db: db, Levels: levelsConfig}
+	whoCommand := &command.WhoCommand{Db: db, Levels: levelsConfig}
+
+	/*
+		TODO: create new modules
+		!forget <term>
+		!level add <username>
+		!level del <username>
+	*/
+
 	externalCommand := &command.ExternalCommand{
 		PathModules: "./modules/",
 	}
@@ -125,9 +137,10 @@ func processing(db db.ZbotDatabase, msg telebot.Message) string {
 	findCommand.Next = searchCommand
 	searchCommand.Next = learnCommand
 	learnCommand.Next = levelCommand
-	levelCommand.Next = ignoreCommand
-	lockCommand.Next = lockCommand
-
+	levelCommand.Next = lockCommand
+	lockCommand.Next = appendCommand
+	appendCommand.Next = whoCommand
+	whoCommand.Next = ignoreCommand
 	ignoreCommand.Next = externalCommand
 
 	outputMsg := commands.ProcessText(msg.Text, user)

@@ -106,3 +106,7 @@ func (d *MockZbotDatabase) UserCleanIgnore() error {
 func (d *MockZbotDatabase) Lock(item DefinitionItem) error {
 	return nil
 }
+
+func (d *MockZbotDatabase) Append(item DefinitionItem) error {
+	return nil
+}

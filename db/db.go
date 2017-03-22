@@ -6,6 +6,7 @@ type ZbotDatabase interface {
 	Init() error
 	Close()
 	Statistics() (string, error)
+	Append(DefinitionItem) error
 	Top() ([]DefinitionItem, error)
 	Rand() (DefinitionItem, error)
 	Last() (DefinitionItem, error)

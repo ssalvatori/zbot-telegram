@@ -8,8 +8,9 @@ import (
 )
 
 type StatsCommand struct {
-	Db   db.ZbotDatabase
-	Next HandlerCommand
+	Db     db.ZbotDatabase
+	Next   HandlerCommand
+	Levels Levels
 }
 
 func (handler *StatsCommand) ProcessText(text string, user User) string {
