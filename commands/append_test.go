@@ -4,6 +4,7 @@ import (
 	"testing"
 	"github.com/ssalvatori/zbot-telegram-go/db"
 	"github.com/stretchr/testify/assert"
+	"fmt"
 )
 
 var appendCommand = AppendCommand{}
@@ -39,5 +40,5 @@ func TestAppendCommandNoLevel(t *testing.T) {
 		Lock:10,
 	}
 
-	assert.Equal(t, "", appendCommand.ProcessText("!append foo bar", user), "Append Command No Level")
+	assert.Equal(t, fmt.Sprintf("Your level is not enough < %s", appendCommand.Levels.Lock), appendCommand.ProcessText("!append foo bar", user), "Append Command No Level")
 }

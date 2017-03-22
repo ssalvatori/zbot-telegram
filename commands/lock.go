@@ -23,12 +23,13 @@ func (handler *LockCommand) ProcessText(text string, user User) string {
 			term := commandPattern.FindStringSubmatch(text)
 			def := db.DefinitionItem{
 				Author: user.Username,
-				Term:   term[0],
+				Term:   term[1],
 			}
 			err := handler.Db.Lock(def)
 			if err != nil {
 				log.Error(err)
 			}
+			result = fmt.Sprintf("[%s] locked", def.Term)
 
 		} else {
 			result = fmt.Sprintf("Your level is not enough < %s", handler.Levels.Lock)

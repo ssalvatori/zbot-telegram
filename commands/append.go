@@ -37,6 +37,8 @@ func (handler *AppendCommand) ProcessText(text string, user User) string {
 				log.Error(err)
 			}
 			result = fmt.Sprintf("[%s] = [%s]", def.Term, def.Meaning)
+		} else {
+			result = fmt.Sprintf("Your level is not enough < %s", handler.Levels.Lock)
 		}
 	} else {
 		if handler.Next != nil {
