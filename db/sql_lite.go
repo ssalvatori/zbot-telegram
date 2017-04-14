@@ -178,24 +178,27 @@ func (d *SqlLite) _set(term string, def DefinitionItem) (sql.Result, error) {
 
 }
 
-func (d *SqlLite) Set(def DefinitionItem) error {
+func (d *SqlLite) Set(def DefinitionItem) (string, error) {
 	count := 1
 	term := def.Term
+	log.Debug(def)
 	for {
 		_, err := d._set(term, def)
 		if err != nil {
-			if strings.Contains(err.Error(), "UNIQUE constraint failed: definitions.value") {
+			log.Debug("SQL insert error: ", err.Error())
+			if strings.Contains(err.Error(), "UNIQUE constraint failed") {
 				term = fmt.Sprintf("%s%d", def.Term, count)
+				log.Debug(fmt.Sprintf("New Term: %s", term))
 				count = count + 1
 			} else {
-				return err
+				return "", err
 			}
-
 		} else {
+			log.Debug("trying with: ", term)
 			break
 		}
 	}
-	return nil
+	return term,nil
 
 }
 

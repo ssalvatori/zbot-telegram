@@ -11,8 +11,8 @@ type MockZbotDatabase struct {
 	File         string
 	Term         string
 	Meaning      string
-	Author string
-	Date string
+	Author       string
+	Date         string
 	Find_terms   []string
 	Search_terms []string
 	Not_found    bool
@@ -56,8 +56,8 @@ func (d *MockZbotDatabase) Last() (DefinitionItem, error) {
 	return DefinitionItem{Term: d.Term, Meaning: d.Meaning}, nil
 }
 
-func (d *MockZbotDatabase) Set(def DefinitionItem) error {
-	return nil
+func (d *MockZbotDatabase) Set(def DefinitionItem) (string, error) {
+	return def.Term, nil
 }
 
 func (d *MockZbotDatabase) Find(criteria string) ([]DefinitionItem, error) {

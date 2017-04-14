@@ -6,6 +6,8 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/ssalvatori/zbot-telegram-go/db"
+
+	"strings"
 )
 
 type LevelCommand struct {
@@ -14,17 +16,42 @@ type LevelCommand struct {
 	Levels Levels
 }
 
-func (handler *LevelCommand) ProcessText(text string, user User) string {
+func (handler *LevelCommand) AddUser(userToCheck string, user string) string {
+	return "not ready"
+}
 
-	commandPattern := regexp.MustCompile(`^!level$`)
+func (handler *LevelCommand) DelUser(userToCheck string, user string) string {
+	return "not ready"
+}
+
+func (handler *LevelCommand) GetLevel(userToCheck string, user string) string {
 	result := ""
-
-	if commandPattern.MatchString(text) {
-		level, err := handler.Db.UserLevel(user.Username)
+	if IsUserAllow(handler.Db, user, 0) {
+		level, err := handler.Db.UserLevel(user)
 		if err != nil {
 			log.Error(err)
 		}
-		result = fmt.Sprintf("%s level %s", user.Username, level)
+		result = fmt.Sprintf("%s level %s", user, level)
+	}
+	return result
+}
+
+func (handler *LevelCommand) ProcessText(text string, user User) string {
+	commandPattern := regexp.MustCompile(`^!level(\s|$)(\S*)\s?(\S+)?\s?(\d+)?`)
+	result := ""
+
+	if commandPattern.MatchString(text) {
+		subcommand := commandPattern.FindStringSubmatch(text)
+		log.Debug("level subcommand: ", subcommand[2])
+		log.Debug(strings.Join(subcommand, "-"))
+		switch subcommand[2] {
+			case "add":
+				result = handler.AddUser(subcommand[2], user.Username)
+			case "del":
+				result = handler.DelUser(subcommand[2], user.Username)
+			default:
+				result = handler.GetLevel(subcommand[2], user.Username)
+		}
 	} else {
 		if handler.Next != nil {
 			result = handler.Next.ProcessText(text, user)

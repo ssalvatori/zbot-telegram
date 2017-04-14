@@ -10,10 +10,34 @@ import (
 var levelCommand = LevelCommand{}
 
 func TestLevelCommandOK(t *testing.T) {
+
 	levelCommand.Db = &db.MockZbotDatabase{
 		Level: "1000",
 	}
-	assert.Equal(t, "ssalvatori level 1000", levelCommand.ProcessText("!level", user), "Level Command")
+
+	assert.Equal(t, "ssalvatori level 1000", levelCommand.ProcessText("!level", user), "Get Level from the same user")
+}
+
+func TestLevelAdd(t *testing.T) {
+
+	levelCommand.Db = &db.MockZbotDatabase{
+		Level: "10",
+	}
+
+	levelCommand.Levels = Levels{
+		LevelAdd: 100,
+	}
+
+	assert.Equal(t, "not ready", levelCommand.ProcessText("!level add rigo 10", user), "add user")
+
+}
+
+func TestLevelOthers(t *testing.T) {
+
+	levelCommand.Db = &db.MockZbotDatabase{
+		Level: "10",
+	}
+
 	assert.Equal(t, "", levelCommand.ProcessText("!level6", user), "Level no next command")
 	levelCommand.Next = &FakeCommand{}
 	assert.Equal(t, "Fake OK", levelCommand.ProcessText("??", user), "Level next command")

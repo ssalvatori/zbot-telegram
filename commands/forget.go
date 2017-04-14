@@ -25,7 +25,7 @@ func (handler *ForgetCommand) ProcessText(text string, user User) string {
 				Term: term[1],
 			}
 			err := handler.Db.Forget(def)
-			if (err != nil) {
+			if err != nil {
 				log.Error(err)
 			}
 			return fmt.Sprintf("[%s] deleted", def.Term)
@@ -38,4 +38,3 @@ func (handler *ForgetCommand) ProcessText(text string, user User) string {
 
 	return result
 }
-

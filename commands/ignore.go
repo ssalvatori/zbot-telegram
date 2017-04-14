@@ -11,11 +11,13 @@ import (
 )
 
 type Levels struct {
-	Ignore int
-	Lock   int
-	Append int
-	Learn  int
-	Forget int
+	Ignore   int
+	Lock     int
+	Append   int
+	Learn    int
+	Forget   int
+	LevelAdd int
+	LevelDel int
 }
 type IgnoreCommand struct {
 	Next   HandlerCommand

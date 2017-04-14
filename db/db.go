@@ -11,7 +11,7 @@ type ZbotDatabase interface {
 	Rand() (DefinitionItem, error)
 	Last() (DefinitionItem, error)
 	Get(string) (DefinitionItem, error)
-	Set(DefinitionItem) error
+	Set(DefinitionItem) (string, error)
 	_set(string, DefinitionItem) (sql.Result, error)
 	Find(string) ([]DefinitionItem, error)
 	Search(string) ([]DefinitionItem, error)

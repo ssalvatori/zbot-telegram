@@ -119,7 +119,7 @@ func processing(db db.ZbotDatabase, msg telebot.Message) string {
 	forgetCommand := &command.ForgetCommand{Db: db, Levels: levelsConfig}
 
 	/*
-		TODO: create new modules
+		TODO: check error handler
 		!level add <username>
 		!level del <username>
 	*/

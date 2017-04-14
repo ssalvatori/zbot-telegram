@@ -28,11 +28,11 @@ func (handler *LearnCommand) ProcessText(text string, user User) string {
 			Author:  fmt.Sprintf("%s!%s@telegram.bot", user.Username, user.Ident),
 			Date:    nowDate,
 		}
-		err := handler.Db.Set(def)
+		usedTerm ,err := handler.Db.Set(def)
 		if err != nil {
 			log.Error(err)
 		}
-		result = fmt.Sprintf("[%s] - [%s]", def.Term, def.Meaning)
+		result = fmt.Sprintf("[%s] - [%s]", usedTerm, def.Meaning)
 	} else {
 		if handler.Next != nil {
 			result = handler.Next.ProcessText(text, user)
