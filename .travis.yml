@@ -1,11 +1,23 @@
 language: go
-sudo: false
+sudo: required
 go:
-  - 1.8.1
+- 1.8.1
 env:
-  - BOT_TOKEN=1234:334
+- BOT_TOKEN=1234:334
 before_install:
-  - go get -u -v github.com/mattn/go-sqlite3
-  - go get github.com/mattn/goveralls
+- go get -u -v github.com/mattn/go-sqlite3
+- go get github.com/mattn/goveralls
+install:
+- go get github.com/mitchellh/gox
 script:
-  - $HOME/gopath/bin/goveralls -service=travis-ci
+- "$HOME/gopath/bin/goveralls -service=travis-ci"
+after_success:
+- gox -osarch="linux/amd64 linux/386" -cgo -output "dist/{{.Dir}}-{{.OS}}-{{.Arch}}"
+deploy:
+  provider: releases
+  skip_cleanup: true
+  api_key:
+    secure: "$GITHUB_API_SECURED"
+  file: "dist/*"
+  on:
+    repo: ssalvatori/zbot-telegram-go
