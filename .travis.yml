@@ -19,4 +19,5 @@ deploy:
   file_glob: true
   file: dist/*
   api_key: "$GITHUB_API_SECURED"
-  
+  on:
+      tags: true
