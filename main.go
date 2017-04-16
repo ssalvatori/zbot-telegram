@@ -22,11 +22,11 @@ func setUp() {
 	}
 
 	zbot.ApiToken = os.Getenv("ZBOT_TOKEN")
+
+
 }
 
-func main() {
-
-	setUp()
+func setUpLog() {
 
 	switch os.Getenv("ZBOT_LOG_LEVEL") {
 	case "debug":
@@ -53,6 +53,11 @@ func main() {
 	}
 
 	log.SetFormatter(&log.JSONFormatter{})
-	zbot.Execute()
+}
 
+func main() {
+	setUp()
+	setUpLog()
+
+	zbot.Execute()
 }
