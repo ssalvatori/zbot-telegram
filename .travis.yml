@@ -12,9 +12,11 @@ before_install:
 script:
 - "$HOME/gopath/bin/goveralls -service=travis-ci"
 after_success:
-- $HOME/gopath/bin/gox -osarch="linux/amd64 linux/386" -cgo -output "$HOME/dist/{{.Dir}}-{{.OS}}-{{.Arch}}"
+- $HOME/gopath/bin/gox -osarch="linux/amd64 linux/386" -cgo -output "dist/{{.Dir}}-{{.OS}}-{{.Arch}}"
 deploy:
   provider: releases
   skip_cleanup: true
+  file_glob: true
+  file: dist/*
   api_key: "$GITHUB_API_SECURED"
-  file: "$HOME/dist/*"
+  
