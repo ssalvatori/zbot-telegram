@@ -1,7 +1,7 @@
 language: go
 sudo: false
 go:
-- 1.8.1
+- 1.7
 env:
 - BOT_TOKEN=1234:334
 before_install:
