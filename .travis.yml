@@ -7,8 +7,6 @@ env:
 before_install:
 - go get -u -v github.com/mattn/go-sqlite3
 - go get github.com/mattn/goveralls
-install:
-- make get-deps
 - go get github.com/mitchellh/gox
 script:
 - $HOME/gopath/bin/goveralls -service=travis-ci
