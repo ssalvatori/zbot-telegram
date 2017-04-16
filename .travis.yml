@@ -15,8 +15,7 @@ after_success:
 deploy:
   provider: releases
   skip_cleanup: true
-  api_key:
-    secure: "$GITHUB_API_SECURED"
+  api_key: "$GITHUB_API_SECURED"
   file: dist/*
   on:
     tags: true
