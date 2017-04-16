@@ -1,5 +1,5 @@
 language: go
-sudo: required
+sudo: false
 go:
 - 1.8.1
 env:
@@ -10,9 +10,9 @@ before_install:
 install:
 - go get github.com/mitchellh/gox
 script:
-- "$HOME/gopath/bin/goveralls -service=travis-ci"
+- $HOME/gopath/bin/goveralls -service=travis-ci
 after_success:
-- gox -osarch="linux/amd64 linux/386" -cgo -output "dist/{{.Dir}}-{{.OS}}-{{.Arch}}"
+- $HOME/gopath/bin/gox -osarch="linux/amd64 linux/386" -cgo -output "dist/{{.Dir}}-{{.OS}}-{{.Arch}}"
 deploy:
   provider: releases
   skip_cleanup: true
