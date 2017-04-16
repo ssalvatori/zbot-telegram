@@ -3,14 +3,18 @@
 [![Build Status](https://travis-ci.org/ssalvatori/zbot-telegram-go.svg?branch=master)](https://travis-ci.org/ssalvatori/zbot-telegram-go)
 [![Coverage Status](https://coveralls.io/repos/github/ssalvatori/zbot-telegram-go/badge.svg)](https://coveralls.io/github/ssalvatori/zbot-telegram-go)
 
-## requirements
+## Requirements
 
 * You need to get an API TOKEN from [BotFather@Telegram](https://core.telegram.org/bots)
-* Load that api token under the environment variable *$BOT_TOKEN*
+
+## Setup
+
+You **must** set the **ZBOT_TOKEN** environment variable using the Telegram's API TOKEN
  
-```bash
-export BOT_TOKEN="yourapi:token"
-```
+* ZBOT_TOKEN : Use to connect to telegram
+* ZBOT_LOG_LEVEL : Use to set the log level the alternatives are debug,info, warn, error, panic
+* ZBOT_DATABASE_FILE : Path to the sqlite database "/path/to/file.sqlite"
+* ZBOT_MODULES_PATH : Path to the externals modules directory
 
 ## Database Schemas
 
@@ -58,8 +62,6 @@ CREATE TABLE `ignore_list` (
     `until` INTEGER NOT NULL
 )
 ```
-
-
 
 ### Migration (optional)
 

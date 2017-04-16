@@ -19,4 +19,4 @@ deploy:
     secure: "$GITHUB_API_SECURED"
   file: dist/*
   on:
-    tags: true 
+    tags: true

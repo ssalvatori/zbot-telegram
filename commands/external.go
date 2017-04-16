@@ -23,6 +23,8 @@ func (handler *ExternalCommand) ProcessText(text string, user User) string {
 		args := commandPattern.FindStringSubmatch(text)
 		externalModule := args[1]
 
+		log.Debug("Looking for module: "+handler.PathModules +externalModule)
+
 		binary, err := exec.LookPath(handler.PathModules + externalModule)
 
 		if err != nil {
