@@ -12,7 +12,7 @@ before_install:
 script:
   - $HOME/gopath/bin/goveralls -service=travis-ci
 after_success:
-  - $HOME/gopath/bin/gox -osarch="linux/amd64 linux/386" -ldflags "-X github.com/ssalvatori/zbot-telegram-go/zbot.Version=`git describe --tags` -X github.com/ssalvatori/zbot-telegram-go/zbot.BuildTime=`TZ=UTC date -u '+%Y-%m-%dT%H:%M:%SZ'` -X github.com/ssalvatori/zbot-telegram-go/zbot.GitHash=`git rev-parse HEAD`" -output "dist/{{.Dir}}-{{.OS}}-{{.Arch}}"
+  - $HOME/gopath/bin/gox -osarch="linux/amd64 linux/386" -cgo -ldflags "-X github.com/ssalvatori/zbot-telegram-go/zbot.Version=`git describe --tags` -X github.com/ssalvatori/zbot-telegram-go/zbot.BuildTime=`TZ=UTC date -u '+%Y-%m-%dT%H:%M:%SZ'` -X github.com/ssalvatori/zbot-telegram-go/zbot.GitHash=`git rev-parse HEAD`" -output "dist/{{.Dir}}-{{.OS}}-{{.Arch}}"
 deploy:
   provider: releases
   skip_cleanup: true
