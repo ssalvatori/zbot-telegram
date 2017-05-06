@@ -1,9 +1,10 @@
 package command
 
 import (
+	"testing"
+
 	"github.com/ssalvatori/zbot-telegram-go/db"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 var lastCommand = LastCommand{}
@@ -13,8 +14,8 @@ func TestLastCommandOK(t *testing.T) {
 		Term:    "foo",
 		Meaning: "bar",
 	}
-	assert.Equal(t, "[foo] - [bar]", lastCommand.ProcessText("!last", user), "Last Command")
-	assert.Equal(t, "", lastCommand.ProcessText("!last6", user), "Last no next command")
+	assert.Equal(t, "[foo] - [bar]", lastCommand.ProcessText("!last", userTest), "Last Command")
+	assert.Equal(t, "", lastCommand.ProcessText("!last6", userTest), "Last no next command")
 	lastCommand.Next = &FakeCommand{}
-	assert.Equal(t, "Fake OK", lastCommand.ProcessText("!last6", user), "Last next command")
+	assert.Equal(t, "Fake OK", lastCommand.ProcessText("!last6", userTest), "Last next command")
 }

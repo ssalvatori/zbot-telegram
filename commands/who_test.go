@@ -1,9 +1,10 @@
 package command
 
 import (
+	"testing"
+
 	"github.com/ssalvatori/zbot-telegram-go/db"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 var whoCommand = WhoCommand{}
@@ -22,9 +23,10 @@ func TestWhoCommandOK(t *testing.T) {
 		Append: 10,
 		Learn:  10,
 		Lock:   10,
+		Who: 1,
 	}
 
-	assert.Equal(t, "[foo] by [ssalvatori] on [2017-03-22]", whoCommand.ProcessText("!who foo", user), "Who Command OK")
+	assert.Equal(t, "[foo] by [ssalvatori] on [2017-03-22]", whoCommand.ProcessText("!who foo", userTest), "Who Command OK")
 }
 
 func TestWhoCommandNoLevel(t *testing.T) {
@@ -41,5 +43,5 @@ func TestWhoCommandNoLevel(t *testing.T) {
 		Lock:   10,
 	}
 
-	assert.Equal(t, "", appendCommand.ProcessText("!who foo", user), "Who Command No Level")
+	assert.Equal(t, "", appendCommand.ProcessText("!who foo", userTest), "Who Command No Level")
 }

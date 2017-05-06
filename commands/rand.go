@@ -4,6 +4,7 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/ssalvatori/zbot-telegram-go/db"
+	"github.com/ssalvatori/zbot-telegram-go/user"
 	"regexp"
 )
 
@@ -13,7 +14,7 @@ type RandCommand struct {
 	Levels Levels
 }
 
-func (handler *RandCommand) ProcessText(text string, user User) string {
+func (handler *RandCommand) ProcessText(text string, user user.User) string {
 
 	commandPattern := regexp.MustCompile(`^!rand$`)
 	result := ""

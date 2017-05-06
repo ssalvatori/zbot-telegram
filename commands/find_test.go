@@ -1,9 +1,10 @@
 package command
 
 import (
+	"testing"
+
 	"github.com/ssalvatori/zbot-telegram-go/db"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 var findCommand = FindCommand{}
@@ -14,11 +15,12 @@ func TestFindCommandOK(t *testing.T) {
 		Term:    "bar",
 		Meaning: "bar",
 	}
-	assert.Equal(t, "bar", findCommand.ProcessText("!find foo", user), "Last Command")
+
+	assert.Equal(t, "bar", findCommand.ProcessText("!find foo", userTest), "Last Command")
 	findCommand.Db = &db.MockZbotDatabase{
 		Not_found: true,
 	}
-	assert.Equal(t, "", findCommand.ProcessText("!find", user), "Last no next command")
+	assert.Equal(t, "", findCommand.ProcessText("!find", userTest), "Last no next command")
 	findCommand.Next = &FakeCommand{}
-	assert.Equal(t, "Fake OK", findCommand.ProcessText("?? ", user), "Last next command")
+	assert.Equal(t, "Fake OK", findCommand.ProcessText("?? ", userTest), "Last next command")
 }

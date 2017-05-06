@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"os/exec"
 	"regexp"
+	"strconv"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/ssalvatori/zbot-telegram-go/user"
 )
 
 type ExternalCommand struct {
@@ -14,7 +16,7 @@ type ExternalCommand struct {
 	Levels      Levels
 }
 
-func (handler *ExternalCommand) ProcessText(text string, user User) string {
+func (handler *ExternalCommand) ProcessText(text string, user user.User) string {
 
 	commandPattern := regexp.MustCompile(`^!([a-zA-Z0-9\_\-]+)([\s(\S*)]*)?`)
 	result := ""
@@ -23,7 +25,7 @@ func (handler *ExternalCommand) ProcessText(text string, user User) string {
 		args := commandPattern.FindStringSubmatch(text)
 		externalModule := args[1]
 
-		log.Debug("Looking for module: "+handler.PathModules +externalModule)
+		log.Debug("Looking for module: " + handler.PathModules + externalModule)
 
 		binary, err := exec.LookPath(handler.PathModules + externalModule)
 
@@ -32,7 +34,7 @@ func (handler *ExternalCommand) ProcessText(text string, user User) string {
 			return ""
 		}
 
-		cmd := exec.Command(binary, args[2])
+		cmd := exec.Command(binary, user.Username, strconv.Itoa(user.Level), args[2])
 		var out bytes.Buffer
 		cmd.Stdout = &out
 		err = cmd.Run()

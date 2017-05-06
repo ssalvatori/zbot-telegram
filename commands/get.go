@@ -4,6 +4,7 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/ssalvatori/zbot-telegram-go/db"
+	"github.com/ssalvatori/zbot-telegram-go/user"
 	"regexp"
 	"strings"
 )
@@ -14,7 +15,7 @@ type GetCommand struct {
 	Levels Levels
 }
 
-func (handler *GetCommand) ProcessText(text string, user User) string {
+func (handler *GetCommand) ProcessText(text string, user user.User) string {
 
 	commandPattern := regexp.MustCompile(`^\?\s(\S*)`)
 	result := ""

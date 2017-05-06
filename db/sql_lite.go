@@ -198,7 +198,7 @@ func (d *SqlLite) Set(def DefinitionItem) (string, error) {
 			break
 		}
 	}
-	return term,nil
+	return term, nil
 
 }
 

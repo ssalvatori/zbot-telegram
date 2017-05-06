@@ -1,9 +1,10 @@
 package command
 
 import (
+	"testing"
+
 	"github.com/ssalvatori/zbot-telegram-go/db"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 var forgetCommand = ForgetCommand{}
@@ -23,7 +24,9 @@ func TestForgetCommandOK(t *testing.T) {
 		Forget: 10,
 	}
 
-	assert.Equal(t, "[foo] deleted", forgetCommand.ProcessText("!forget foo", user), "Forget Command OK")
+	userTest.Level = 100
+
+	assert.Equal(t, "[foo] deleted", forgetCommand.ProcessText("!forget foo", userTest), "Forget Command OK")
 }
 
 func TestForgetCommandNoLevel(t *testing.T) {
@@ -41,5 +44,7 @@ func TestForgetCommandNoLevel(t *testing.T) {
 		Forget: 1000,
 	}
 
-	assert.Equal(t, "", forgetCommand.ProcessText("!forget foo", user), "Forget Command No Level")
+	userTest.Level = 5
+
+	assert.Equal(t, "", forgetCommand.ProcessText("!forget foo", userTest), "Forget Command No Level")
 }

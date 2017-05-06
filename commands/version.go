@@ -2,17 +2,18 @@ package command
 
 import (
 	"fmt"
+	"github.com/ssalvatori/zbot-telegram-go/user"
 	"regexp"
 )
 
 type VersionCommand struct {
-	Next    HandlerCommand
-	Version string
+	Next      HandlerCommand
+	Version   string
 	BuildTime string
-	Levels  Levels
+	Levels    Levels
 }
 
-func (handler *VersionCommand) ProcessText(text string, user User) string {
+func (handler *VersionCommand) ProcessText(text string, user user.User) string {
 
 	commandPattern := regexp.MustCompile(`^!version$`)
 	result := ""

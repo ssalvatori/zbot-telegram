@@ -1,6 +1,7 @@
 package command
 
 import (
+	"github.com/ssalvatori/zbot-telegram-go/user"
 	"regexp"
 )
 
@@ -9,7 +10,7 @@ type PingCommand struct {
 	Levels Levels
 }
 
-func (handler *PingCommand) ProcessText(text string, user User) string {
+func (handler *PingCommand) ProcessText(text string, user user.User) string {
 
 	commandPattern := regexp.MustCompile(`^!ping$`)
 	result := ""

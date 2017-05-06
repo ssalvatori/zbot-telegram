@@ -2,9 +2,10 @@ package command
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/ssalvatori/zbot-telegram-go/db"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 var appendCommand = AppendCommand{}
@@ -23,7 +24,9 @@ func TestAppendCommandOK(t *testing.T) {
 		Lock:   10,
 	}
 
-	assert.Equal(t, "[foo] = [bar]", appendCommand.ProcessText("!append foo bar", user), "Append Command")
+	userTest.Level = 100
+
+	assert.Equal(t, "[foo] = [bar]", appendCommand.ProcessText("!append foo bar", userTest), "Append Command")
 }
 
 func TestAppendCommandNoLevel(t *testing.T) {
@@ -40,5 +43,7 @@ func TestAppendCommandNoLevel(t *testing.T) {
 		Lock:   10,
 	}
 
-	assert.Equal(t, fmt.Sprintf("Your level is not enough < %s", appendCommand.Levels.Lock), appendCommand.ProcessText("!append foo bar", user), "Append Command No Level")
+	userTest.Level = 5
+
+	assert.Equal(t, fmt.Sprintf("Your level is not enough < %s", appendCommand.Levels.Lock), appendCommand.ProcessText("!append foo bar", userTest), "Append Command No Level")
 }

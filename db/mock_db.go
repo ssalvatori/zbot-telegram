@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 
+	"errors"
 	"github.com/tucnak/telebot"
 )
 
@@ -21,6 +22,7 @@ type MockZbotDatabase struct {
 	Ignore_list  []string
 	User_ignored []UserIgnore
 	Ignore_User  bool
+	Error        bool
 }
 
 func (d *MockZbotDatabase) Init() error {
@@ -90,6 +92,9 @@ func (d *MockZbotDatabase) Search(str string) ([]DefinitionItem, error) {
 }
 
 func (d *MockZbotDatabase) UserLevel(str string) (string, error) {
+	if d.Error {
+		return "", errors.New("Mock")
+	}
 	return d.Level, nil
 }
 

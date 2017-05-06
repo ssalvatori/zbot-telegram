@@ -4,6 +4,7 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/ssalvatori/zbot-telegram-go/db"
+	"github.com/ssalvatori/zbot-telegram-go/user"
 	"regexp"
 )
 
@@ -13,7 +14,7 @@ type StatsCommand struct {
 	Levels Levels
 }
 
-func (handler *StatsCommand) ProcessText(text string, user User) string {
+func (handler *StatsCommand) ProcessText(text string, user user.User) string {
 
 	commandPattern := regexp.MustCompile(`^!stats$`)
 	result := ""

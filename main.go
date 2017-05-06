@@ -2,11 +2,12 @@ package main
 
 import (
 	log "github.com/Sirupsen/logrus"
-	"os"
 	"github.com/ssalvatori/zbot-telegram-go/zbot"
+	"os"
 )
 
 func setUp() {
+
 	if os.Getenv("ZBOT_DATABASE") != "" {
 		zbot.Database = os.Getenv("ZBOT_DATABASE")
 	}
@@ -21,8 +22,12 @@ func setUp() {
 		zbot.ModulesPath = os.Getenv("ZBOT_MODULES_PATH") + "/"
 	}
 
-	zbot.ApiToken = os.Getenv("ZBOT_TOKEN")
+	if os.Getenv("ZBOT_DISABLE_COMMANDS") != "" {
+		log.Info("Disable modules configuration = ", os.Getenv("ZBOT_DISABLE_COMMANDS"))
+		zbot.DisableCommands(os.Getenv("ZBOT_DISABLE_COMMANDS"))
+	}
 
+	zbot.ApiToken = os.Getenv("ZBOT_TOKEN")
 
 }
 
@@ -52,12 +57,12 @@ func setUpLog() {
 		break
 	}
 
-	log.SetFormatter(&log.JSONFormatter{})
+	//log.SetFormatter(&log.JSONFormatter{})
 }
 
 func main() {
-	setUp()
 	setUpLog()
+	setUp()
 
 	zbot.Execute()
 }

@@ -1,9 +1,10 @@
 package command
 
 import (
+	"testing"
+
 	"github.com/ssalvatori/zbot-telegram-go/db"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 var ignoreCommand = IgnoreCommand{
@@ -12,7 +13,7 @@ var ignoreCommand = IgnoreCommand{
 
 func TestIgnoreCommandHelp(t *testing.T) {
 	result := "*!ignore* Options available: \n list (show all user ignored) \n add <username> (ignore a user for 10 minutes)"
-	assert.Equal(t, result, ignoreCommand.ProcessText("!ignore help", user), "Ignore help")
+	assert.Equal(t, result, ignoreCommand.ProcessText("!ignore help", userTest), "Ignore help")
 }
 
 func TestIgnoreCommandList(t *testing.T) {
@@ -23,7 +24,7 @@ func TestIgnoreCommandList(t *testing.T) {
 		},
 	}
 	expected := "[ @rigo ] since [01-01-1970 00:00:12 UTC] until [01-01-1970 00:00:22 UTC]/n[ @jav ] since [01-01-1970 00:00:32 UTC] until [01-01-1970 00:00:42 UTC]"
-	assert.Equal(t, expected, ignoreCommand.ProcessText("!ignore list", user), "Last Command")
+	assert.Equal(t, expected, ignoreCommand.ProcessText("!ignore list", userTest), "Last Command")
 }
 
 func TestIgnoreCommandAdd(t *testing.T) {
@@ -34,15 +35,21 @@ func TestIgnoreCommandAdd(t *testing.T) {
 			{Username: "jav", Since: "32", Until: "32"},
 		},
 	}
-	expected := "User [rigo] ignored for 10 minutes"
-	assert.Equal(t, expected, ignoreCommand.ProcessText("!ignore add rigo", user), "Ignore add Command")
 
-	assert.Equal(t, "You can't ignore youself", ignoreCommand.ProcessText("!ignore add ssalvatori", user), "Ignore add myself")
+
+	userTest.Level = 1000
+	expected := "User [rigo] ignored for 10 minutes"
+	assert.Equal(t, expected, ignoreCommand.ProcessText("!ignore add rigo", userTest), "Ignore add Command")
+
+	assert.Equal(t, "You can't ignore youself", ignoreCommand.ProcessText("!ignore add ssalvatori", userTest), "Ignore add myself")
 
 	ignoreCommand.Db = &db.MockZbotDatabase{
 		Level: "10",
 	}
-	assert.Equal(t, "Your level is not enough < 1000", ignoreCommand.ProcessText("!ignore add rigo", user), "Ignore add no enough level")
+
+	userTest.Level = 5
+	assert.Equal(t, "Your level is not enough < 1000", ignoreCommand.ProcessText("!ignore add rigo", userTest), "Ignore add no enough level")
+
 }
 
 func TestConvertDates(t *testing.T) {

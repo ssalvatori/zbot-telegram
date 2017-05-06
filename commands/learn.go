@@ -4,6 +4,7 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/ssalvatori/zbot-telegram-go/db"
+	"github.com/ssalvatori/zbot-telegram-go/user"
 	"regexp"
 	"time"
 )
@@ -14,7 +15,7 @@ type LearnCommand struct {
 	Levels Levels
 }
 
-func (handler *LearnCommand) ProcessText(text string, user User) string {
+func (handler *LearnCommand) ProcessText(text string, user user.User) string {
 
 	commandPattern := regexp.MustCompile(`^!learn\s(\S*)\s(.*)`)
 	result := ""
@@ -28,7 +29,7 @@ func (handler *LearnCommand) ProcessText(text string, user User) string {
 			Author:  fmt.Sprintf("%s!%s@telegram.bot", user.Username, user.Ident),
 			Date:    nowDate,
 		}
-		usedTerm ,err := handler.Db.Set(def)
+		usedTerm, err := handler.Db.Set(def)
 		if err != nil {
 			log.Error(err)
 		}

@@ -7,6 +7,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/ssalvatori/zbot-telegram-go/db"
 
+	"github.com/ssalvatori/zbot-telegram-go/user"
 	"strings"
 )
 
@@ -24,19 +25,19 @@ func (handler *LevelCommand) DelUser(userToCheck string, user string) string {
 	return "not ready"
 }
 
-func (handler *LevelCommand) GetLevel(userToCheck string, user string) string {
+func (handler *LevelCommand) GetLevel(userToCheck string, user user.User) string {
 	result := ""
-	if IsUserAllow(handler.Db, user, 0) {
-		level, err := handler.Db.UserLevel(user)
+	if user.IsAllow(0) {
+		level, err := handler.Db.UserLevel(user.Username)
 		if err != nil {
 			log.Error(err)
 		}
-		result = fmt.Sprintf("%s level %s", user, level)
+		result = fmt.Sprintf("%s level %s", user.Username, level)
 	}
 	return result
 }
 
-func (handler *LevelCommand) ProcessText(text string, user User) string {
+func (handler *LevelCommand) ProcessText(text string, user user.User) string {
 	commandPattern := regexp.MustCompile(`^!level(\s|$)(\S*)\s?(\S+)?\s?(\d+)?`)
 	result := ""
 
@@ -45,12 +46,12 @@ func (handler *LevelCommand) ProcessText(text string, user User) string {
 		log.Debug("level subcommand: ", subcommand[2])
 		log.Debug(strings.Join(subcommand, "-"))
 		switch subcommand[2] {
-			case "add":
-				result = handler.AddUser(subcommand[2], user.Username)
-			case "del":
-				result = handler.DelUser(subcommand[2], user.Username)
-			default:
-				result = handler.GetLevel(subcommand[2], user.Username)
+		case "add":
+			result = handler.AddUser(subcommand[2], user.Username)
+		case "del":
+			result = handler.DelUser(subcommand[2], user.Username)
+		default:
+			result = handler.GetLevel(subcommand[2], user)
 		}
 	} else {
 		if handler.Next != nil {

@@ -2,10 +2,12 @@ package command
 
 import (
 	"fmt"
-	log "github.com/Sirupsen/logrus"
-	"github.com/ssalvatori/zbot-telegram-go/db"
 	"regexp"
 	"strings"
+
+	log "github.com/Sirupsen/logrus"
+	"github.com/ssalvatori/zbot-telegram-go/db"
+	"github.com/ssalvatori/zbot-telegram-go/user"
 )
 
 type FindCommand struct {
@@ -14,7 +16,7 @@ type FindCommand struct {
 	Levels Levels
 }
 
-func (handler *FindCommand) ProcessText(text string, user User) string {
+func (handler *FindCommand) ProcessText(text string, user user.User) string {
 
 	commandPattern := regexp.MustCompile(`^!find\s(\S*)`)
 	result := ""

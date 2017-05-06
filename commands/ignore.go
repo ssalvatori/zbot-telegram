@@ -4,6 +4,7 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/ssalvatori/zbot-telegram-go/db"
+	"github.com/ssalvatori/zbot-telegram-go/user"
 	"regexp"
 	"strconv"
 	"strings"
@@ -16,6 +17,7 @@ type Levels struct {
 	Append   int
 	Learn    int
 	Forget   int
+	Who	int
 	LevelAdd int
 	LevelDel int
 }
@@ -27,7 +29,7 @@ type IgnoreCommand struct {
 
 const dateFormat string = "02-01-2006 15:04:05 MST" //dd-mm-yyyy hh:ii:ss TZ
 
-func (handler *IgnoreCommand) ProcessText(text string, user User) string {
+func (handler *IgnoreCommand) ProcessText(text string, user user.User) string {
 	commandPattern := regexp.MustCompile(`^!ignore\s(\S*)(\s(\S*))?`)
 	result := ""
 
@@ -46,7 +48,7 @@ func (handler *IgnoreCommand) ProcessText(text string, user User) string {
 			result = fmt.Sprintf(strings.Join(getUserIgnored(ignoredUsers), "/n"))
 			break
 		case "add":
-			if IsUserAllow(handler.Db, user.Username, handler.Levels.Ignore) {
+			if user.IsAllow(handler.Levels.Ignore) {
 				if strings.ToLower(args[3]) != strings.ToLower(user.Username) {
 					err := handler.Db.UserIgnoreInsert(args[3])
 					if err != nil {

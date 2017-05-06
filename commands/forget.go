@@ -4,6 +4,7 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/ssalvatori/zbot-telegram-go/db"
+	"github.com/ssalvatori/zbot-telegram-go/user"
 	"regexp"
 )
 
@@ -13,13 +14,13 @@ type ForgetCommand struct {
 	Levels Levels
 }
 
-func (handler *ForgetCommand) ProcessText(text string, user User) string {
+func (handler *ForgetCommand) ProcessText(text string, user user.User) string {
 
 	commandPattern := regexp.MustCompile(`^!forget\s(\S*)$`)
 	result := ""
 
 	if commandPattern.MatchString(text) {
-		if IsUserAllow(handler.Db, user.Username, handler.Levels.Forget) {
+		if user.IsAllow(handler.Levels.Append) {
 			term := commandPattern.FindStringSubmatch(text)
 			def := db.DefinitionItem{
 				Term: term[1],

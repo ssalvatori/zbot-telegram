@@ -1,9 +1,10 @@
 package command
 
 import (
+	"testing"
+
 	"github.com/ssalvatori/zbot-telegram-go/db"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 var topCommand = TopCommand{}
@@ -14,8 +15,8 @@ func TestTopCommandOK(t *testing.T) {
 		Find_terms: []string{"foo", "bar"},
 		Rand_def:   db.DefinitionItem{Term: "foo", Meaning: "bar"},
 	}
-	assert.Equal(t, "foo bar", topCommand.ProcessText("!top", user), "Top Command")
-	assert.Equal(t, "", topCommand.ProcessText("!top6", user), "Top no next command")
+	assert.Equal(t, "foo bar", topCommand.ProcessText("!top", userTest), "Top Command")
+	assert.Equal(t, "", topCommand.ProcessText("!top6", userTest), "Top no next command")
 	topCommand.Next = &FakeCommand{}
-	assert.Equal(t, "Fake OK", topCommand.ProcessText("!top6", user), "Top next command")
+	assert.Equal(t, "Fake OK", topCommand.ProcessText("!top6", userTest), "Top next command")
 }

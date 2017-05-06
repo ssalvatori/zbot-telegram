@@ -2,9 +2,11 @@ package command
 
 import (
 	"fmt"
+	"regexp"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/ssalvatori/zbot-telegram-go/db"
-	"regexp"
+	"github.com/ssalvatori/zbot-telegram-go/user"
 )
 
 type WhoCommand struct {
@@ -13,13 +15,13 @@ type WhoCommand struct {
 	Levels Levels
 }
 
-func (handler *WhoCommand) ProcessText(text string, user User) string {
+func (handler *WhoCommand) ProcessText(text string, user user.User) string {
 
 	commandPattern := regexp.MustCompile(`^!who\s(\S*)$`)
 	result := ""
 
 	if commandPattern.MatchString(text) {
-		if IsUserAllow(handler.Db, user.Username, handler.Levels.Append) {
+		if user.IsAllow(handler.Levels.Who) {
 			term := commandPattern.FindStringSubmatch(text)
 			def := db.DefinitionItem{
 				Term: term[1],

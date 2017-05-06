@@ -2,9 +2,10 @@ package command
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/ssalvatori/zbot-telegram-go/db"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 var lockCommand = LockCommand{}
@@ -20,10 +21,10 @@ func TestTemplateCommandOK(t *testing.T) {
 		Ignore: 10,
 		Append: 10,
 		Learn:  10,
-		Lock:   10,
+		Lock:   1,
 	}
 
-	assert.Equal(t, "[foo] locked", lockCommand.ProcessText("!lock foo", user), "Template Command")
+	assert.Equal(t, "[foo] locked", lockCommand.ProcessText("!lock foo", userTest), "Template Command")
 }
 
 func TestTemplateCommandNoLevel(t *testing.T) {
@@ -40,5 +41,7 @@ func TestTemplateCommandNoLevel(t *testing.T) {
 		Lock:   100,
 	}
 
-	assert.Equal(t, fmt.Sprintf("Your level is not enough < %s", lockCommand.Levels.Lock), lockCommand.ProcessText("!lock foo", user), "Lock Command No Level")
+	userTest.Level = 5
+
+	assert.Equal(t, fmt.Sprintf("Your level is not enough < %s", lockCommand.Levels.Lock), lockCommand.ProcessText("!lock foo", userTest), "Lock Command No Level")
 }

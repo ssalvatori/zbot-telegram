@@ -2,10 +2,12 @@ package command
 
 import (
 	"fmt"
-	log "github.com/Sirupsen/logrus"
-	"github.com/ssalvatori/zbot-telegram-go/db"
 	"regexp"
 	"time"
+
+	log "github.com/Sirupsen/logrus"
+	"github.com/ssalvatori/zbot-telegram-go/db"
+	"github.com/ssalvatori/zbot-telegram-go/user"
 )
 
 type AppendCommand struct {
@@ -14,13 +16,13 @@ type AppendCommand struct {
 	Levels Levels
 }
 
-func (handler *AppendCommand) ProcessText(text string, user User) string {
+func (handler *AppendCommand) ProcessText(text string, user user.User) string {
 
 	commandPattern := regexp.MustCompile(`^!append\s(\S*)\s(.*)`)
 	result := ""
 
 	if commandPattern.MatchString(text) {
-		if IsUserAllow(handler.Db, user.Username, handler.Levels.Append) {
+		if user.IsAllow(handler.Levels.Append) {
 			term := commandPattern.FindStringSubmatch(text)
 			def := db.DefinitionItem{
 				Term:    term[1],

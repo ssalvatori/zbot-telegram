@@ -2,29 +2,44 @@ package zbot
 
 import (
 	"github.com/ssalvatori/zbot-telegram-go/db"
+	"github.com/ssalvatori/zbot-telegram-go/user"
 	"github.com/stretchr/testify/assert"
 	"github.com/tucnak/telebot"
 
-	"testing"
 	"os"
+	"testing"
 )
+
+func TestIsCommandDisable(t *testing.T) {
+	botMsg := telebot.Message{
+		Text: "!learn afs asdf",
+	}
+
+	DisabledCommands = []string{
+		"learn",
+		"version",
+	}
+
+	assert.True(t, isCommandDisable(botMsg), "Disable Commands")
+}
 
 func TestBuildUser(t *testing.T) {
 	botMsg := telebot.Message{
 		Sender: telebot.User{FirstName: "Stefano", Username: "Ssalvato"},
 	}
+	mockDatabase := &db.MockZbotDatabase{}
 
-	user := buildUser(botMsg.Sender)
-	assert.Equal(t, "ssalvato", user.Username, "username defined")
-	assert.Equal(t, "stefano", user.Ident, "ident defined")
+	userTest := user.BuildUser(botMsg.Sender, mockDatabase)
+	assert.Equal(t, "ssalvato", userTest.Username, "username defined")
+	assert.Equal(t, "stefano", userTest.Ident, "ident defined")
 
 	botMsg = telebot.Message{
 		Sender: telebot.User{FirstName: "Stefano"},
 	}
 
-	user = buildUser(botMsg.Sender)
-	assert.Equal(t, "stefano", user.Username, "username not defined")
-	assert.Equal(t, user.Ident, "stefano", "ident defined")
+	userTest = user.BuildUser(botMsg.Sender, mockDatabase)
+	assert.Equal(t, "stefano", userTest.Username, "username not defined")
+	assert.Equal(t, userTest.Ident, "stefano", "ident defined")
 
 }
 
@@ -35,9 +50,12 @@ func TestProcessingVersion(t *testing.T) {
 		File:  "hola.db",
 	}
 
+	BuildTime = "2017-05-06 09:59:21.318841424 +0300 EEST"
+	DisabledCommands = nil
+
 	botMsg := telebot.Message{Text: "!version"}
 	result := processing(dbMock, botMsg)
-	assert.Equal(t, result, "zbot golang version ["+Version+"] build-time ["+BuildTime+"]", "!version default")
+	assert.Equal(t, "zbot golang version ["+Version+"] build-time ["+BuildTime+"]",result,"!version default")
 }
 
 func TestProcessingStats(t *testing.T) {
@@ -207,10 +225,15 @@ func TestProcessingExternalModuleWithArgs(t *testing.T) {
 		File:  "hola.db",
 	}
 
-	botMsg := telebot.Message{Text: "!test arg1 arg2"}
+	botMsg := telebot.Message{Text: "!test arg1 arg2",
+		Sender: telebot.User{
+			Username:"ssalvatori",
+			FirstName:"stefano",
+		},
+	}
 	result := processing(dbMock, botMsg)
 
-	assert.Equal(t, "OK arg1 arg2\n", result, "!test module with args")
+	assert.Equal(t, "OK ssalvatori 666 arg1 arg2\n", result, "!test module with args")
 }
 
 func TestProcessingExternalModuleWithoutArgs(t *testing.T) {
@@ -220,10 +243,16 @@ func TestProcessingExternalModuleWithoutArgs(t *testing.T) {
 		File:  "hola.db",
 	}
 
-	botMsg := telebot.Message{Text: "!test"}
+	botMsg := telebot.Message{
+		Text: "!test",
+		Sender: telebot.User{
+			Username:"ssalvatori",
+			FirstName:"stefano",
+		},
+	}
 	result := processing(dbMock, botMsg)
 
-	assert.Equal(t, "OK\n", result, "external module without args")
+	assert.Equal(t, "OK ssalvatori 666\n", result, "external module without args")
 }
 
 func TestProcessingExternalModuleNotFound(t *testing.T) {
@@ -241,8 +270,8 @@ func TestProcessingExternalModuleNotFound(t *testing.T) {
 
 func TestGetCurrentDirectory(t *testing.T) {
 	directory := getCurrentDirectory()
-	dir,_ := os.Getwd()
-	assert.Equal(t, dir, directory,"getting current directory")
+	dir, _ := os.Getwd()
+	assert.Equal(t, dir, directory, "getting current directory")
 }
 
 /*

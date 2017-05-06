@@ -1,25 +1,37 @@
 package zbot
 
 import (
-	"github.com/ssalvatori/zbot-telegram-go/db"
-	"github.com/tucnak/telebot"
 	"regexp"
-	log "github.com/Sirupsen/logrus"
+
+	"github.com/ssalvatori/zbot-telegram-go/commands"
+	"github.com/ssalvatori/zbot-telegram-go/db"
+	"github.com/ssalvatori/zbot-telegram-go/user"
+	"github.com/tucnak/telebot"
+
 	"fmt"
 	"strings"
-	"github.com/ssalvatori/zbot-telegram-go/commands"
 
-	"time"
 	"os"
+	"time"
+
+	"encoding/json"
+	"io/ioutil"
+
+	log "github.com/Sirupsen/logrus"
+
+	"sort"
+
+	"github.com/ssalvatori/zbot-telegram-go/utils"
 )
 
 var (
-	Version   = "dev-master"
-	BuildTime = time.Now().String()
-	GitHash   = "undefined"
-	Database = "./sample.db"
-	ApiToken = ""
-	ModulesPath = getCurrentDirectory() + "/../modules/"
+	Version          = "dev-master"
+	BuildTime        = time.Now().String()
+	GitHash          = "undefined"
+	Database         = "./sample.db"
+	ApiToken         = ""
+	ModulesPath      = getCurrentDirectory() + "/../modules/"
+	DisabledCommands []string
 )
 
 var levelsConfig = command.Levels{
@@ -28,12 +40,28 @@ var levelsConfig = command.Levels{
 	Learn:  0,
 	Append: 0,
 	Forget: 1000,
+	Who: 0,
+}
+
+// Reading file to disable son modules
+func DisableCommands(disableCommandFile string) {
+	log.Debug("Reading file ", disableCommandFile)
+	raw, err := ioutil.ReadFile(disableCommandFile)
+	if err != nil {
+		log.Error(err.Error())
+		os.Exit(1)
+	}
+
+	var c []string
+	json.Unmarshal(raw, &c)
+	DisabledCommands = c
+	sort.Strings(DisabledCommands)
 }
 
 func Execute() {
-	log.Info("Loading zbot-telegram version ["+Version+"] ["+BuildTime+"] ["+GitHash+"]")
+	log.Info("Loading zbot-telegram version [" + Version + "] [" + BuildTime + "] [" + GitHash + "]")
 
-	log.Info("Database: [" + Database + "] Modules: ["+ModulesPath+"]")
+	log.Info("Database: [" + Database + "] Modules: [" + ModulesPath + "]")
 
 	bot, err := telebot.NewBot(ApiToken)
 	if err != nil {
@@ -48,7 +76,7 @@ func Execute() {
 	defer database.Close()
 
 	if err != nil {
-	log.Fatal(err)
+		log.Fatal(err)
 	}
 
 	go database.UserCleanIgnore()
@@ -70,6 +98,7 @@ func messagesProcessing(db db.ZbotDatabase, bot *telebot.Bot) {
 		ignore, err := db.UserCheckIgnore(strings.ToLower(message.Sender.Username))
 		if err != nil {
 			log.Error(err)
+			ignore = true
 		}
 		if !ignore {
 			if processingMsg.MatchString(message.Text) {
@@ -87,21 +116,28 @@ func sendResponse(bot *telebot.Bot, db db.ZbotDatabase, msg telebot.Message, out
 	bot.SendMessage(msg.Chat, response, nil)
 }
 
-func buildUser(sender telebot.User) command.User {
-	user := command.User{}
-	user.Ident = strings.ToLower(sender.FirstName)
-	user.Username = strings.ToLower(sender.FirstName)
-
-	if sender.Username != "" {
-		user.Username = strings.ToLower(sender.Username)
+func isCommandDisable(msg telebot.Message) bool {
+	commandPattern := regexp.MustCompile(`^!(\S*)\s*.*`)
+	if commandPattern.MatchString(msg.Text) {
+		cmd := commandPattern.FindStringSubmatch(msg.Text)
+		log.Debug("Searching for ", cmd[1])
+		log.Debug(DisabledCommands)
+		if utils.InArray(cmd[1], DisabledCommands) {
+			return true
+		}
+		return false
 	}
-
-	return user
+	return false
 }
 
 func processing(db db.ZbotDatabase, msg telebot.Message) string {
 
-	user := buildUser(msg.Sender)
+	if isCommandDisable(msg) {
+		log.Debug("Command disable")
+		return ""
+	}
+
+	user := user.BuildUser(msg.Sender, db)
 
 	// TODO: how to clean this code
 	commands := &command.PingCommand{}

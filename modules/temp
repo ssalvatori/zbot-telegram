@@ -1,0 +1,44 @@
+#!/bin/env bash
+#
+# Requirements: curl & jq (https://stedolan.github.io/jq/)º
+#
+
+get_weather () {
+    API="http://api.openweathermap.org/data/2.5/weather"
+    CITY=${ORIGIN}
+    TOKEN="appid=683b2add658f8dd5f4566b6d8692f0ee"
+    URL="${API}?q=${CITY}&${TOKEN}&units=metric&lang=es_es"
+    DATA=$(curl -s ${URL})
+    CURRENT=$(echo ${DATA} | jq '.main.temp')
+    MIN=$(echo ${DATA} | jq '.main.temp_min')
+    MAX=$(echo ${DATA} | jq '.main.temp_max')
+    HUM=$(echo ${DATA} | jq '.main.humidity')
+    DESC=$(echo ${DATA} | jq '.weather[0].description')
+    echo "City: ${CITY} Current: ${CURRENT} ºC min: ${MIN} ºC max: ${MAX} ºC hum: ${HUM}% Des: ${DESC}"
+}
+case "$1" in
+  dengel)
+    ORIGIN="Rochester,NY"
+  ;;
+  stefano)
+    ORIGIN="Tallinn,EE"
+  ;;
+  jav)
+    ORIGIN="Brussels,Belgium"
+  ;;
+  scl)
+    ORIGIN="Santiago,CL"
+  ;;
+  bond)
+    ORIGIN="Madrid,ES"
+  ;;
+  ccp)
+    ORIGIN="Concepcion,CL"
+  ;;
+  *)
+    echo "Options: dengel, bond, jav, stefano, scl, ccp"
+    exit 1
+  ;;
+esac
+get_weather $ORIGIN
+exit 1
