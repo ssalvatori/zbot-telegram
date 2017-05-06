@@ -2,10 +2,11 @@ package command
 
 import (
 	"fmt"
+	"regexp"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/ssalvatori/zbot-telegram-go/db"
 	"github.com/ssalvatori/zbot-telegram-go/user"
-	"regexp"
 )
 
 type StatsCommand struct {
@@ -20,11 +21,17 @@ func (handler *StatsCommand) ProcessText(text string, user user.User) string {
 	result := ""
 
 	if commandPattern.MatchString(text) {
-		statTotal, err := handler.Db.Statistics()
-		if err != nil {
-			log.Error(err)
+		if user.IsAllow(handler.Levels.Stats) {
+			statTotal, err := handler.Db.Statistics()
+			if err != nil {
+				log.Error(err)
+				return ""
+			}
+			result = fmt.Sprintf("Count: %s", statTotal)
+		} else {
+			result = fmt.Sprintf("Your level is not enough < %s", handler.Levels.Stats)
 		}
-		result = fmt.Sprintf("Count: %s", statTotal)
+
 	} else {
 		if handler.Next != nil {
 			result = handler.Next.ProcessText(text, user)

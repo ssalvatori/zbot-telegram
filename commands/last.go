@@ -2,10 +2,11 @@ package command
 
 import (
 	"fmt"
+	"regexp"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/ssalvatori/zbot-telegram-go/db"
 	"github.com/ssalvatori/zbot-telegram-go/user"
-	"regexp"
 )
 
 type LastCommand struct {
@@ -23,6 +24,7 @@ func (handler *LastCommand) ProcessText(text string, user user.User) string {
 		lastItem, err := handler.Db.Last()
 		if err != nil {
 			log.Error(err)
+			return ""
 		}
 		result = fmt.Sprintf("[%s] - [%s]", lastItem.Term, lastItem.Meaning)
 	} else {

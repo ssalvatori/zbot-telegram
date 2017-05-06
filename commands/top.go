@@ -21,11 +21,16 @@ func (handler *TopCommand) ProcessText(text string, user user.User) string {
 	result := ""
 
 	if commandPattern.MatchString(text) {
-		items, err := handler.Db.Top()
-		if err != nil {
-			log.Error(err)
+		if user.IsAllow(handler.Levels.Top) {
+			items, err := handler.Db.Top()
+			if err != nil {
+				log.Error(err)
+				return ""
+			}
+			result = fmt.Sprintf(strings.Join(getTerms(items), " "))
+		} else {
+			result = fmt.Sprintf("Your level is not enough < %s", handler.Levels.Top)
 		}
-		result = fmt.Sprintf(strings.Join(getTerms(items), " "))
 	} else {
 		if handler.Next != nil {
 			result = handler.Next.ProcessText(text, user)

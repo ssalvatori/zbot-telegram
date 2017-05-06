@@ -33,15 +33,25 @@ func (d *MockZbotDatabase) Close() {
 }
 
 func (d *MockZbotDatabase) UserIgnoreList() ([]UserIgnore, error) {
+	if d.Error {
+		return nil, errors.New("Mock")
+	}
 	return d.User_ignored, nil
 }
 
 func (d *MockZbotDatabase) Statistics() (string, error) {
+	if d.Error {
+		return "", errors.New("Mock")
+	}
 	return d.Level, nil
 }
 
 func (d *MockZbotDatabase) Top() ([]DefinitionItem, error) {
 	var items []DefinitionItem
+
+	if d.Error {
+		return nil, errors.New("Mock")
+	}
 
 	for _, value := range d.Find_terms {
 		items = append(items, DefinitionItem{Term: value})
@@ -55,6 +65,11 @@ func (d *MockZbotDatabase) Rand() (DefinitionItem, error) {
 }
 
 func (d *MockZbotDatabase) Last() (DefinitionItem, error) {
+
+	if d.Error {
+		return DefinitionItem{}, errors.New("Mock")
+	}
+
 	return DefinitionItem{Term: d.Term, Meaning: d.Meaning}, nil
 }
 
@@ -66,12 +81,18 @@ func (d *MockZbotDatabase) Find(criteria string) ([]DefinitionItem, error) {
 	if d.Not_found {
 		return []DefinitionItem{}, nil
 	}
+	if d.Error {
+		return  nil, errors.New("Mock Error")
+	}
 	return []DefinitionItem{{Term: d.Term}}, nil
 }
 
 func (d *MockZbotDatabase) Get(term string) (DefinitionItem, error) {
 	if d.Not_found {
 		return DefinitionItem{}, nil
+	}
+	if d.Error {
+		return DefinitionItem{}, errors.New("Mock")
 	}
 	return DefinitionItem{Term: d.Term, Meaning: d.Meaning, Author: d.Author, Date: d.Date}, nil
 }

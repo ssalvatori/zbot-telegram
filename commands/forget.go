@@ -20,7 +20,7 @@ func (handler *ForgetCommand) ProcessText(text string, user user.User) string {
 	result := ""
 
 	if commandPattern.MatchString(text) {
-		if user.IsAllow(handler.Levels.Append) {
+		if user.IsAllow(handler.Levels.Forget) {
 			term := commandPattern.FindStringSubmatch(text)
 			def := db.DefinitionItem{
 				Term: term[1],

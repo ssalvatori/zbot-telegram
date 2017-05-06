@@ -2,25 +2,16 @@ package command
 
 import (
 	"fmt"
-	log "github.com/Sirupsen/logrus"
-	"github.com/ssalvatori/zbot-telegram-go/db"
-	"github.com/ssalvatori/zbot-telegram-go/user"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	log "github.com/Sirupsen/logrus"
+	"github.com/ssalvatori/zbot-telegram-go/db"
+	"github.com/ssalvatori/zbot-telegram-go/user"
 )
 
-type Levels struct {
-	Ignore   int
-	Lock     int
-	Append   int
-	Learn    int
-	Forget   int
-	Who	int
-	LevelAdd int
-	LevelDel int
-}
 type IgnoreCommand struct {
 	Next   HandlerCommand
 	Db     db.ZbotDatabase

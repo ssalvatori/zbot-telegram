@@ -41,6 +41,8 @@ var levelsConfig = command.Levels{
 	Append: 0,
 	Forget: 1000,
 	Who: 0,
+	Top: 0,
+	Stats: 0,
 }
 
 // Reading file to disable son modules

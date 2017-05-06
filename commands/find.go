@@ -26,6 +26,7 @@ func (handler *FindCommand) ProcessText(text string, user user.User) string {
 		results, err := handler.Db.Find(term[1])
 		if err != nil {
 			log.Error(err)
+			return ""
 		}
 		result = fmt.Sprintf("%s", strings.Join(getTerms(results), " "))
 	} else {

@@ -4,6 +4,18 @@ import (
 	"github.com/ssalvatori/zbot-telegram-go/db"
 	"github.com/ssalvatori/zbot-telegram-go/user"
 )
+type Levels struct {
+	Ignore   int
+	Lock     int
+	Append   int
+	Learn    int
+	Forget   int
+	Who      int
+	LevelAdd int
+	LevelDel int
+	Top      int
+	Stats    int
+}
 
 type HandlerCommand interface {
 	ProcessText(text string, username user.User) string
