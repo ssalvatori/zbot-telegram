@@ -1,11 +1,12 @@
 package main
 
 import (
+	"os"
+	"testing"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/ssalvatori/zbot-telegram-go/zbot"
 	"github.com/stretchr/testify/assert"
-	"os"
-	"testing"
 )
 
 func TestSetUp(t *testing.T) {

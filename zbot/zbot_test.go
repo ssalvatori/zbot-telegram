@@ -1,45 +1,31 @@
 package zbot
 
 import (
-	"github.com/ssalvatori/zbot-telegram-go/db"
-	"github.com/ssalvatori/zbot-telegram-go/user"
-	"github.com/stretchr/testify/assert"
-	"github.com/tucnak/telebot"
-
+	"fmt"
 	"os"
 	"testing"
+
+	"github.com/ssalvatori/zbot-telegram-go/commands"
+	"github.com/ssalvatori/zbot-telegram-go/db"
+	"github.com/stretchr/testify/assert"
+	"github.com/tucnak/telebot"
 )
 
-func TestIsCommandDisable(t *testing.T) {
-	botMsg := telebot.Message{
-		Text: "!learn afs asdf",
+func TestProcessingIsCommandDisabled(t *testing.T) {
+
+	dbMock := &db.MockZbotDatabase{
+		Level: "666",
+		File:  "hola.db",
 	}
 
-	DisabledCommands = []string{
+	command.DisabledCommands = []string{
 		"learn",
 		"version",
 	}
 
-	assert.True(t, isCommandDisable(botMsg), "Disable Commands")
-}
-
-func TestBuildUser(t *testing.T) {
-	botMsg := telebot.Message{
-		Sender: telebot.User{FirstName: "Stefano", Username: "Ssalvato"},
-	}
-	mockDatabase := &db.MockZbotDatabase{}
-
-	userTest := user.BuildUser(botMsg.Sender, mockDatabase)
-	assert.Equal(t, "ssalvato", userTest.Username, "username defined")
-	assert.Equal(t, "stefano", userTest.Ident, "ident defined")
-
-	botMsg = telebot.Message{
-		Sender: telebot.User{FirstName: "Stefano"},
-	}
-
-	userTest = user.BuildUser(botMsg.Sender, mockDatabase)
-	assert.Equal(t, "stefano", userTest.Username, "username not defined")
-	assert.Equal(t, userTest.Ident, "stefano", "ident defined")
+	botMsg := telebot.Message{Text: "!learn"}
+	result := processing(dbMock, botMsg)
+	assert.Equal(t, "", result, "command disabled")
 
 }
 
@@ -51,11 +37,11 @@ func TestProcessingVersion(t *testing.T) {
 	}
 
 	BuildTime = "2017-05-06 09:59:21.318841424 +0300 EEST"
-	DisabledCommands = nil
+	command.DisabledCommands = nil
 
 	botMsg := telebot.Message{Text: "!version"}
 	result := processing(dbMock, botMsg)
-	assert.Equal(t, "zbot golang version ["+Version+"] build-time ["+BuildTime+"]",result,"!version default")
+	assert.Equal(t, "zbot golang version ["+Version+"] build-time ["+BuildTime+"]", result, "!version default")
 }
 
 func TestProcessingStats(t *testing.T) {
@@ -215,7 +201,7 @@ func TestProcessingUserIgnoreInsert(t *testing.T) {
 		Sender: telebot.User{FirstName: "ssalvato", Username: "ssalvato"},
 	}
 	result = processing(dbMock, botMsg)
-	assert.Equal(t, "Your level is not enough < 100", result, "!ignore")
+	assert.Equal(t, fmt.Sprintf("Your level is not enough < %s", 100), result, "!ignore")
 }
 
 func TestProcessingExternalModuleWithArgs(t *testing.T) {
@@ -227,8 +213,8 @@ func TestProcessingExternalModuleWithArgs(t *testing.T) {
 
 	botMsg := telebot.Message{Text: "!test arg1 arg2",
 		Sender: telebot.User{
-			Username:"ssalvatori",
-			FirstName:"stefano",
+			Username:  "ssalvatori",
+			FirstName: "stefano",
 		},
 	}
 	result := processing(dbMock, botMsg)
@@ -246,8 +232,8 @@ func TestProcessingExternalModuleWithoutArgs(t *testing.T) {
 	botMsg := telebot.Message{
 		Text: "!test",
 		Sender: telebot.User{
-			Username:"ssalvatori",
-			FirstName:"stefano",
+			Username:  "ssalvatori",
+			FirstName: "stefano",
 		},
 	}
 	result := processing(dbMock, botMsg)

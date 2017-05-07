@@ -2,11 +2,12 @@ package command
 
 import (
 	"fmt"
+	"regexp"
+	"strings"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/ssalvatori/zbot-telegram-go/db"
 	"github.com/ssalvatori/zbot-telegram-go/user"
-	"regexp"
-	"strings"
 )
 
 type GetCommand struct {

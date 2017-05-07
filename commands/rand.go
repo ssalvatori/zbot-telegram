@@ -2,10 +2,11 @@ package command
 
 import (
 	"fmt"
+	"regexp"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/ssalvatori/zbot-telegram-go/db"
 	"github.com/ssalvatori/zbot-telegram-go/user"
-	"regexp"
 )
 
 type RandCommand struct {
@@ -13,7 +14,7 @@ type RandCommand struct {
 	Db     db.ZbotDatabase
 	Levels Levels
 }
-
+// ProcessText
 func (handler *RandCommand) ProcessText(text string, user user.User) string {
 
 	commandPattern := regexp.MustCompile(`^!rand$`)
@@ -23,6 +24,7 @@ func (handler *RandCommand) ProcessText(text string, user user.User) string {
 		randItem, err := handler.Db.Rand()
 		if err != nil {
 			log.Error(err)
+			return ""
 		}
 		result = fmt.Sprintf("[%s] - [%s]", randItem.Term, randItem.Meaning)
 	} else {

@@ -29,6 +29,7 @@ func (handler *WhoCommand) ProcessText(text string, user user.User) string {
 			Item, err := handler.Db.Get(def.Term)
 			if err != nil {
 				log.Error(err)
+				return ""
 			}
 			result = fmt.Sprintf("[%s] by [%s] on [%s]", Item.Term, Item.Author, Item.Date)
 		}

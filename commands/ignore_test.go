@@ -47,9 +47,6 @@ func TestIgnoreCommandAdd(t *testing.T) {
 		Level: "10",
 	}
 
-	userTest.Level = 5
-	assert.Equal(t, "Your level is not enough < 1000", ignoreCommand.ProcessText("!ignore add rigo", userTest), "Ignore add no enough level")
-
 }
 
 func TestConvertDates(t *testing.T) {

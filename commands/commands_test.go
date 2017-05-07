@@ -16,6 +16,17 @@ var userTest = user.User{
 	Level:    100,
 }
 
+var minimumLevels = Levels{
+	Ignore: 100,
+	Lock:   1000,
+	Learn:  10,
+	Append: 0,
+	Forget: 1000,
+	Who:    0,
+	Top:    0,
+	Stats:  0,
+}
+
 type FakeCommand struct {
 	Next HandlerCommand
 }
@@ -33,4 +44,36 @@ func TestGetTerms(t *testing.T) {
 	assert.Equal(t, []string{"foo", "foo2", "foo3"}, getTerms(items))
 	var terms []string
 	assert.Equal(t, terms, getTerms([]db.DefinitionItem{}))
+}
+
+func TestIsCommandDisable(t *testing.T) {
+
+	DisabledCommands = []string{
+		"learn",
+		"version",
+	}
+
+	assert.True(t, IsCommandDisabled("learn"), "Disable Commands true")
+
+	assert.False(t, IsCommandDisabled("lock"), "Disable Commands false")
+}
+
+func TestGetCommandInformation(t *testing.T) {
+	assert.Equal(t, "", GetCommandInformation("asdfasd"), "Command not found")
+	assert.Equal(t, "hola", GetCommandInformation("!hola"), "Command not found")
+
+	assert.Equal(t, "learn", GetCommandInformation("!Learn"), "Command not found")
+}
+
+func TestCheckPermission(t *testing.T) {
+	assert.True(t, CheckPermission("hola", userTest, minimumLevels), "")
+	userTest.Level = 5
+	assert.False(t, CheckPermission("learn", userTest, minimumLevels), "")
+}
+
+func TestGetMinimumLevel(t *testing.T) {
+
+	assert.Equal(t, minimumLevels.Lock, GetMinimumLevel("lock", minimumLevels), "checking lock")
+
+	assert.Equal(t, 0, GetMinimumLevel("hola", minimumLevels), "checking level not defined")
 }

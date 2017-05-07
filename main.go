@@ -1,11 +1,13 @@
 package main
 
 import (
+	"os"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/ssalvatori/zbot-telegram-go/zbot"
-	"os"
 )
 
+// setUp
 func setUp() {
 
 	if os.Getenv("ZBOT_DATABASE") != "" {
@@ -24,13 +26,14 @@ func setUp() {
 
 	if os.Getenv("ZBOT_DISABLE_COMMANDS") != "" {
 		log.Info("Disable modules configuration = ", os.Getenv("ZBOT_DISABLE_COMMANDS"))
-		zbot.DisableCommands(os.Getenv("ZBOT_DISABLE_COMMANDS"))
+		zbot.GetDisabledCommands(os.Getenv("ZBOT_DISABLE_COMMANDS"))
 	}
 
 	zbot.ApiToken = os.Getenv("ZBOT_TOKEN")
 
 }
 
+// setUpLog setup log level using environment variables
 func setUpLog() {
 
 	switch os.Getenv("ZBOT_LOG_LEVEL") {
@@ -57,7 +60,6 @@ func setUpLog() {
 		break
 	}
 
-	//log.SetFormatter(&log.JSONFormatter{})
 }
 
 func main() {

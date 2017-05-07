@@ -38,19 +38,16 @@ func (handler *IgnoreCommand) ProcessText(text string, user user.User) string {
 			}
 			result = fmt.Sprintf(strings.Join(getUserIgnored(ignoredUsers), "/n"))
 			break
+
 		case "add":
-			if user.IsAllow(handler.Levels.Ignore) {
-				if strings.ToLower(args[3]) != strings.ToLower(user.Username) {
-					err := handler.Db.UserIgnoreInsert(args[3])
-					if err != nil {
-						log.Error(err)
-					}
-					result = fmt.Sprintf("User [%s] ignored for 10 minutes", args[3])
-				} else {
-					result = fmt.Sprintf("You can't ignore youself")
+			if strings.ToLower(args[3]) != strings.ToLower(user.Username) {
+				err := handler.Db.UserIgnoreInsert(args[3])
+				if err != nil {
+					log.Error(err)
 				}
+				result = fmt.Sprintf("User [%s] ignored for 10 minutes", args[3])
 			} else {
-				result = fmt.Sprintf("Your level is not enough < %d", handler.Levels.Ignore)
+				result = "You can't ignore youself"
 			}
 			break
 		}

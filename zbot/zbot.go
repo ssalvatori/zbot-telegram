@@ -1,37 +1,26 @@
 package zbot
 
 import (
+	"fmt"
+	"os"
 	"regexp"
+	"strings"
+	"time"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/ssalvatori/zbot-telegram-go/commands"
 	"github.com/ssalvatori/zbot-telegram-go/db"
 	"github.com/ssalvatori/zbot-telegram-go/user"
 	"github.com/tucnak/telebot"
-
-	"fmt"
-	"strings"
-
-	"os"
-	"time"
-
-	"encoding/json"
-	"io/ioutil"
-
-	log "github.com/Sirupsen/logrus"
-
-	"sort"
-
-	"github.com/ssalvatori/zbot-telegram-go/utils"
 )
 
 var (
-	Version          = "dev-master"
-	BuildTime        = time.Now().String()
-	GitHash          = "undefined"
-	Database         = "./sample.db"
-	ApiToken         = ""
-	ModulesPath      = getCurrentDirectory() + "/../modules/"
-	DisabledCommands []string
+	Version     = "dev-master"
+	BuildTime   = time.Now().String()
+	GitHash     = "undefined"
+	Database    = "./sample.db"
+	ApiToken    = ""
+	ModulesPath = getCurrentDirectory() + "/../modules/"
 )
 
 var levelsConfig = command.Levels{
@@ -40,26 +29,12 @@ var levelsConfig = command.Levels{
 	Learn:  0,
 	Append: 0,
 	Forget: 1000,
-	Who: 0,
-	Top: 0,
-	Stats: 0,
+	Who:    0,
+	Top:    0,
+	Stats:  0,
 }
 
-// Reading file to disable son modules
-func DisableCommands(disableCommandFile string) {
-	log.Debug("Reading file ", disableCommandFile)
-	raw, err := ioutil.ReadFile(disableCommandFile)
-	if err != nil {
-		log.Error(err.Error())
-		os.Exit(1)
-	}
-
-	var c []string
-	json.Unmarshal(raw, &c)
-	DisabledCommands = c
-	sort.Strings(DisabledCommands)
-}
-
+// Execute
 func Execute() {
 	log.Info("Loading zbot-telegram version [" + Version + "] [" + BuildTime + "] [" + GitHash + "]")
 
@@ -88,8 +63,9 @@ func Execute() {
 	bot.Start(1 * time.Second)
 }
 
+// messagesProcessing
 func messagesProcessing(db db.ZbotDatabase, bot *telebot.Bot) {
-	output := make(chan string)
+
 	for message := range bot.Messages {
 
 		//we're going to process only the message starting with ! or ?
@@ -105,7 +81,7 @@ func messagesProcessing(db db.ZbotDatabase, bot *telebot.Bot) {
 		if !ignore {
 			if processingMsg.MatchString(message.Text) {
 				log.Debug(fmt.Sprintf("Received a message from %s with the text: %s", message.Sender.Username, message.Text))
-				go sendResponse(bot, db, message, output)
+				go sendResponse(bot, db, message)
 			}
 		} else {
 			log.Debug(fmt.Sprintf("User [%s] ignored", strings.ToLower(message.Sender.Username)))
@@ -113,33 +89,27 @@ func messagesProcessing(db db.ZbotDatabase, bot *telebot.Bot) {
 	}
 }
 
-func sendResponse(bot *telebot.Bot, db db.ZbotDatabase, msg telebot.Message, output chan string) {
+// sendResponse
+func sendResponse(bot *telebot.Bot, db db.ZbotDatabase, msg telebot.Message) {
 	response := processing(db, msg)
 	bot.SendMessage(msg.Chat, response, nil)
 }
 
-func isCommandDisable(msg telebot.Message) bool {
-	commandPattern := regexp.MustCompile(`^!(\S*)\s*.*`)
-	if commandPattern.MatchString(msg.Text) {
-		cmd := commandPattern.FindStringSubmatch(msg.Text)
-		log.Debug("Searching for ", cmd[1])
-		log.Debug(DisabledCommands)
-		if utils.InArray(cmd[1], DisabledCommands) {
-			return true
-		}
-		return false
-	}
-	return false
-}
-
+// processing
 func processing(db db.ZbotDatabase, msg telebot.Message) string {
 
-	if isCommandDisable(msg) {
-		log.Debug("Command disable")
+	commandName := command.GetCommandInformation(msg.Text)
+
+	if command.IsCommandDisabled(commandName) {
+		log.Debug("Command: ", commandName, " is disable")
 		return ""
 	}
 
 	user := user.BuildUser(msg.Sender, db)
+
+	if !command.CheckPermission(commandName, user, levelsConfig) {
+		return fmt.Sprintf("Your level is not enough < %s", command.GetMinimumLevel(commandName, levelsConfig))
+	}
 
 	// TODO: how to clean this code
 	commands := &command.PingCommand{}
@@ -189,6 +159,11 @@ func processing(db db.ZbotDatabase, msg telebot.Message) string {
 	outputMsg := commands.ProcessText(msg.Text, user)
 
 	return outputMsg
+}
+
+// GetDisabledCommands setup disabled commands
+func GetDisabledCommands(file string) {
+	command.GetDisabledCommands(file)
 }
 
 func getCurrentDirectory() string {
