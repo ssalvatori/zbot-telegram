@@ -18,10 +18,12 @@ var (
 	Version     = "dev-master"
 	BuildTime   = time.Now().String()
 	GitHash     = "undefined"
-	Database    = "./sample.db"
+
 	ApiToken    = ""
 	ModulesPath = getCurrentDirectory() + "/../modules/"
 )
+
+var Db db.ZbotDatabase
 
 var levelsConfig = command.Levels{
 	Ignore: 100,
@@ -45,20 +47,18 @@ func Execute() {
 		log.Fatal(err)
 	}
 
-	database := &db.SqlLite{
-		File: Database,
-	}
+	//database := databaseConfiguration()
 
-	err = database.Init()
-	defer database.Close()
+	err = Db.Init()
+	defer Db.Close()
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	go database.UserCleanIgnore()
+	go Db.UserCleanIgnore()
 	bot.Messages = make(chan telebot.Message, 1000)
-	go messagesProcessing(database, bot)
+	go messagesProcessing(Db, bot)
 
 	bot.Start(1 * time.Second)
 }
@@ -101,14 +101,16 @@ func processing(db db.ZbotDatabase, msg telebot.Message) string {
 	commandName := command.GetCommandInformation(msg.Text)
 
 	if command.IsCommandDisabled(commandName) {
-		log.Debug("Command: ", commandName, " is disable")
+		log.Debug("Command: [", commandName, "] is disabled")
 		return ""
 	}
 
 	user := user.BuildUser(msg.Sender, db)
 
-	if !command.CheckPermission(commandName, user, levelsConfig) {
-		return fmt.Sprintf("Your level is not enough < %s", command.GetMinimumLevel(commandName, levelsConfig))
+	requiredLevel := command.GetMinimumLevel(commandName, levelsConfig)
+
+	if !command.CheckPermission(commandName, user, levelsConfig, requiredLevel) {
+		return fmt.Sprintf("Your level is not enough < %s", requiredLevel)
 	}
 
 	// TODO: how to clean this code

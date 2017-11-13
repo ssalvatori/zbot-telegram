@@ -5,14 +5,11 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/ssalvatori/zbot-telegram-go/zbot"
+	"github.com/ssalvatori/zbot-telegram-go/db"
 )
 
 // setUp
 func setUp() {
-
-	if os.Getenv("ZBOT_DATABASE") != "" {
-		zbot.Database = os.Getenv("ZBOT_DATABASE")
-	}
 
 	if os.Getenv("ZBOT_TOKEN") == "" {
 		log.Fatal("You must set the ZBOT_TOKEN environment variable first")
@@ -58,6 +55,58 @@ func setUpLog() {
 	default:
 		log.SetLevel(log.InfoLevel)
 		break
+	}
+
+}
+
+// setupDatabase this function will get the data
+func setupDatabase() {
+
+	switch os.Getenv("ZBOT_DATABASE_TYPE") {
+	case "mysql":
+		log.Info("Setting up mysql connections")
+		zbot.Database = setupDatabaseMysql()
+		break
+	case "sqlite":
+		log.Info("Setting up sqlite connections")
+		zbot.Database = setupDatabaseSqlite()
+		break
+	default:
+		log.Error("Select a database type (mysql o sqlite)")
+		break
+	}
+
+}
+
+func setupDatabaseSqlite() db.ZbotDatabase {
+	if os.Getenv("ZBOT_DATABASE") != "" {
+		zbot.Database = os.Getenv("ZBOT_DATABASE")
+	}
+}
+
+func setupDatabaseMysql() db.ZbotDatabase {
+	if os.Getenv("ZBOT_MYSQL_HOSTNAME") != "" {
+
+	} else {
+		log.Error("Insert the mysql hostname")
+	}
+
+	if os.Getenv("ZBOT_MYSQL_USERNAME") != "" {
+
+	} else {
+		log.Error("Insert the mysql username")
+	}
+
+	if os.Getenv("ZBOT_MYSQL_PASSWORD") != "" {
+
+	} else {
+		log.Error("Insert the mysql password")
+	}
+
+	if os.Getenv("ZBOT_MYSQL_DATABASE") != "" {
+
+	} else {
+		log.Error("Insert mysql database name")
 	}
 
 }

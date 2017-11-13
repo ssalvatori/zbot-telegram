@@ -73,10 +73,10 @@ func GetCommandInformation(text string) string {
 	return commandName
 }
 
-func CheckPermission(command string, user user.User, minimumLevels Levels) bool {
-	log.Debug("Checking permission for ", command, " and user ", user)
+func CheckPermission(command string, user user.User, requiredLevel int) bool {
+	log.Debug("Checking permission for [", command, "] and user ", user.Username)
 
-	if user.Level >= GetMinimumLevel(command, minimumLevels) {
+	if user.Level >= requiredLevel {
 		return true
 	} else {
 		return false
@@ -85,7 +85,8 @@ func CheckPermission(command string, user user.User, minimumLevels Levels) bool 
 
 // IsCommandDisabled check if a command is in the disable list
 func IsCommandDisabled(commandName string) bool {
-	log.Debug("Checking isCommandDisabled: ", commandName, " is diable")
+	log.Debug("Checking isCommandDisabled: [", commandName, "] is disabled")
+	//TODO BUG check DisabledCommands before check the array
 	if utils.InArray(commandName, DisabledCommands) {
 		return true
 	}
@@ -94,7 +95,7 @@ func IsCommandDisabled(commandName string) bool {
 
 // GetMinimumLevel get the minimum level required for a git command, if it is not defined return 0
 func GetMinimumLevel(commandName string, minimumLevels Levels) int {
-	log.Debug("Getting mininum level to: ", commandName)
+	log.Debug("Getting mininum level for ", commandName)
 
 	field, ok := reflect.TypeOf(&minimumLevels).Elem().FieldByName(strings.Title(commandName))
 

@@ -45,3 +45,15 @@ func TestSetUpLog(t *testing.T) {
 	}
 
 }
+
+func TestSetupDatabase(t *testing.T) {
+	databaseTypes := map[string]string {
+		"mysql": "",
+		"sqlite": "",
+	}
+	for dbType  := range databaseTypes {
+		os.Setenv("ZBOT_DATABASE_TYPE", dbType)
+		setupDatabase()
+		assert.Equal(t, )
+	}
+}
