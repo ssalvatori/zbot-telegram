@@ -25,6 +25,10 @@ type MockZbotDatabase struct {
 	Error        bool
 }
 
+func (d *MockZbotDatabase) GetConnectionInfo() string {
+	return "mock"
+}
+
 func (d *MockZbotDatabase) Init() error {
 	return nil
 }
@@ -88,7 +92,7 @@ func (d *MockZbotDatabase) Find(criteria string) ([]DefinitionItem, error) {
 		return []DefinitionItem{}, nil
 	}
 	if d.Error {
-		return  nil, errors.New("mock")
+		return nil, errors.New("mock")
 	}
 	return []DefinitionItem{{Term: d.Term}}, nil
 }

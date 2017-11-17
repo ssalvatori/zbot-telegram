@@ -15,12 +15,12 @@ import (
 )
 
 var (
-	Version     = "dev-master"
-	BuildTime   = time.Now().String()
-	GitHash     = "undefined"
-
-	ApiToken    = ""
-	ModulesPath = getCurrentDirectory() + "/../modules/"
+	Version      = "dev-master"
+	BuildTime    = time.Now().String()
+	GitHash      = "undefined"
+	DatabaseType = ""
+	ApiToken     = ""
+	ModulesPath  = getCurrentDirectory() + "/../modules/"
 )
 
 var Db db.ZbotDatabase
@@ -40,7 +40,7 @@ var levelsConfig = command.Levels{
 func Execute() {
 	log.Info("Loading zbot-telegram version [" + Version + "] [" + BuildTime + "] [" + GitHash + "]")
 
-	log.Info("Database: [" + Database + "] Modules: [" + ModulesPath + "]")
+	log.Info("Database: [" + DatabaseType + "] Modules: [" + ModulesPath + "]")
 
 	bot, err := telebot.NewBot(ApiToken)
 	if err != nil {
@@ -109,7 +109,7 @@ func processing(db db.ZbotDatabase, msg telebot.Message) string {
 
 	requiredLevel := command.GetMinimumLevel(commandName, levelsConfig)
 
-	if !command.CheckPermission(commandName, user, levelsConfig, requiredLevel) {
+	if !command.CheckPermission(commandName, user, requiredLevel) {
 		return fmt.Sprintf("Your level is not enough < %s", requiredLevel)
 	}
 

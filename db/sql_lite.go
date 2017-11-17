@@ -18,6 +18,10 @@ type ZbotSqliteDatabase struct {
 	File string
 }
 
+func (d *ZbotSqliteDatabase) GetConnectionInfo() string {
+	return fmt.Sprintf("DB: %s", d.File)
+}
+
 func (d *ZbotSqliteDatabase) UserIgnoreList() ([]UserIgnore, error) {
 	log.Debug("Getting ignore list")
 	statement := "SELECT username, since, until FROM ignore_list"

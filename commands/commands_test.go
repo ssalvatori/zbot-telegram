@@ -66,6 +66,7 @@ func TestGetCommandInformation(t *testing.T) {
 }
 
 func TestCheckPermission(t *testing.T) {
+	userTest.Level = 10
 	assert.True(t, CheckPermission("hola", userTest, 10), "")
 	userTest.Level = 5
 	assert.False(t, CheckPermission("learn", userTest, 1000), "")

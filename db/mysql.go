@@ -3,28 +3,32 @@ package db
 import (
 	"database/sql"
 
-	_ "github.com/go-sql-driver/mysql"
-	log "github.com/Sirupsen/logrus"
-	"fmt"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
+
+	log "github.com/Sirupsen/logrus"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 type ZbotMysqlDatabase struct {
-	Db *sql.DB
+	Db         *sql.DB
 	Connection struct {
-		Username string
-		Password string
+		Username     string
+		Password     string
 		DatabaseName string
-		DatabaseHost string
-		HostName string
+		HostName     string
 	}
+}
+
+func (d *ZbotMysqlDatabase) GetConnectionInfo() string {
+	return fmt.Sprintf("%s:%s@%s/%s", d.Connection.Username, d.Connection.Password, d.Connection.HostName, d.Connection.DatabaseName)
 }
 
 func (d *ZbotMysqlDatabase) Init() error {
 	log.Debug("Connecting to database")
-	connectionData := fmt.Sprintf("%s:%s@%s/%s", d.Connection.Username, d.Connection.Password, d.Connection.HostName, d.Connection.DatabaseName)
+	connectionData := d.GetConnectionInfo()
 	connection, err := sql.Open("mysql", connectionData)
 	if err != nil {
 		log.Error(err)
@@ -304,7 +308,7 @@ func (d *ZbotMysqlDatabase) UserCheckIgnore(username string) (bool, error) {
 
 	now := time.Now().Unix()
 
-	var level string
+	var level int = 0
 	statement := "SELECT count(*) as total FROM ignore_list WHERE username = ? AND until >= ?"
 	err := d.Db.QueryRow(statement, username, now).Scan(&level)
 	if err != nil {
@@ -316,9 +320,9 @@ func (d *ZbotMysqlDatabase) UserCheckIgnore(username string) (bool, error) {
 
 		}
 	}
-	levelInt, _ := strconv.Atoi(level)
-	log.Debug("Ingored ", levelInt)
-	if levelInt > 0 {
+
+	log.Debug("Ingored ", level)
+	if level > 0 {
 		ignored = true
 	}
 

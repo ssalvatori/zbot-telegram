@@ -4,8 +4,8 @@ import (
 	"os"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/ssalvatori/zbot-telegram-go/zbot"
 	"github.com/ssalvatori/zbot-telegram-go/db"
+	"github.com/ssalvatori/zbot-telegram-go/zbot"
 )
 
 // setUp
@@ -65,11 +65,11 @@ func setupDatabase() {
 	switch os.Getenv("ZBOT_DATABASE_TYPE") {
 	case "mysql":
 		log.Info("Setting up mysql connections")
-		zbot.Database = setupDatabaseMysql()
+		zbot.Db = setupDatabaseMysql()
 		break
 	case "sqlite":
 		log.Info("Setting up sqlite connections")
-		zbot.Database = setupDatabaseSqlite()
+		zbot.Db = setupDatabaseSqlite()
 		break
 	default:
 		log.Error("Select a database type (mysql o sqlite)")
@@ -79,36 +79,49 @@ func setupDatabase() {
 }
 
 func setupDatabaseSqlite() db.ZbotDatabase {
+	zbot.DatabaseType = "sqlite"
+
+	database := new(db.ZbotSqliteDatabase)
+
 	if os.Getenv("ZBOT_DATABASE") != "" {
-		zbot.Database = os.Getenv("ZBOT_DATABASE")
+		database.File = os.Getenv("ZBOT_DATABASE")
+	} else {
+		log.Error("Insert the sqlite file name")
 	}
+
+	return database
 }
 
 func setupDatabaseMysql() db.ZbotDatabase {
-	if os.Getenv("ZBOT_MYSQL_HOSTNAME") != "" {
+	zbot.DatabaseType = "mysql"
 
+	database := new(db.ZbotMysqlDatabase)
+
+	if os.Getenv("ZBOT_MYSQL_HOSTNAME") != "" {
+		database.Connection.HostName = os.Getenv("ZBOT_MYSQL_HOSTNAME")
 	} else {
 		log.Error("Insert the mysql hostname")
 	}
 
 	if os.Getenv("ZBOT_MYSQL_USERNAME") != "" {
-
+		database.Connection.Username = os.Getenv("ZBOT_MYSQL_USERNAME")
 	} else {
 		log.Error("Insert the mysql username")
 	}
 
 	if os.Getenv("ZBOT_MYSQL_PASSWORD") != "" {
-
+		database.Connection.Password = os.Getenv("ZBOT_MYSQL_PASSWORD")
 	} else {
 		log.Error("Insert the mysql password")
 	}
 
 	if os.Getenv("ZBOT_MYSQL_DATABASE") != "" {
-
+		database.Connection.DatabaseName = os.Getenv("ZBOT_MYSQL_DATABASE")
 	} else {
 		log.Error("Insert mysql database name")
 	}
 
+	return database
 }
 
 func main() {

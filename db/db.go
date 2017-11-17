@@ -3,6 +3,7 @@ package db
 import "database/sql"
 
 type ZbotDatabase interface {
+	GetConnectionInfo() string
 	Init() error
 	Close()
 	Statistics() (string, error)
