@@ -14,21 +14,28 @@ import (
 // setUp
 func setUp() {
 
-	if os.Getenv("ZBOT_TOKEN") == "" {
-		log.Fatal("You must set the ZBOT_TOKEN environment variable first")
+	type EnvironmentVariables struct {
+		Token            string `env:"ZBOT_TOKEN,required"`
+		ModulesPath      string `env:"ZBOT_MODULES_PATH" envDefault:"."`
+		DisabledCommands string `env:"ZBOT_DISABLE_COMMANDS" `
 	}
 
-	if os.Getenv("ZBOT_MODULES_PATH") != "" {
-		log.Debug("Module path using: " + os.Getenv("ZBOT_MODULES_PATH"))
-		zbot.ModulesPath = os.Getenv("ZBOT_MODULES_PATH") + "/"
+	cfg := EnvironmentVariables{}
+	err := env.Parse(&cfg)
+	if err != nil {
+		log.Fatal(fmt.Printf("%+v\n", err))
 	}
+
+	log.Info(fmt.Printf("%+v\n", cfg))
+
+	zbot.ApiToken = cfg.Token
+	zbot.ModulesPath = cfg.ModulesPath + "/"
+	zbot.GetDisabledCommands(cfg.DisabledCommands)
 
 	if os.Getenv("ZBOT_DISABLE_COMMANDS") != "" {
 		log.Info("Disable modules configuration = ", os.Getenv("ZBOT_DISABLE_COMMANDS"))
 		zbot.GetDisabledCommands(os.Getenv("ZBOT_DISABLE_COMMANDS"))
 	}
-
-	zbot.ApiToken = os.Getenv("ZBOT_TOKEN")
 
 }
 

@@ -163,7 +163,9 @@ func processing(db db.ZbotDatabase, msg telebot.Message) string {
 
 // GetDisabledCommands setup disabled commands
 func GetDisabledCommands(file string) {
-	command.GetDisabledCommands(file)
+	if file != "" {
+		command.GetDisabledCommands(file)
+	}
 }
 
 func getCurrentDirectory() string {
