@@ -14,16 +14,19 @@ import (
 
 type ZbotMysqlDatabase struct {
 	Db         *sql.DB
-	Connection struct {
-		Username     string
-		Password     string
-		DatabaseName string
-		HostName     string
-	}
+	Connection MysqlConnection
+}
+
+type MysqlConnection struct {
+	Username     string
+	Password     string
+	DatabaseName string
+	HostName     string
+	Port         int
 }
 
 func (d *ZbotMysqlDatabase) GetConnectionInfo() string {
-	return fmt.Sprintf("%s:%s@%s/%s", d.Connection.Username, d.Connection.Password, d.Connection.HostName, d.Connection.DatabaseName)
+	return fmt.Sprintf("%s:%s@%s:%d/%s", d.Connection.Username, d.Connection.Password, d.Connection.HostName, d.Connection.Port, d.Connection.DatabaseName)
 }
 
 func (d *ZbotMysqlDatabase) Init() error {

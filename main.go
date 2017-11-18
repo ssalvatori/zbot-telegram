@@ -3,7 +3,10 @@ package main
 import (
 	"os"
 
+	"fmt"
+
 	log "github.com/Sirupsen/logrus"
+	"github.com/caarlos0/env"
 	"github.com/ssalvatori/zbot-telegram-go/db"
 	"github.com/ssalvatori/zbot-telegram-go/zbot"
 )
@@ -13,7 +16,6 @@ func setUp() {
 
 	if os.Getenv("ZBOT_TOKEN") == "" {
 		log.Fatal("You must set the ZBOT_TOKEN environment variable first")
-		os.Exit(1)
 	}
 
 	if os.Getenv("ZBOT_MODULES_PATH") != "" {
@@ -81,45 +83,40 @@ func setupDatabase() {
 func setupDatabaseSqlite() db.ZbotDatabase {
 	zbot.DatabaseType = "sqlite"
 
-	database := new(db.ZbotSqliteDatabase)
-
-	if os.Getenv("ZBOT_DATABASE") != "" {
-		database.File = os.Getenv("ZBOT_DATABASE")
-	} else {
-		log.Error("Insert the sqlite file name")
+	type SqliteEnvironmentConfig struct {
+		File string `env:"ZBOT_DATABASE"`
 	}
 
+	cfg := SqliteEnvironmentConfig{}
+	err := env.Parse(&cfg)
+	if err != nil {
+		log.Fatal(fmt.Printf("%+v\n", err))
+	}
+
+	database := new(db.ZbotSqliteDatabase)
+	database.File = cfg.File
 	return database
 }
 
 func setupDatabaseMysql() db.ZbotDatabase {
 	zbot.DatabaseType = "mysql"
 
+	type MysqlConnection struct {
+		Username     string `env:"ZBOT_MYSQL_USERNAME,required"`
+		Password     string `env:"ZBOT_MYSQL_PASSWORD,required"`
+		DatabaseName string `env:"ZBOT_MYSQL_DATABASE,required"`
+		HostName     string `env:"ZBOT_MYSQL_HOSTNAME,required"`
+		Port         int    `env:"ZBOT_MYSQL_PORT" envDefault:"3306"`
+	}
+
+	cfg := MysqlConnection{}
+	err := env.Parse(&cfg)
+	if err != nil {
+		log.Fatal(fmt.Printf("%+v\n", err))
+	}
+
 	database := new(db.ZbotMysqlDatabase)
-
-	if os.Getenv("ZBOT_MYSQL_HOSTNAME") != "" {
-		database.Connection.HostName = os.Getenv("ZBOT_MYSQL_HOSTNAME")
-	} else {
-		log.Error("Insert the mysql hostname")
-	}
-
-	if os.Getenv("ZBOT_MYSQL_USERNAME") != "" {
-		database.Connection.Username = os.Getenv("ZBOT_MYSQL_USERNAME")
-	} else {
-		log.Error("Insert the mysql username")
-	}
-
-	if os.Getenv("ZBOT_MYSQL_PASSWORD") != "" {
-		database.Connection.Password = os.Getenv("ZBOT_MYSQL_PASSWORD")
-	} else {
-		log.Error("Insert the mysql password")
-	}
-
-	if os.Getenv("ZBOT_MYSQL_DATABASE") != "" {
-		database.Connection.DatabaseName = os.Getenv("ZBOT_MYSQL_DATABASE")
-	} else {
-		log.Error("Insert mysql database name")
-	}
+	database.Connection = db.MysqlConnection(cfg)
 
 	return database
 }
@@ -127,6 +124,7 @@ func setupDatabaseMysql() db.ZbotDatabase {
 func main() {
 	setUpLog()
 	setUp()
+	setupDatabase()
 
 	zbot.Execute()
 }

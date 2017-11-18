@@ -47,8 +47,6 @@ func Execute() {
 		log.Fatal(err)
 	}
 
-	//database := databaseConfiguration()
-
 	err = Db.Init()
 	defer Db.Close()
 

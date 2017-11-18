@@ -51,7 +51,7 @@ func TestSetupDatabaseSqLite(t *testing.T) {
 	os.Setenv("ZBOT_DATABASE", "hola.sql")
 	setupDatabase()
 	assert.Equal(t, zbot.DatabaseType, "sqlite", "DataBaseType sqlite OK")
-	assert.EqualValues(t, "DB: hola.sql", zbot.Db.GetConnectionInfo(), "DataBaseType sqlite OK")
+	assert.Equal(t, "DB: hola.sql", zbot.Db.GetConnectionInfo(), "DataBaseType sqlite OK")
 
 }
 
@@ -64,6 +64,6 @@ func TestSetupDatabaseMysql(t *testing.T) {
 	os.Setenv("ZBOT_MYSQL_DATABASE", "test")
 	setupDatabase()
 	assert.Equal(t, zbot.DatabaseType, "mysql", "DataBaseType mysql OK")
-	assert.EqualValues(t, "root:pass@localhost/test", zbot.Db.GetConnectionInfo(), "DataBaseType mysql OK")
+	assert.Equal(t, "root:pass@localhost:3306/test", zbot.Db.GetConnectionInfo(), "DataBaseType mysql OK")
 
 }
