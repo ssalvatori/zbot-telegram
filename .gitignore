@@ -25,3 +25,5 @@ _testmain.go
 
 linux.db
 Makefile
+
+.vscode/
