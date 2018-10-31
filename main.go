@@ -26,9 +26,9 @@ func setUp() {
 		log.Fatal(fmt.Printf("%+v\n", err))
 	}
 
-	log.Info(fmt.Printf("%+v\n", cfg))
+	//log.Info("%+v\n", cfg)
 
-	zbot.ApiToken = cfg.Token
+	zbot.APIToken = cfg.Token
 	zbot.ModulesPath = cfg.ModulesPath + "/"
 	zbot.GetDisabledCommands(cfg.DisabledCommands)
 

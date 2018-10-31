@@ -11,7 +11,7 @@ import (
 	"github.com/ssalvatori/zbot-telegram-go/commands"
 	"github.com/ssalvatori/zbot-telegram-go/db"
 	"github.com/ssalvatori/zbot-telegram-go/user"
-	"github.com/tucnak/telebot"
+	tb "gopkg.in/tucnak/telebot.v2"
 )
 
 var (
@@ -19,7 +19,7 @@ var (
 	BuildTime    = time.Now().String()
 	GitHash      = "undefined"
 	DatabaseType = ""
-	ApiToken     = ""
+	APIToken     = ""
 	ModulesPath  = getCurrentDirectory() + "/../modules/"
 )
 
@@ -42,7 +42,12 @@ func Execute() {
 
 	log.Info("Database: [" + DatabaseType + "] Modules: [" + ModulesPath + "]")
 
-	bot, err := telebot.NewBot(ApiToken)
+	bot, err := tb.NewBot(tb.Settings{
+		Token:  APIToken,
+		Poller: &tb.LongPoller{Timeout: 10 * time.Second},
+	})
+
+	//APIToken)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -54,47 +59,57 @@ func Execute() {
 		log.Fatal(err)
 	}
 
-	go Db.UserCleanIgnore()
-	bot.Messages = make(chan telebot.Message, 1000)
-	go messagesProcessing(Db, bot)
+	//go Db.UserCleanIgnore()
+	//bot.Messages = make(chan tb.Message, 1000)
 
-	bot.Start(1 * time.Second)
+	bot.Handle(tb.OnText, func(m *tb.Message) {
+		var response = messagesProcessing(Db, m)
+		if response != "" {
+			bot.Send(m.Chat, response)
+		}
+		//go messagesProcessing(Db, m)
+	})
+
+	bot.Start()
 }
 
 // messagesProcessing
-func messagesProcessing(db db.ZbotDatabase, bot *telebot.Bot) {
+func messagesProcessing(db db.ZbotDatabase, message *tb.Message) string {
 
-	for message := range bot.Messages {
+	//for message := range msg.Messages {
 
-		//we're going to process only the message starting with ! or ?
-		processingMsg := regexp.MustCompilePOSIX(`^[!|?].*`)
+	//we're going to process only the message starting with ! or ?
+	processingMsg := regexp.MustCompilePOSIX(`^[!|?].*`)
 
-		//check if the user isn't on the ignore_list
-		log.Debug(fmt.Sprintf("Checking user [%s] ", strings.ToLower(message.Sender.Username)))
-		ignore, err := db.UserCheckIgnore(strings.ToLower(message.Sender.Username))
-		if err != nil {
-			log.Error(err)
-			ignore = true
-		}
-		if !ignore {
-			if processingMsg.MatchString(message.Text) {
-				log.Debug(fmt.Sprintf("Received a message from %s with the text: %s", message.Sender.Username, message.Text))
-				go sendResponse(bot, db, message)
-			}
-		} else {
-			log.Debug(fmt.Sprintf("User [%s] ignored", strings.ToLower(message.Sender.Username)))
-		}
+	//check if the user isn't on the ignore_list
+	log.Debug(fmt.Sprintf("Checking user [%s] ", strings.ToLower(message.Sender.Username)))
+	ignore, err := db.UserCheckIgnore(strings.ToLower(message.Sender.Username))
+	if err != nil {
+		log.Error(err)
+		ignore = true
 	}
+	if !ignore {
+		if processingMsg.MatchString(message.Text) {
+			log.Debug(fmt.Sprintf("Received a message from %s with the text: %s", message.Sender.Username, message.Text))
+			return processing(db, *message)
+			// sendResponse(msg, db, message)
+		}
+	} else {
+		log.Debug(fmt.Sprintf("User [%s] ignored", strings.ToLower(message.Sender.Username)))
+	}
+
+	return ""
+	//}
 }
 
 // sendResponse
-func sendResponse(bot *telebot.Bot, db db.ZbotDatabase, msg telebot.Message) {
-	response := processing(db, msg)
-	bot.SendMessage(msg.Chat, response, nil)
-}
+// func sendResponse(bot *tb.Bot, db db.ZbotDatabase, msg tb.Message) {
+// 	response := processing(db, msg)
+// 	bot.Send(msg.Chat, response, nil)
+// }
 
 // processing
-func processing(db db.ZbotDatabase, msg telebot.Message) string {
+func processing(db db.ZbotDatabase, msg tb.Message) string {
 
 	commandName := command.GetCommandInformation(msg.Text)
 
