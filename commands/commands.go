@@ -85,7 +85,7 @@ func CheckPermission(command string, user user.User, requiredLevel int) bool {
 
 // IsCommandDisabled check if a command is in the disable list
 func IsCommandDisabled(commandName string) bool {
-	log.Debug("Checking isCommandDisabled: [", commandName, "] is disabled")
+	log.Debug("Checking if [", commandName, "] is disabled")
 	//TODO BUG check DisabledCommands before check the array
 	if utils.InArray(commandName, DisabledCommands) {
 		return true

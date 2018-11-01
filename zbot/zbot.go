@@ -59,8 +59,7 @@ func Execute() {
 		log.Fatal(err)
 	}
 
-	//go Db.UserCleanIgnore()
-	//bot.Messages = make(chan tb.Message, 1000)
+	go Db.UserCleanIgnore()
 
 	bot.Handle(tb.OnText, func(m *tb.Message) {
 		var response = messagesProcessing(Db, m)
@@ -75,8 +74,6 @@ func Execute() {
 
 // messagesProcessing
 func messagesProcessing(db db.ZbotDatabase, message *tb.Message) string {
-
-	//for message := range msg.Messages {
 
 	//we're going to process only the message starting with ! or ?
 	processingMsg := regexp.MustCompilePOSIX(`^[!|?].*`)
@@ -99,7 +96,7 @@ func messagesProcessing(db db.ZbotDatabase, message *tb.Message) string {
 	}
 
 	return ""
-	//}
+
 }
 
 // sendResponse
@@ -114,7 +111,7 @@ func processing(db db.ZbotDatabase, msg tb.Message) string {
 	commandName := command.GetCommandInformation(msg.Text)
 
 	if command.IsCommandDisabled(commandName) {
-		log.Debug("Command: [", commandName, "] is disabled")
+		log.Debug("Command [", commandName, "] is disabled")
 		return ""
 	}
 
@@ -171,7 +168,13 @@ func processing(db db.ZbotDatabase, msg tb.Message) string {
 	forgetCommand.Next = ignoreCommand
 	ignoreCommand.Next = externalCommand
 
-	outputMsg := commands.ProcessText(msg.Text, user)
+	var messageString = msg.Text
+
+	if msg.ReplyTo != nil {
+		messageString = fmt.Sprintf("%s %s %s", messageString, msg.ReplyTo.Sender.Username, msg.ReplyTo.Text)
+	}
+
+	outputMsg := commands.ProcessText(messageString, user)
 
 	return outputMsg
 }

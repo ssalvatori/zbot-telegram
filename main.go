@@ -23,14 +23,13 @@ func setUp() {
 	cfg := EnvironmentVariables{}
 	err := env.Parse(&cfg)
 	if err != nil {
-		log.Fatal(fmt.Printf("%+v\n", err))
+		log.Fatal(fmt.Sprintf("%+v\n", err))
 	}
 
-	//log.Info("%+v\n", cfg)
+	log.Debug(fmt.Sprintf("%+v\n", cfg))
 
 	zbot.APIToken = cfg.Token
 	zbot.ModulesPath = cfg.ModulesPath + "/"
-	zbot.GetDisabledCommands(cfg.DisabledCommands)
 
 	if os.Getenv("ZBOT_DISABLE_COMMANDS") != "" {
 		log.Info("Disable modules configuration = ", os.Getenv("ZBOT_DISABLE_COMMANDS"))
