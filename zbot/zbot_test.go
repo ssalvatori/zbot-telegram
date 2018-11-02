@@ -23,7 +23,7 @@ func TestProcessingIsCommandDisabled(t *testing.T) {
 		"version",
 	}
 
-	botMsg := tb.Message{Text: "!learn"}
+	botMsg := tb.Message{Text: "!learn", Sender: &tb.User{Username: "zbot_test"}}
 	result := processing(dbMock, botMsg)
 	assert.Equal(t, "", result, "command disabled")
 
@@ -39,7 +39,12 @@ func TestProcessingVersion(t *testing.T) {
 	BuildTime = "2017-05-06 09:59:21.318841424 +0300 EEST"
 	command.DisabledCommands = nil
 
-	botMsg := tb.Message{Text: "!version"}
+	botMsg := tb.Message{
+		Text: "!version",
+		Sender: &tb.User{
+			Username: "zbot_test",
+		},
+	}
 	result := processing(dbMock, botMsg)
 	assert.Equal(t, "zbot golang version ["+Version+"] build-time ["+BuildTime+"]", result, "!version default")
 }
@@ -51,7 +56,7 @@ func TestProcessingStats(t *testing.T) {
 		File:  "hola.db",
 	}
 
-	botMsg := tb.Message{Text: "!stats"}
+	botMsg := tb.Message{Text: "!stats", Sender: &tb.User{Username: "zbot_test"}}
 	result := processing(dbMock, botMsg)
 	assert.Equal(t, result, "Count: 666", "!stats")
 }
@@ -63,7 +68,7 @@ func TestProcessingPing(t *testing.T) {
 		File:  "hola.db",
 	}
 
-	botMsg := tb.Message{Text: "!ping"}
+	botMsg := tb.Message{Text: "!ping", Sender: &tb.User{Username: "zbot_test"}}
 	result := processing(dbMock, botMsg)
 	assert.Equal(t, result, "pong!!", "!ping")
 }
@@ -74,7 +79,7 @@ func TestProcessingRand(t *testing.T) {
 		Rand_def: db.DefinitionItem{Term: "hola", Meaning: "gatolinux"},
 	}
 
-	botMsg := tb.Message{Text: "!rand"}
+	botMsg := tb.Message{Text: "!rand", Sender: &tb.User{Username: "zbot_test"}}
 	result := processing(dbMock, botMsg)
 	assert.Equal(t, "[hola] - [gatolinux]", result, "!rand")
 }
@@ -88,7 +93,7 @@ func TestProcessingGet(t *testing.T) {
 		Meaning: "foo bar!",
 	}
 
-	botMsg := tb.Message{Text: "? hola"}
+	botMsg := tb.Message{Text: "? hola", Sender: &tb.User{Username: "zbot_test"}}
 	result := processing(dbMock, botMsg)
 	assert.Equal(t, result, "[hola] - [foo bar!]", "? def fail")
 
@@ -103,7 +108,7 @@ func TestProcessingFind(t *testing.T) {
 		Meaning: "foo bar!",
 	}
 
-	botMsg := tb.Message{Text: "!find hola"}
+	botMsg := tb.Message{Text: "!find hola", Sender: &tb.User{Username: "zbot_test"}}
 	result := processing(dbMock, botMsg)
 	assert.Equal(t, result, "hola", "!find fail")
 }
@@ -120,7 +125,7 @@ func TestProcessingSearch(t *testing.T) {
 		Search_terms: []string{"hola", "chao", "foobar"},
 	}
 
-	botMsg := tb.Message{Text: "!search hola"}
+	botMsg := tb.Message{Text: "!search hola", Sender: &tb.User{Username: "zbot_test"}}
 	result := processing(dbMock, botMsg)
 	assert.Equal(t, "hola chao foobar", result, "!rand")
 }
@@ -248,7 +253,7 @@ func TestProcessingExternalModuleNotFound(t *testing.T) {
 		File:  "hola.db",
 	}
 
-	botMsg := tb.Message{Text: "!external arg1 arg2"}
+	botMsg := tb.Message{Text: "!external arg1 arg2", Sender: &tb.User{Username: "zbot_test"}}
 	result := processing(dbMock, botMsg)
 
 	assert.Equal(t, "", result, "external module not found")
