@@ -45,6 +45,13 @@ func TestSetUpLog(t *testing.T) {
 
 }
 
+func TestSetupNoDatabase(t *testing.T) {
+
+	os.Setenv("ZBOT_DATABASE_TYPE", "")
+	setupDatabase()
+	assert.Equal(t, zbot.DatabaseType, "", "DataBaseType empty OK")
+}
+
 func TestSetupDatabaseSqLite(t *testing.T) {
 
 	os.Setenv("ZBOT_DATABASE_TYPE", "sqlite")
