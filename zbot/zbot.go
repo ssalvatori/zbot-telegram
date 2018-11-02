@@ -120,7 +120,7 @@ func processing(db db.ZbotDatabase, msg tb.Message) string {
 	requiredLevel := command.GetMinimumLevel(commandName, levelsConfig)
 
 	if !command.CheckPermission(commandName, user, requiredLevel) {
-		return fmt.Sprintf("Your level is not enough < %s", requiredLevel)
+		return fmt.Sprintf("Your level is not enough < %d", requiredLevel)
 	}
 
 	// TODO: how to clean this code

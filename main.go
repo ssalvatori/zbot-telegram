@@ -17,7 +17,7 @@ func setUp() {
 	type EnvironmentVariables struct {
 		Token            string `env:"ZBOT_TOKEN,required"`
 		ModulesPath      string `env:"ZBOT_MODULES_PATH" envDefault:"."`
-		DisabledCommands string `env:"ZBOT_DISABLE_COMMANDS" `
+		DisabledCommands string `env:"ZBOT_DISABLED_COMMANDS" `
 	}
 
 	cfg := EnvironmentVariables{}
@@ -31,9 +31,9 @@ func setUp() {
 	zbot.APIToken = cfg.Token
 	zbot.ModulesPath = cfg.ModulesPath + "/"
 
-	if os.Getenv("ZBOT_DISABLE_COMMANDS") != "" {
-		log.Info("Disable modules configuration = ", os.Getenv("ZBOT_DISABLE_COMMANDS"))
-		zbot.GetDisabledCommands(os.Getenv("ZBOT_DISABLE_COMMANDS"))
+	if os.Getenv("ZBOT_DISABLED_COMMANDS") != "" {
+		log.Info("Disabled modules configuration = ", os.Getenv("ZBOT_DISABLED_COMMANDS"))
+		zbot.GetDisabledCommands(os.Getenv("ZBOT_DISABLED_COMMANDS"))
 	}
 
 }
@@ -90,7 +90,7 @@ func setupDatabaseSqlite() db.ZbotDatabase {
 	zbot.DatabaseType = "sqlite"
 
 	type SqliteEnvironmentConfig struct {
-		File string `env:"ZBOT_DATABASE"`
+		File string `env:"ZBOT_SQLITE_DATABASE"`
 	}
 
 	cfg := SqliteEnvironmentConfig{}

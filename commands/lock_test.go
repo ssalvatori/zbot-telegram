@@ -43,5 +43,5 @@ func TestTemplateCommandNoLevel(t *testing.T) {
 
 	userTest.Level = 5
 
-	assert.Equal(t, fmt.Sprintf("Your level is not enough < %s", lockCommand.Levels.Lock), lockCommand.ProcessText("!lock foo", userTest), "Lock Command No Level")
+	assert.Equal(t, fmt.Sprintf("Your level is not enough < %d", lockCommand.Levels.Lock), lockCommand.ProcessText("!lock foo", userTest), "Lock Command No Level")
 }

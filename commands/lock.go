@@ -2,10 +2,11 @@ package command
 
 import (
 	"fmt"
+	"regexp"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/ssalvatori/zbot-telegram-go/db"
 	"github.com/ssalvatori/zbot-telegram-go/user"
-	"regexp"
 )
 
 type LockCommand struct {
@@ -33,7 +34,7 @@ func (handler *LockCommand) ProcessText(text string, user user.User) string {
 			result = fmt.Sprintf("[%s] locked", def.Term)
 
 		} else {
-			result = fmt.Sprintf("Your level is not enough < %s", handler.Levels.Lock)
+			result = fmt.Sprintf("Your level is not enough < %d", handler.Levels.Lock)
 		}
 	} else {
 		if handler.Next != nil {

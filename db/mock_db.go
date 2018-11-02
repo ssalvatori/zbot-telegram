@@ -4,7 +4,8 @@ import (
 	"database/sql"
 
 	"errors"
-	"github.com/tucnak/telebot"
+
+	"gopkg.in/tucnak/telebot.v2"
 )
 
 type MockZbotDatabase struct {

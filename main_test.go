@@ -12,7 +12,7 @@ import (
 func TestSetUp(t *testing.T) {
 
 	os.Setenv("ZBOT_TOKEN", "test:test")
-	os.Setenv("ZBOT_DATABASE", "new_database.sql")
+	os.Setenv("ZBOT_SQLITE_DATABASE", "new_database.sql")
 
 	dir, _ := os.Getwd()
 
@@ -48,7 +48,7 @@ func TestSetUpLog(t *testing.T) {
 func TestSetupDatabaseSqLite(t *testing.T) {
 
 	os.Setenv("ZBOT_DATABASE_TYPE", "sqlite")
-	os.Setenv("ZBOT_DATABASE", "hola.sql")
+	os.Setenv("ZBOT_SQLITE_DATABASE", "hola.sql")
 	setupDatabase()
 	assert.Equal(t, zbot.DatabaseType, "sqlite", "DataBaseType sqlite OK")
 	assert.Equal(t, "DB: hola.sql", zbot.Db.GetConnectionInfo(), "DataBaseType sqlite OK")
