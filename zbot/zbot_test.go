@@ -265,6 +265,53 @@ func TestGetCurrentDirectory(t *testing.T) {
 	assert.Equal(t, dir, directory, "getting current directory")
 }
 
+func TestProcessingLearnReplyTo(t *testing.T) {
+	dbMock := &db.MockZbotDatabase{
+		Level: "666",
+		File:  "hola.db",
+	}
+
+	botMsg := tb.Message{Text: "!learn arg1",
+		Sender: &tb.User{
+			Username:  "ssalvatori",
+			FirstName: "stefano",
+		},
+		ReplyTo: &tb.Message{
+			Text: "message in reply-to",
+			Sender: &tb.User{
+				Username: "otheruser",
+			},
+		},
+	}
+	result := processing(dbMock, botMsg)
+
+	assert.Equal(t, "[arg1] - [otheruser message in reply-to]", result, "!learn with replayto")
+}
+
+func TestMessageProcessing(t *testing.T) {
+	dbMock := &db.MockZbotDatabase{
+		Level: "666",
+		File:  "hola.db",
+	}
+
+	botMsg := tb.Message{Text: "!learn arg1",
+		Sender: &tb.User{
+			Username:  "ssalvatori",
+			FirstName: "stefano",
+		},
+		ReplyTo: &tb.Message{
+			Text: "message in reply-to",
+			Sender: &tb.User{
+				Username: "otheruser",
+			},
+		},
+	}
+
+	result := messagesProcessing(dbMock, &botMsg)
+
+	assert.Equal(t, "[arg1] - [otheruser message in reply-to]", result, "!learn with replayto")
+}
+
 /*
 func TestMessagesProcessing(t *testing.T) {
 	dbMock := &db.MockZbotDatabase{
