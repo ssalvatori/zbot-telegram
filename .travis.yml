@@ -1,7 +1,7 @@
 sudo: required
 language: go
 go:
-  - 1.11.1
+  - "1.08"
 env:
   - BOT_TOKEN=1234:334
 before_install:
