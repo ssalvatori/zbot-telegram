@@ -1,9 +1,11 @@
 package zbot
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -15,12 +17,15 @@ import (
 )
 
 var (
-	Version      = "dev-master"
-	BuildTime    = time.Now().String()
-	GitHash      = "undefined"
+	version   = "dev-master"
+	buildTime = time.Now().String()
+	gitHash   = "undefined"
+	//DatabaseType database backend to be use (mysql or sqlite)
 	DatabaseType = ""
-	APIToken     = ""
-	ModulesPath  = getCurrentDirectory() + "/../modules/"
+	//APIToken Telegram API Token (key:secret Format)
+	APIToken = ""
+	//ModulesPath Absolute path where the modules are located
+	ModulesPath = getCurrentDirectory() + "/../modules/"
 )
 
 var Db db.ZbotDatabase
@@ -38,7 +43,7 @@ var levelsConfig = command.Levels{
 
 // Execute
 func Execute() {
-	log.Info("Loading zbot-telegram version [" + Version + "] [" + BuildTime + "] [" + GitHash + "]")
+	log.Info("Loading zbot-telegram version [" + version + "] [" + buildTime + "] [" + gitHash + "]")
 
 	log.Info("Database: [" + DatabaseType + "] Modules: [" + ModulesPath + "]")
 
@@ -125,7 +130,7 @@ func processing(db db.ZbotDatabase, msg tb.Message) string {
 
 	// TODO: how to clean this code
 	commands := &command.PingCommand{}
-	versionCommand := &command.VersionCommand{Version: Version, BuildTime: BuildTime}
+	versionCommand := &command.VersionCommand{Version: version, BuildTime: buildTime}
 	statsCommand := &command.StatsCommand{Db: db, Levels: levelsConfig}
 	randCommand := &command.RandCommand{Db: db, Levels: levelsConfig}
 	topCommand := &command.TopCommand{Db: db, Levels: levelsConfig}
@@ -179,11 +184,18 @@ func processing(db db.ZbotDatabase, msg tb.Message) string {
 	return outputMsg
 }
 
-// GetDisabledCommands setup disabled commands
-func GetDisabledCommands(file string) {
-	if file != "" {
-		command.GetDisabledCommands(file)
+// SetDisabledCommands setup disabled commands
+func SetDisabledCommands(dataBinaryContent []byte) {
+	var c []string
+	err := json.Unmarshal(dataBinaryContent, &c)
+
+	if err != nil {
+		log.Debug("No disabled commands")
+		return
 	}
+
+	command.DisabledCommands = c
+	sort.Strings(command.DisabledCommands)
 }
 
 func getCurrentDirectory() string {

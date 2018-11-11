@@ -2,8 +2,6 @@ package command
 
 import (
 	"encoding/json"
-	"io/ioutil"
-	"os"
 	"reflect"
 	"regexp"
 	"sort"
@@ -46,17 +44,16 @@ func getTerms(items []db.DefinitionItem) []string {
 	return terms
 }
 
-// GetDisabledCommands Reading file to disable son modules
-func GetDisabledCommands(disableCommandFile string) {
-	log.Debug("Reading file ", disableCommandFile)
-	raw, err := ioutil.ReadFile(disableCommandFile)
+// SetDisabledCommands get the disabled commands from binary json
+func SetDisabledCommands(dataBinaryContent []byte) {
+	var c []string
+	err := json.Unmarshal(dataBinaryContent, &c)
+
 	if err != nil {
-		log.Error(err.Error())
-		os.Exit(1)
+		log.Debug("No disabled commands")
+		return
 	}
 
-	var c []string
-	json.Unmarshal(raw, &c)
 	DisabledCommands = c
 	sort.Strings(DisabledCommands)
 }

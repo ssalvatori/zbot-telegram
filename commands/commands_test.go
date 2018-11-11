@@ -1,6 +1,7 @@
 package command
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/ssalvatori/zbot-telegram-go/db"
@@ -77,4 +78,28 @@ func TestGetMinimumLevel(t *testing.T) {
 	assert.Equal(t, minimumLevels.Lock, GetMinimumLevel("lock", minimumLevels), "checking lock")
 
 	assert.Equal(t, 0, GetMinimumLevel("hola", minimumLevels), "checking level not defined")
+}
+
+func TestSetDisabledCommands(t *testing.T) {
+
+	commands := `["level","ignore"]`
+	jsonRaw := json.RawMessage(commands)
+	binary, _ := jsonRaw.MarshalJSON()
+	SetDisabledCommands(binary)
+	disabledCommands := []string{"ignore", "level"}
+
+	assert.Equal(t, disabledCommands, DisabledCommands, "disabled command")
+}
+
+func TestSetDisabledCommandsEmpty(t *testing.T) {
+
+	DisabledCommands = []string(nil)
+
+	commands := ``
+	jsonRaw := json.RawMessage(commands)
+	binary, _ := jsonRaw.MarshalJSON()
+	SetDisabledCommands(binary)
+	disabledCommands := []string(nil)
+
+	assert.Equal(t, disabledCommands, DisabledCommands, "no disabled command")
 }

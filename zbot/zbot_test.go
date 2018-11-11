@@ -36,7 +36,7 @@ func TestProcessingVersion(t *testing.T) {
 		File:  "hola.db",
 	}
 
-	BuildTime = "2017-05-06 09:59:21.318841424 +0300 EEST"
+	buildTime = "2017-05-06 09:59:21.318841424 +0300 EEST"
 	command.DisabledCommands = nil
 
 	botMsg := tb.Message{
@@ -46,7 +46,7 @@ func TestProcessingVersion(t *testing.T) {
 		},
 	}
 	result := processing(dbMock, botMsg)
-	assert.Equal(t, "zbot golang version ["+Version+"] build-time ["+BuildTime+"]", result, "!version default")
+	assert.Equal(t, "zbot golang version ["+version+"] build-time ["+buildTime+"]", result, "!version default")
 }
 
 func TestProcessingStats(t *testing.T) {

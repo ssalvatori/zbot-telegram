@@ -74,3 +74,11 @@ func TestSetupDatabaseMysql(t *testing.T) {
 	assert.Equal(t, "root:pass@localhost:3306/test", zbot.Db.GetConnectionInfo(), "DataBaseType mysql OK")
 
 }
+
+func TestGetDisabledCommandsError(t *testing.T) {
+	assert.Error(t, getDisabledCommands("lala.json"), "", "Disabled Command Error")
+}
+
+func TestGetDisabledCommands(t *testing.T) {
+	assert.Equal(t, getDisabledCommands("main_test.go"), nil, "Set Disabled Commands")
+}

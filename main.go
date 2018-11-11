@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io/ioutil"
 	"os"
 
 	"fmt"
@@ -33,9 +34,23 @@ func setUp() {
 
 	if os.Getenv("ZBOT_DISABLED_COMMANDS") != "" {
 		log.Info("Disabled modules configuration = ", os.Getenv("ZBOT_DISABLED_COMMANDS"))
-		zbot.GetDisabledCommands(os.Getenv("ZBOT_DISABLED_COMMANDS"))
+		getDisabledCommands(os.Getenv("ZBOT_DISABLED_COMMANDS"))
 	}
 
+}
+
+func getDisabledCommands(file string) error {
+
+	log.Debug("Reading file ", file)
+	raw, err := ioutil.ReadFile(file)
+
+	if err != nil {
+		log.Error(fmt.Sprintf("ccould not file: %v", err))
+		return fmt.Errorf("could not file: %v", err)
+	}
+
+	zbot.SetDisabledCommands(raw)
+	return nil
 }
 
 // setUpLog setup log level using environment variables
