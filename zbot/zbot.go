@@ -198,6 +198,11 @@ func SetDisabledCommands(dataBinaryContent []byte) {
 	sort.Strings(command.DisabledCommands)
 }
 
+// GetDisabledCommands get disabled zbot commands
+func GetDisabledCommands() []string {
+	return command.DisabledCommands
+}
+
 func getCurrentDirectory() string {
 	ex, err := os.Getwd()
 	if err != nil {

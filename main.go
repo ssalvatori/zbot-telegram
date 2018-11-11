@@ -34,12 +34,12 @@ func setUp() {
 
 	if os.Getenv("ZBOT_DISABLED_COMMANDS") != "" {
 		log.Info("Disabled modules configuration = ", os.Getenv("ZBOT_DISABLED_COMMANDS"))
-		getDisabledCommands(os.Getenv("ZBOT_DISABLED_COMMANDS"))
+		setDisabledCommands(os.Getenv("ZBOT_DISABLED_COMMANDS"))
 	}
 
 }
 
-func getDisabledCommands(file string) error {
+func setDisabledCommands(file string) error {
 
 	log.Debug("Reading file ", file)
 	raw, err := ioutil.ReadFile(file)

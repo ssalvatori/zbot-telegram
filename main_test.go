@@ -24,6 +24,10 @@ func TestSetUp(t *testing.T) {
 	os.Setenv("ZBOT_MODULES_PATH", "/tmp")
 	setUp()
 	assert.Equal(t, "/tmp/", zbot.ModulesPath, "Setting module path")
+
+	os.Setenv("ZBOT_DISABLED_COMMANDS", "lala.json")
+	setUp()
+	assert.Equal(t, []string(nil), zbot.GetDisabledCommands(), "Setting DisableCommands")
 }
 
 func TestSetUpLog(t *testing.T) {
@@ -75,10 +79,8 @@ func TestSetupDatabaseMysql(t *testing.T) {
 
 }
 
-func TestGetDisabledCommandsError(t *testing.T) {
-	assert.Error(t, getDisabledCommands("lala.json"), "", "Disabled Command Error")
-}
+func TestSetDisabledCommands(t *testing.T) {
+	assert.Equal(t, setDisabledCommands("main_test.go"), nil, "Set Disabled Commands")
 
-func TestGetDisabledCommands(t *testing.T) {
-	assert.Equal(t, getDisabledCommands("main_test.go"), nil, "Set Disabled Commands")
+	assert.Error(t, setDisabledCommands("lala.json"), "", "Disabled Command Error")
 }

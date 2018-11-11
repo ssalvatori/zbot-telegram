@@ -1,10 +1,8 @@
 package command
 
 import (
-	"encoding/json"
 	"reflect"
 	"regexp"
-	"sort"
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
@@ -45,6 +43,7 @@ func getTerms(items []db.DefinitionItem) []string {
 }
 
 // SetDisabledCommands get the disabled commands from binary json
+/*
 func SetDisabledCommands(dataBinaryContent []byte) {
 	var c []string
 	err := json.Unmarshal(dataBinaryContent, &c)
@@ -57,6 +56,7 @@ func SetDisabledCommands(dataBinaryContent []byte) {
 	DisabledCommands = c
 	sort.Strings(DisabledCommands)
 }
+*/
 
 // GetCommandInformation this will parse the text and return the commands and the level minimum to use it or 0 when is
 // not defined a level
@@ -75,9 +75,10 @@ func CheckPermission(command string, user user.User, requiredLevel int) bool {
 
 	if user.Level >= requiredLevel {
 		return true
-	} else {
-		return false
 	}
+
+	return false
+
 }
 
 // IsCommandDisabled check if a command is in the disable list

@@ -1,6 +1,7 @@
 package zbot
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"testing"
@@ -310,6 +311,17 @@ func TestMessageProcessing(t *testing.T) {
 	result := messagesProcessing(dbMock, &botMsg)
 
 	assert.Equal(t, "[arg1] - [otheruser message in reply-to]", result, "!learn with replayto")
+}
+
+func TestGetDisabledCommands(t *testing.T) {
+
+	commands := `["level","ignore"]`
+	jsonRaw := json.RawMessage(commands)
+	binary, _ := jsonRaw.MarshalJSON()
+
+	SetDisabledCommands(binary)
+
+	assert.Equal(t, []string{"ignore", "level"}, GetDisabledCommands(), "Get Disabled Commands")
 }
 
 /*
