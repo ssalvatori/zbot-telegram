@@ -25,7 +25,7 @@ func (handler *FindCommand) ProcessText(text string, user user.User) string {
 		term := commandPattern.FindStringSubmatch(text)
 		results, err := handler.Db.Find(term[1])
 		if err != nil {
-			log.Error(err)
+			log.Error(fmt.Errorf("Error learn %v", err))
 			return ""
 		}
 		result = fmt.Sprintf("%s", strings.Join(getTerms(results), " "))

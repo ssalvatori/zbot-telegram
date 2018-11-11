@@ -1,12 +1,13 @@
 package utils
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_InArray(t *testing.T) {
+func TestInArray(t *testing.T) {
 	tests := []struct {
 		lookFor        string
 		ArrayOfStrings []string
@@ -23,4 +24,11 @@ func Test_InArray(t *testing.T) {
 		got := InArray(test.lookFor, test.ArrayOfStrings)
 		assert.Equal(t, test.expected, got, "Testing in array")
 	}
+}
+
+func TestGetCurrentDirectory(t *testing.T) {
+	currentPath := os.Getenv("PWD")
+
+	assert.Equal(t, GetCurrentDirectory(), currentPath, "")
+
 }

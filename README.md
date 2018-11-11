@@ -3,6 +3,8 @@
 [![Build Status](https://travis-ci.org/ssalvatori/zbot-telegram-go.svg?branch=master)](https://travis-ci.org/ssalvatori/zbot-telegram-go)
 [![Coverage Status](https://coveralls.io/repos/github/ssalvatori/zbot-telegram-go/badge.svg)](https://coveralls.io/github/ssalvatori/zbot-telegram-go)
 [![Go Report Card](https://goreportcard.com/badge/github.com/ssalvatori/zbot-telegram-go)](https://goreportcard.com/report/github.com/ssalvatori/zbot-telegram-go)
+[![Build status](https://ci.appveyor.com/api/projects/status/sml2sck29885bh4g?svg=true)](https://ci.appveyor.com/project/ssalvatori/zbot-telegram-go)
+
 
 ## Requirements
 

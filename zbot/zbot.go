@@ -3,7 +3,6 @@ package zbot
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"regexp"
 	"sort"
 	"strings"
@@ -13,6 +12,7 @@ import (
 	"github.com/ssalvatori/zbot-telegram-go/commands"
 	"github.com/ssalvatori/zbot-telegram-go/db"
 	"github.com/ssalvatori/zbot-telegram-go/user"
+	"github.com/ssalvatori/zbot-telegram-go/utils"
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
@@ -25,7 +25,7 @@ var (
 	//APIToken Telegram API Token (key:secret Format)
 	APIToken = ""
 	//ModulesPath Absolute path where the modules are located
-	ModulesPath = getCurrentDirectory() + "/../modules/"
+	ModulesPath = utils.GetCurrentDirectory() + "/../modules/"
 )
 
 var Db db.ZbotDatabase
@@ -41,7 +41,7 @@ var levelsConfig = command.Levels{
 	Stats:  0,
 }
 
-// Execute
+//Execute run Zbot
 func Execute() {
 	log.Info("Loading zbot-telegram version [" + version + "] [" + buildTime + "] [" + gitHash + "]")
 
@@ -191,7 +191,7 @@ func SetDisabledCommands(dataBinaryContent []byte) {
 
 	if err != nil {
 		log.Debug("No disabled commands")
-		return
+		command.DisabledCommands = []string{}
 	}
 
 	command.DisabledCommands = c
@@ -201,13 +201,4 @@ func SetDisabledCommands(dataBinaryContent []byte) {
 // GetDisabledCommands get disabled zbot commands
 func GetDisabledCommands() []string {
 	return command.DisabledCommands
-}
-
-func getCurrentDirectory() string {
-	ex, err := os.Getwd()
-	if err != nil {
-		log.Panic(err.Error())
-		return ""
-	}
-	return ex
 }

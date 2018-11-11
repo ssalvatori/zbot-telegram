@@ -1,5 +1,12 @@
 package utils
 
+import (
+	"fmt"
+	"os"
+
+	log "github.com/Sirupsen/logrus"
+)
+
 // InArray returns true if the string 's' is found in the array 'arr', otherwise false
 func InArray(s string, arr []string) bool {
 	for _, v := range arr {
@@ -8,4 +15,14 @@ func InArray(s string, arr []string) bool {
 		}
 	}
 	return false
+}
+
+//GetCurrentDirectory Return the current path
+func GetCurrentDirectory() string {
+	ex, err := os.Getwd()
+	if err != nil {
+		log.Error(fmt.Errorf("Could get the path %v", err))
+		return os.Getenv("PWD")
+	}
+	return ex
 }

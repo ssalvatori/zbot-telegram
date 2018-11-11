@@ -3,7 +3,6 @@ package zbot
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/ssalvatori/zbot-telegram-go/commands"
@@ -260,12 +259,6 @@ func TestProcessingExternalModuleNotFound(t *testing.T) {
 	assert.Equal(t, "", result, "external module not found")
 }
 
-func TestGetCurrentDirectory(t *testing.T) {
-	directory := getCurrentDirectory()
-	dir, _ := os.Getwd()
-	assert.Equal(t, dir, directory, "getting current directory")
-}
-
 func TestProcessingLearnReplyTo(t *testing.T) {
 	dbMock := &db.MockZbotDatabase{
 		Level: "666",
@@ -322,6 +315,14 @@ func TestGetDisabledCommands(t *testing.T) {
 	SetDisabledCommands(binary)
 
 	assert.Equal(t, []string{"ignore", "level"}, GetDisabledCommands(), "Get Disabled Commands")
+
+	commands = `["level]`
+	jsonRaw = json.RawMessage(commands)
+	binary, _ = jsonRaw.MarshalJSON()
+	SetDisabledCommands(binary)
+
+	assert.Equal(t, []string(nil), GetDisabledCommands(), "Get Disabled Commands")
+
 }
 
 /*

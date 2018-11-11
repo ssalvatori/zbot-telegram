@@ -19,6 +19,10 @@ func TestSearchCommandOK(t *testing.T) {
 		Search_terms: []string{},
 	}
 	assert.Equal(t, "", searchCommand.ProcessText("!search", userTest), "Search no next command")
+
+	searchCommand.Db = &db.MockZbotDatabase{Error: true}
+	assert.Equal(t, "", searchCommand.ProcessText("!search foo ", userTest), "Search error")
+
 	searchCommand.Next = &FakeCommand{}
 	assert.Equal(t, "Fake OK", searchCommand.ProcessText("?? ", userTest), "Search next command")
 }
