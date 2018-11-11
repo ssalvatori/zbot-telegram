@@ -24,6 +24,7 @@ type MockZbotDatabase struct {
 	User_ignored []UserIgnore
 	Ignore_User  bool
 	Error        bool
+	ErrorAppend  bool
 }
 
 func (d *MockZbotDatabase) GetConnectionInfo() string {
@@ -161,6 +162,9 @@ func (d *MockZbotDatabase) Lock(item DefinitionItem) error {
 }
 
 func (d *MockZbotDatabase) Append(item DefinitionItem) error {
+	if d.ErrorAppend {
+		return errors.New("mock")
+	}
 	return nil
 }
 

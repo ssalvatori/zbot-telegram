@@ -27,9 +27,6 @@ func TestAppendCommandOK(t *testing.T) {
 	userTest.Level = 100
 
 	assert.Equal(t, "[foo] = [bar]", appendCommand.ProcessText("!append foo bar", userTest), "Append Command")
-}
-
-func TestAppendCommandNoLevel(t *testing.T) {
 
 	appendCommand.Db = &db.MockZbotDatabase{
 		Term:    "foo",
@@ -46,4 +43,20 @@ func TestAppendCommandNoLevel(t *testing.T) {
 	userTest.Level = 5
 
 	assert.Equal(t, fmt.Sprintf("Your level is not enough < %d", appendCommand.Levels.Lock), appendCommand.ProcessText("!append foo bar", userTest), "Append Command No Level")
+
+	appendCommand.Db = &db.MockZbotDatabase{
+		Error: true,
+	}
+	appendCommand.Levels = Levels{
+		Append: 1,
+	}
+	assert.Equal(t, "", appendCommand.ProcessText("!append foo bar2", userTest), "Append Error Set")
+
+	appendCommand.Db = &db.MockZbotDatabase{
+		ErrorAppend: true,
+	}
+	assert.Equal(t, "", appendCommand.ProcessText("!append foo bar2", userTest), "Append Error Get")
+
+	appendCommand.Next = &FakeCommand{}
+	assert.Equal(t, "Fake OK", appendCommand.ProcessText("??", userTest), "Append next command")
 }

@@ -1,12 +1,13 @@
 sudo: required
 language: go
 go:
-  - "1.11.1"
+  - "1.8.1"
 env:
   - BOT_TOKEN=1234:334
 before_install:
   - sudo apt-get install gcc-multilib
   - go get -u -v github.com/mattn/go-sqlite3
+  - go get golang.org/x/tools/cmd/cover
   - go get github.com/mattn/goveralls
   - go get github.com/mitchellh/gox
 script:

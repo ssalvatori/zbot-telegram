@@ -52,7 +52,6 @@ func Execute() {
 		Poller: &tb.LongPoller{Timeout: 10 * time.Second},
 	})
 
-	//APIToken)
 	if err != nil {
 		log.Fatal(err)
 	}

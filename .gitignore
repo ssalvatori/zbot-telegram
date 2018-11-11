@@ -27,3 +27,5 @@ linux.db
 Makefile
 
 .vscode/
+.cover/
+coverage.sh

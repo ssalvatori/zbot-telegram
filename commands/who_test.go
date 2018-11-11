@@ -9,7 +9,7 @@ import (
 
 var whoCommand = WhoCommand{}
 
-func TestWhoCommandOK(t *testing.T) {
+func TestWhoCommand(t *testing.T) {
 
 	whoCommand.Db = &db.MockZbotDatabase{
 		Term:    "foo",
@@ -19,17 +19,10 @@ func TestWhoCommandOK(t *testing.T) {
 		Level:   "100",
 	}
 	whoCommand.Levels = Levels{
-		Ignore: 10,
-		Append: 10,
-		Learn:  10,
-		Lock:   10,
 		Who: 1,
 	}
 
 	assert.Equal(t, "[foo] by [ssalvatori] on [2017-03-22]", whoCommand.ProcessText("!who foo", userTest), "Who Command OK")
-}
-
-func TestWhoCommandNoLevel(t *testing.T) {
 
 	whoCommand.Db = &db.MockZbotDatabase{
 		Term:    "foo",
@@ -37,11 +30,19 @@ func TestWhoCommandNoLevel(t *testing.T) {
 		Level:   "5",
 	}
 	whoCommand.Levels = Levels{
-		Ignore: 10,
-		Append: 10,
-		Learn:  10,
-		Lock:   10,
+		Who: 10,
 	}
 
-	assert.Equal(t, "", appendCommand.ProcessText("!who foo", userTest), "Who Command No Level")
+	assert.Equal(t, "", whoCommand.ProcessText("!who foo", userTest), "Who Command No Level")
+
+	whoCommand.Db = &db.MockZbotDatabase{
+		Error: true,
+	}
+	whoCommand.Levels = Levels{
+		Who: 1,
+	}
+	assert.Equal(t, "", whoCommand.ProcessText("!who foo", userTest), "Who with internal error")
+
+	whoCommand.Next = &FakeCommand{}
+	assert.Equal(t, "Fake OK", whoCommand.ProcessText("!who2 foo", userTest), "Who next command")
 }

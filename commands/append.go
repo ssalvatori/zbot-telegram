@@ -32,11 +32,13 @@ func (handler *AppendCommand) ProcessText(text string, user user.User) string {
 			}
 			err := handler.Db.Append(def)
 			if err != nil {
-				log.Error(err)
+				log.Error(fmt.Errorf("Error append %v", err))
+				return ""
 			}
 			def, err = handler.Db.Get(def.Term)
 			if err != nil {
-				log.Error(err)
+				log.Error(fmt.Errorf("Error append %v", err))
+				return ""
 			}
 			result = fmt.Sprintf("[%s] = [%s]", def.Term, def.Meaning)
 		} else {
