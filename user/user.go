@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/tucnak/telebot"
+	tb "gopkg.in/tucnak/telebot.v2"
 )
 
 type User struct {
@@ -18,7 +18,7 @@ type User struct {
 }
 
 //Create a user using telegram information
-func BuildUser(sender telebot.User, db db.ZbotDatabase) User {
+func BuildUser(sender *tb.User, db db.ZbotDatabase) User {
 	user := User{}
 	user.Ident = strings.ToLower(sender.FirstName)
 

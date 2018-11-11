@@ -5,18 +5,18 @@ import (
 
 	"github.com/ssalvatori/zbot-telegram-go/db"
 	"github.com/stretchr/testify/assert"
-	"github.com/tucnak/telebot"
+	tb "gopkg.in/tucnak/telebot.v2"
 )
 
 func TestBuildUser(t *testing.T) {
-	sender := telebot.User{}
+	sender := tb.User{}
 	newUser := User{}
 
 	mockDatabase := &db.MockZbotDatabase{
 		Level: "10",
 	}
 
-	sender = telebot.User{
+	sender = tb.User{
 		FirstName: "stefano",
 		Username:  "ssalvatori",
 	}
@@ -27,9 +27,9 @@ func TestBuildUser(t *testing.T) {
 		Ident:    "stefano",
 	}
 
-	assert.Equal(t, newUser, BuildUser(sender, mockDatabase), "creating with username")
+	assert.Equal(t, newUser, BuildUser(&sender, mockDatabase), "creating with username")
 
-	sender = telebot.User{
+	sender = tb.User{
 		FirstName: "stefano",
 		Username:  "",
 	}
@@ -39,7 +39,7 @@ func TestBuildUser(t *testing.T) {
 		Ident:    "stefano",
 	}
 
-	assert.Equal(t, newUser, BuildUser(sender, mockDatabase), "creating without username")
+	assert.Equal(t, newUser, BuildUser(&sender, mockDatabase), "creating without username")
 
 }
 

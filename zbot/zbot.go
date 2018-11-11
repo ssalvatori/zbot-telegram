@@ -1,9 +1,11 @@
 package zbot
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -11,17 +13,22 @@ import (
 	"github.com/ssalvatori/zbot-telegram-go/commands"
 	"github.com/ssalvatori/zbot-telegram-go/db"
 	"github.com/ssalvatori/zbot-telegram-go/user"
-	"github.com/tucnak/telebot"
+	tb "gopkg.in/tucnak/telebot.v2"
 )
 
 var (
-	Version     = "dev-master"
-	BuildTime   = time.Now().String()
-	GitHash     = "undefined"
-	Database    = "./sample.db"
-	ApiToken    = ""
+	version   = "dev-master"
+	buildTime = time.Now().String()
+	gitHash   = "undefined"
+	//DatabaseType database backend to be use (mysql or sqlite)
+	DatabaseType = ""
+	//APIToken Telegram API Token (key:secret Format)
+	APIToken = ""
+	//ModulesPath Absolute path where the modules are located
 	ModulesPath = getCurrentDirectory() + "/../modules/"
 )
+
+var Db db.ZbotDatabase
 
 var levelsConfig = command.Levels{
 	Ignore: 100,
@@ -36,84 +43,94 @@ var levelsConfig = command.Levels{
 
 // Execute
 func Execute() {
-	log.Info("Loading zbot-telegram version [" + Version + "] [" + BuildTime + "] [" + GitHash + "]")
+	log.Info("Loading zbot-telegram version [" + version + "] [" + buildTime + "] [" + gitHash + "]")
 
-	log.Info("Database: [" + Database + "] Modules: [" + ModulesPath + "]")
+	log.Info("Database: [" + DatabaseType + "] Modules: [" + ModulesPath + "]")
 
-	bot, err := telebot.NewBot(ApiToken)
+	bot, err := tb.NewBot(tb.Settings{
+		Token:  APIToken,
+		Poller: &tb.LongPoller{Timeout: 10 * time.Second},
+	})
+
+	//APIToken)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	database := &db.SqlLite{
-		File: Database,
-	}
-
-	err = database.Init()
-	defer database.Close()
+	err = Db.Init()
+	defer Db.Close()
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	go database.UserCleanIgnore()
-	bot.Messages = make(chan telebot.Message, 1000)
-	go messagesProcessing(database, bot)
+	go Db.UserCleanIgnore()
 
-	bot.Start(1 * time.Second)
+	bot.Handle(tb.OnText, func(m *tb.Message) {
+		var response = messagesProcessing(Db, m)
+		if response != "" {
+			bot.Send(m.Chat, response)
+		}
+		//go messagesProcessing(Db, m)
+	})
+
+	bot.Start()
 }
 
 // messagesProcessing
-func messagesProcessing(db db.ZbotDatabase, bot *telebot.Bot) {
+func messagesProcessing(db db.ZbotDatabase, message *tb.Message) string {
 
-	for message := range bot.Messages {
+	//we're going to process only the message starting with ! or ?
+	processingMsg := regexp.MustCompilePOSIX(`^[!|?].*`)
 
-		//we're going to process only the message starting with ! or ?
-		processingMsg := regexp.MustCompilePOSIX(`^[!|?].*`)
-
-		//check if the user isn't on the ignore_list
-		log.Debug(fmt.Sprintf("Checking user [%s] ", strings.ToLower(message.Sender.Username)))
-		ignore, err := db.UserCheckIgnore(strings.ToLower(message.Sender.Username))
-		if err != nil {
-			log.Error(err)
-			ignore = true
-		}
-		if !ignore {
-			if processingMsg.MatchString(message.Text) {
-				log.Debug(fmt.Sprintf("Received a message from %s with the text: %s", message.Sender.Username, message.Text))
-				go sendResponse(bot, db, message)
-			}
-		} else {
-			log.Debug(fmt.Sprintf("User [%s] ignored", strings.ToLower(message.Sender.Username)))
-		}
+	//check if the user isn't on the ignore_list
+	log.Debug(fmt.Sprintf("Checking user [%s] ", strings.ToLower(message.Sender.Username)))
+	ignore, err := db.UserCheckIgnore(strings.ToLower(message.Sender.Username))
+	if err != nil {
+		log.Error(err)
+		ignore = true
 	}
+	if !ignore {
+		if processingMsg.MatchString(message.Text) {
+			log.Debug(fmt.Sprintf("Received a message from %s with the text: %s", message.Sender.Username, message.Text))
+			return processing(db, *message)
+			// sendResponse(msg, db, message)
+		}
+	} else {
+		log.Debug(fmt.Sprintf("User [%s] ignored", strings.ToLower(message.Sender.Username)))
+	}
+
+	return ""
+
 }
 
 // sendResponse
-func sendResponse(bot *telebot.Bot, db db.ZbotDatabase, msg telebot.Message) {
-	response := processing(db, msg)
-	bot.SendMessage(msg.Chat, response, nil)
-}
+// func sendResponse(bot *tb.Bot, db db.ZbotDatabase, msg tb.Message) {
+// 	response := processing(db, msg)
+// 	bot.Send(msg.Chat, response, nil)
+// }
 
 // processing
-func processing(db db.ZbotDatabase, msg telebot.Message) string {
+func processing(db db.ZbotDatabase, msg tb.Message) string {
 
 	commandName := command.GetCommandInformation(msg.Text)
 
 	if command.IsCommandDisabled(commandName) {
-		log.Debug("Command: ", commandName, " is disable")
+		log.Debug("Command [", commandName, "] is disabled")
 		return ""
 	}
 
 	user := user.BuildUser(msg.Sender, db)
 
-	if !command.CheckPermission(commandName, user, levelsConfig) {
-		return fmt.Sprintf("Your level is not enough < %s", command.GetMinimumLevel(commandName, levelsConfig))
+	requiredLevel := command.GetMinimumLevel(commandName, levelsConfig)
+
+	if !command.CheckPermission(commandName, user, requiredLevel) {
+		return fmt.Sprintf("Your level is not enough < %d", requiredLevel)
 	}
 
 	// TODO: how to clean this code
 	commands := &command.PingCommand{}
-	versionCommand := &command.VersionCommand{Version: Version, BuildTime: BuildTime}
+	versionCommand := &command.VersionCommand{Version: version, BuildTime: buildTime}
 	statsCommand := &command.StatsCommand{Db: db, Levels: levelsConfig}
 	randCommand := &command.RandCommand{Db: db, Levels: levelsConfig}
 	topCommand := &command.TopCommand{Db: db, Levels: levelsConfig}
@@ -156,14 +173,29 @@ func processing(db db.ZbotDatabase, msg telebot.Message) string {
 	forgetCommand.Next = ignoreCommand
 	ignoreCommand.Next = externalCommand
 
-	outputMsg := commands.ProcessText(msg.Text, user)
+	var messageString = msg.Text
+
+	if msg.ReplyTo != nil {
+		messageString = fmt.Sprintf("%s %s %s", messageString, msg.ReplyTo.Sender.Username, msg.ReplyTo.Text)
+	}
+
+	outputMsg := commands.ProcessText(messageString, user)
 
 	return outputMsg
 }
 
-// GetDisabledCommands setup disabled commands
-func GetDisabledCommands(file string) {
-	command.GetDisabledCommands(file)
+// SetDisabledCommands setup disabled commands
+func SetDisabledCommands(dataBinaryContent []byte) {
+	var c []string
+	err := json.Unmarshal(dataBinaryContent, &c)
+
+	if err != nil {
+		log.Debug("No disabled commands")
+		return
+	}
+
+	command.DisabledCommands = c
+	sort.Strings(command.DisabledCommands)
 }
 
 func getCurrentDirectory() string {

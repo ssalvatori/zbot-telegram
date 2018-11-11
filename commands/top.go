@@ -2,11 +2,12 @@ package command
 
 import (
 	"fmt"
+	"regexp"
+	"strings"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/ssalvatori/zbot-telegram-go/db"
 	"github.com/ssalvatori/zbot-telegram-go/user"
-	"regexp"
-	"strings"
 )
 
 type TopCommand struct {
@@ -29,7 +30,7 @@ func (handler *TopCommand) ProcessText(text string, user user.User) string {
 			}
 			result = fmt.Sprintf(strings.Join(getTerms(items), " "))
 		} else {
-			result = fmt.Sprintf("Your level is not enough < %s", handler.Levels.Top)
+			result = fmt.Sprintf("Your level is not enough < %d", handler.Levels.Top)
 		}
 	} else {
 		if handler.Next != nil {

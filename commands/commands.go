@@ -2,8 +2,6 @@ package command
 
 import (
 	"encoding/json"
-	"io/ioutil"
-	"os"
 	"reflect"
 	"regexp"
 	"sort"
@@ -46,17 +44,16 @@ func getTerms(items []db.DefinitionItem) []string {
 	return terms
 }
 
-// GetDisabledCommands Reading file to disable son modules
-func GetDisabledCommands(disableCommandFile string) {
-	log.Debug("Reading file ", disableCommandFile)
-	raw, err := ioutil.ReadFile(disableCommandFile)
+// SetDisabledCommands get the disabled commands from binary json
+func SetDisabledCommands(dataBinaryContent []byte) {
+	var c []string
+	err := json.Unmarshal(dataBinaryContent, &c)
+
 	if err != nil {
-		log.Error(err.Error())
-		os.Exit(1)
+		log.Debug("No disabled commands")
+		return
 	}
 
-	var c []string
-	json.Unmarshal(raw, &c)
 	DisabledCommands = c
 	sort.Strings(DisabledCommands)
 }
@@ -73,10 +70,10 @@ func GetCommandInformation(text string) string {
 	return commandName
 }
 
-func CheckPermission(command string, user user.User, minimumLevels Levels) bool {
-	log.Debug("Checking permission for ", command, " and user ", user)
+func CheckPermission(command string, user user.User, requiredLevel int) bool {
+	log.Debug("Checking permission for [", command, "] and user ", user.Username)
 
-	if user.Level >= GetMinimumLevel(command, minimumLevels) {
+	if user.Level >= requiredLevel {
 		return true
 	} else {
 		return false
@@ -85,7 +82,8 @@ func CheckPermission(command string, user user.User, minimumLevels Levels) bool 
 
 // IsCommandDisabled check if a command is in the disable list
 func IsCommandDisabled(commandName string) bool {
-	log.Debug("Checking isCommandDisabled: ", commandName, " is diable")
+	log.Debug("Checking if [", commandName, "] is disabled")
+	//TODO BUG check DisabledCommands before check the array
 	if utils.InArray(commandName, DisabledCommands) {
 		return true
 	}
@@ -94,7 +92,7 @@ func IsCommandDisabled(commandName string) bool {
 
 // GetMinimumLevel get the minimum level required for a git command, if it is not defined return 0
 func GetMinimumLevel(commandName string, minimumLevels Levels) int {
-	log.Debug("Getting mininum level to: ", commandName)
+	log.Debug("Getting mininum level for ", commandName)
 
 	field, ok := reflect.TypeOf(&minimumLevels).Elem().FieldByName(strings.Title(commandName))
 

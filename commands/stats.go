@@ -29,7 +29,7 @@ func (handler *StatsCommand) ProcessText(text string, user user.User) string {
 			}
 			result = fmt.Sprintf("Count: %s", statTotal)
 		} else {
-			result = fmt.Sprintf("Your level is not enough < %s", handler.Levels.Stats)
+			result = fmt.Sprintf("Your level is not enough < %d", handler.Levels.Stats)
 		}
 
 	} else {

@@ -45,5 +45,5 @@ func TestAppendCommandNoLevel(t *testing.T) {
 
 	userTest.Level = 5
 
-	assert.Equal(t, fmt.Sprintf("Your level is not enough < %s", appendCommand.Levels.Lock), appendCommand.ProcessText("!append foo bar", userTest), "Append Command No Level")
+	assert.Equal(t, fmt.Sprintf("Your level is not enough < %d", appendCommand.Levels.Lock), appendCommand.ProcessText("!append foo bar", userTest), "Append Command No Level")
 }

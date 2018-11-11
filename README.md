@@ -16,6 +16,20 @@ You **must** set the **ZBOT_TOKEN** environment variable using the Telegram's AP
 * ZBOT_LOG_LEVEL : Use to set the log level the alternatives are debug,info, warn, error, panic
 * ZBOT_DATABASE_FILE : Path to the sqlite database "/path/to/file.sqlite"
 * ZBOT_MODULES_PATH : Path to the externals modules directory
+* ZBOT_DISABLED_COMMANDS: Json file with an array of disabled commands
+* ZBOT_DATABASE_TYPE: Database to be use (mysql or sqlite)
+
+## SQLite Configurations
+
+* ZBOT_SQLITE_DATABASE: Path to the SQLite file 
+
+## MySQL Configuration
+
+* ZBOT_MYSQL_USERNAME : Database username
+* ZBOT_MYSQL_PASSWORD : Database password
+* ZBOT_MYSQL_DATABASE : Database name
+* ZBOT_MYSQL_HOSTNAME : Database hostname 
+* ZBOT_MYSQL_PORT : Database port (default: 3306)
 
 ## Database Schemas
 

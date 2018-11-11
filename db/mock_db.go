@@ -4,7 +4,8 @@ import (
 	"database/sql"
 
 	"errors"
-	"github.com/tucnak/telebot"
+
+	"gopkg.in/tucnak/telebot.v2"
 )
 
 type MockZbotDatabase struct {
@@ -23,6 +24,10 @@ type MockZbotDatabase struct {
 	User_ignored []UserIgnore
 	Ignore_User  bool
 	Error        bool
+}
+
+func (d *MockZbotDatabase) GetConnectionInfo() string {
+	return "mock"
 }
 
 func (d *MockZbotDatabase) Init() error {
@@ -88,7 +93,7 @@ func (d *MockZbotDatabase) Find(criteria string) ([]DefinitionItem, error) {
 		return []DefinitionItem{}, nil
 	}
 	if d.Error {
-		return  nil, errors.New("mock")
+		return nil, errors.New("mock")
 	}
 	return []DefinitionItem{{Term: d.Term}}, nil
 }
