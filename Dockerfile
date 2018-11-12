@@ -1,5 +1,5 @@
-FROM golang:1.8.1-alpine
-MAINTAINER Stefano Salvatori <ssalvatori@gmail.com>
+FROM golang:1.11-alpine
+LABEL maintainer="ssalvatori@gmail.com"
 
 #ADD https://github.com/ssalvatori/zbot-telegram-go/releases/download/v1.0.3/zbot-telegram-go-linux-amd64 /bin/zbot
 
