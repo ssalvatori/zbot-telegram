@@ -29,3 +29,4 @@ Makefile
 .vscode/
 .cover/
 coverage.sh
+*.coverprofile
