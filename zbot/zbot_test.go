@@ -198,7 +198,7 @@ func TestProcessingUserIgnoreInsert(t *testing.T) {
 		Sender: &tb.User{FirstName: "ssalvatori", Username: "ssalvatori"},
 	}
 	result = processing(dbMock, botMsg)
-	assert.Equal(t, "You can't ignore youself", result, "!ignore add myself")
+	assert.Equal(t, "You can't ignore yourself", result, "!ignore add myself")
 
 	dbMock.Level = "10"
 	botMsg = tb.Message{

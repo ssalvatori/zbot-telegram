@@ -47,7 +47,7 @@ func (handler *IgnoreCommand) ProcessText(text string, user user.User) string {
 				}
 				result = fmt.Sprintf("User [%s] ignored for 10 minutes", args[3])
 			} else {
-				result = "You can't ignore youself"
+				result = "You can't ignore yourself"
 			}
 			break
 		}

@@ -17,7 +17,7 @@ type User struct {
 	Level    int
 }
 
-//Create a user using telegram information
+//BuildUser Create a user using telegram information
 func BuildUser(sender *tb.User, db db.ZbotDatabase) User {
 	user := User{}
 	user.Ident = strings.ToLower(sender.FirstName)
@@ -33,7 +33,7 @@ func BuildUser(sender *tb.User, db db.ZbotDatabase) User {
 	return user
 }
 
-// Get the current level for a user using its username
+//GetUserLevel Get the current level for a user using its username
 func GetUserLevel(Db db.ZbotDatabase, username string) int {
 	userLevel, err := Db.UserLevel(username)
 
@@ -47,7 +47,7 @@ func GetUserLevel(Db db.ZbotDatabase, username string) int {
 	return userLevelInt
 }
 
-// Check if username has level greater or equal that a level given
+//IsAllow Check if username has level greater or equal that a level given
 func (u User) IsAllow(level int) bool {
 	result := false
 

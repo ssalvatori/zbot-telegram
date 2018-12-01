@@ -36,12 +36,11 @@ func TestIgnoreCommandAdd(t *testing.T) {
 		},
 	}
 
-
 	userTest.Level = 1000
 	expected := "User [rigo] ignored for 10 minutes"
 	assert.Equal(t, expected, ignoreCommand.ProcessText("!ignore add rigo", userTest), "Ignore add Command")
 
-	assert.Equal(t, "You can't ignore youself", ignoreCommand.ProcessText("!ignore add ssalvatori", userTest), "Ignore add myself")
+	assert.Equal(t, "You can't ignore yourself", ignoreCommand.ProcessText("!ignore add ssalvatori", userTest), "Ignore add myself")
 
 	ignoreCommand.Db = &db.MockZbotDatabase{
 		Level: "10",
