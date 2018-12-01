@@ -8,15 +8,18 @@ env:
 before_install:
   - sudo apt-get install gcc-multilib
   - go get -u -v github.com/mattn/go-sqlite3
-  - go get golang.org/x/tools/cmd/cover
   - go get github.com/mattn/goveralls
   - go get github.com/mitchellh/gox
-  - go get -t -v ./...
+  - go get github.com/modocache/gover
 script:
-  - $HOME/gopath/bin/goveralls -service=travis-ci --ignore=db/mock_db.go,db/db.go,db/mysql.go,db/sql_lite.go
-  - go test -race -coverprofile=coverage.txt -covermode=atomic
+  - go test -v github.com/ssalvatori/zbot-telegram-go/zbot -coverprofile=zbot.coverprofile
+  - go test -v github.com/ssalvatori/zbot-telegram-go/utils -coverprofile=utils.coverprofile
+  - go test -v github.com/ssalvatori/zbot-telegram-go/user -coverprofile=user.coverprofile
+  - go test -v github.com/ssalvatori/zbot-telegram-go/db -coverprofile=db.coverprofile
+  - go test -v github.com/ssalvatori/zbot-telegram-go/commands -coverprofile=db.coverprofile
+  - $HOME/gopath/bin/gover
+  - $HOME/gopath/bin/goveralls -coverprofile gover.coverprofile -service travis-ci --ignore=db/mock_db.go,db/db.go,db/mysql.go,db/sql_lite.go
 after_success:
-  - bash <(curl -s https://codecov.io/bash)
   - $HOME/gopath/bin/gox -osarch="linux/amd64 linux/386" -cgo -ldflags "-X github.com/ssalvatori/zbot-telegram-go/zbot.Version=`git describe --tags` -X github.com/ssalvatori/zbot-telegram-go/zbot.BuildTime=`TZ=UTC date -u '+%Y-%m-%dT%H:%M:%SZ'` -X github.com/ssalvatori/zbot-telegram-go/zbot.GitHash=`git rev-parse HEAD`" -output "dist/{{.Dir}}-{{.OS}}-{{.Arch}}"
 deploy:
   provider: releases
