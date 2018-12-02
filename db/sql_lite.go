@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -49,9 +50,15 @@ func (d *ZbotSqliteDatabase) UserIgnoreList() ([]UserIgnore, error) {
 	return users, nil
 }
 
+//Init start connection with sql database
 func (d *ZbotSqliteDatabase) Init() error {
-	log.Debug("Connecting to database")
-	db, err := sql.Open("sqlite3", d.File)
+
+	if _, err := os.Stat(d.File); os.IsNotExist(err) {
+		log.Fatal(fmt.Sprintf("Sqlite file [%s] does not exist!", d.File))
+	}
+
+	log.Info("Connecting to database: " + d.File)
+	db, err := sql.Open("sqlite3", "file:"+d.File+"?cache=shared&mode=rwc")
 	if err != nil {
 		log.Error(err)
 		return err
@@ -303,7 +310,10 @@ func (d *ZbotSqliteDatabase) UserIgnoreInsert(username string) error {
 	}
 	return nil
 }
-func (d *ZbotSqliteDatabase) UserCheckIgnore(username string) (bool, error) {
+
+//UserCheckIgnore check if user there is any row in ignore_list table for some username
+// and an until greater than the current time
+func (d *ZbotSqliteDatabase) UserCheckIgnore(username string) bool {
 	ignored := false
 
 	now := time.Now().Unix()
@@ -315,9 +325,8 @@ func (d *ZbotSqliteDatabase) UserCheckIgnore(username string) (bool, error) {
 		if err == sql.ErrNoRows {
 			ignored = false
 		} else {
-			log.Fatal(err)
-			return ignored, err
-
+			log.Error(err)
+			return ignored
 		}
 	}
 	levelInt, _ := strconv.Atoi(level)
@@ -326,7 +335,7 @@ func (d *ZbotSqliteDatabase) UserCheckIgnore(username string) (bool, error) {
 		ignored = true
 	}
 
-	return ignored, nil
+	return ignored
 }
 func (d *ZbotSqliteDatabase) UserCleanIgnore() error {
 	for {

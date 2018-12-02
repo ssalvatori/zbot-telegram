@@ -22,28 +22,24 @@ func (handler *AppendCommand) ProcessText(text string, user user.User) string {
 	result := ""
 
 	if commandPattern.MatchString(text) {
-		if user.IsAllow(handler.Levels.Append) {
-			term := commandPattern.FindStringSubmatch(text)
-			def := db.DefinitionItem{
-				Term:    term[1],
-				Meaning: term[2],
-				Author:  fmt.Sprintf("%s!%s@telegram.bot", user.Username, user.Ident),
-				Date:    time.Now().Format("2006-01-02"),
-			}
-			err := handler.Db.Append(def)
-			if err != nil {
-				log.Error(fmt.Errorf("Error append %v", err))
-				return ""
-			}
-			def, err = handler.Db.Get(def.Term)
-			if err != nil {
-				log.Error(fmt.Errorf("Error append %v", err))
-				return ""
-			}
-			result = fmt.Sprintf("[%s] = [%s]", def.Term, def.Meaning)
-		} else {
-			result = fmt.Sprintf("Your level is not enough < %d", handler.Levels.Lock)
+		term := commandPattern.FindStringSubmatch(text)
+		def := db.DefinitionItem{
+			Term:    term[1],
+			Meaning: term[2],
+			Author:  fmt.Sprintf("%s!%s@telegram.bot", user.Username, user.Ident),
+			Date:    time.Now().Format("2006-01-02"),
 		}
+		err := handler.Db.Append(def)
+		if err != nil {
+			log.Error(fmt.Errorf("Error append %v", err))
+			return ""
+		}
+		def, err = handler.Db.Get(def.Term)
+		if err != nil {
+			log.Error(fmt.Errorf("Error append %v", err))
+			return ""
+		}
+		result = fmt.Sprintf("[%s] = [%s]", def.Term, def.Meaning)
 	} else {
 		if handler.Next != nil {
 			result = handler.Next.ProcessText(text, user)

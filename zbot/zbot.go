@@ -26,8 +26,17 @@ var (
 	APIToken = ""
 	//ModulesPath Absolute path where the modules are located
 	ModulesPath = utils.GetCurrentDirectory() + "/../modules/"
+	//Flags zbot configurations
+	Flags = ConfigurationFlags{Ignore: false, Level: false}
 )
 
+//ConfigurationFlags configurations false means the feature is disabled
+type ConfigurationFlags struct {
+	Ignore bool
+	Level  bool
+}
+
+//Db interface to the database
 var Db db.ZbotDatabase
 
 var levelsConfig = command.Levels{
@@ -45,7 +54,10 @@ var levelsConfig = command.Levels{
 func Execute() {
 	log.Info("Loading zbot-telegram version [" + version + "] [" + buildTime + "] [" + gitHash + "]")
 
-	log.Info("Database: [" + DatabaseType + "] Modules: [" + ModulesPath + "]")
+	log.Info("Database: ", DatabaseType)
+	log.Info("Modules: ", ModulesPath)
+	log.Info("Configuration Flags Ignore: ", Flags.Ignore)
+	log.Info("Configuration Flags Level: ", Flags.Level)
 
 	bot, err := tb.NewBot(tb.Settings{
 		Token:  APIToken,
@@ -63,53 +75,53 @@ func Execute() {
 		log.Fatal(err)
 	}
 
-	go Db.UserCleanIgnore()
+	if Flags.Ignore {
+		go Db.UserCleanIgnore()
+	}
 
 	bot.Handle(tb.OnText, func(m *tb.Message) {
 		var response = messagesProcessing(Db, m)
 		if response != "" {
 			bot.Send(m.Chat, response)
 		}
-		//go messagesProcessing(Db, m)
 	})
 
 	bot.Start()
 }
 
-// messagesProcessing
+//messagesProcessing
 func messagesProcessing(db db.ZbotDatabase, message *tb.Message) string {
 
 	//we're going to process only the message starting with ! or ?
 	processingMsg := regexp.MustCompilePOSIX(`^[!|?].*`)
+	username := strings.ToLower(message.Sender.Username)
 
-	//check if the user isn't on the ignore_list
-	log.Debug(fmt.Sprintf("Checking user [%s] ", strings.ToLower(message.Sender.Username)))
-	ignore, err := db.UserCheckIgnore(strings.ToLower(message.Sender.Username))
-	if err != nil {
-		log.Error(err)
-		ignore = true
-	}
-	if !ignore {
+	if !checkIgnoreList(db, username) {
 		if processingMsg.MatchString(message.Text) {
-			log.Debug(fmt.Sprintf("Received a message from %s with the text: %s", message.Sender.Username, message.Text))
+			log.Debug(fmt.Sprintf("Received a message from %s with the text: %s", username, message.Text))
 			return processing(db, *message)
-			// sendResponse(msg, db, message)
 		}
 	} else {
-		log.Debug(fmt.Sprintf("User [%s] ignored", strings.ToLower(message.Sender.Username)))
+		log.Debug(fmt.Sprintf("User [%s] ignored", username))
 	}
 
 	return ""
-
 }
 
-// sendResponse
-// func sendResponse(bot *tb.Bot, db db.ZbotDatabase, msg tb.Message) {
-// 	response := processing(db, msg)
-// 	bot.Send(msg.Chat, response, nil)
-// }
+//checkIgnoreList check user in the ignore list
+//return true if user is on the ignore_list
+//		 false if the flag ignore is disable or the user is not in the list
+func checkIgnoreList(db db.ZbotDatabase, username string) bool {
 
-// processing
+	if Flags.Ignore {
+		log.Debug(fmt.Sprintf("Checking user [%s] ", username))
+		return db.UserCheckIgnore(username)
+	}
+
+	return false
+}
+
+//processing process message using commands
 func processing(db db.ZbotDatabase, msg tb.Message) string {
 
 	commandName := command.GetCommandInformation(msg.Text)
@@ -121,15 +133,16 @@ func processing(db db.ZbotDatabase, msg tb.Message) string {
 
 	user := user.BuildUser(msg.Sender, db)
 
-	requiredLevel := command.GetMinimumLevel(commandName, levelsConfig)
-
-	if !command.CheckPermission(commandName, user, requiredLevel) {
-		return fmt.Sprintf("Your level is not enough < %d", requiredLevel)
+	if Flags.Level {
+		requiredLevel := command.GetMinimumLevel(commandName, levelsConfig)
+		if !command.CheckPermission(commandName, user, requiredLevel) {
+			return fmt.Sprintf("Your level is not enough < %d", requiredLevel)
+		}
 	}
 
 	// TODO: how to clean this code
 	commands := &command.PingCommand{}
-	versionCommand := &command.VersionCommand{Version: version, BuildTime: buildTime}
+	versionCommand := &command.VersionCommand{Version: version, BuildTime: buildTime, GitHash: gitHash}
 	statsCommand := &command.StatsCommand{Db: db, Levels: levelsConfig}
 	randCommand := &command.RandCommand{Db: db, Levels: levelsConfig}
 	topCommand := &command.TopCommand{Db: db, Levels: levelsConfig}
@@ -183,7 +196,7 @@ func processing(db db.ZbotDatabase, msg tb.Message) string {
 	return outputMsg
 }
 
-// SetDisabledCommands setup disabled commands
+//SetDisabledCommands setup disabled commands
 func SetDisabledCommands(dataBinaryContent []byte) {
 	var c []string
 	err := json.Unmarshal(dataBinaryContent, &c)
@@ -197,7 +210,7 @@ func SetDisabledCommands(dataBinaryContent []byte) {
 	sort.Strings(command.DisabledCommands)
 }
 
-// GetDisabledCommands get disabled zbot commands
+//GetDisabledCommands get disabled zbot commands
 func GetDisabledCommands() []string {
 	return command.DisabledCommands
 }

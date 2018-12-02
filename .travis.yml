@@ -2,7 +2,6 @@ sudo: required
 language: go
 go:
   - 1.11.x
-  - tip
 env:
   - BOT_TOKEN=1234:334
 before_install:
@@ -20,7 +19,7 @@ script:
   - $HOME/gopath/bin/gover
   - $HOME/gopath/bin/goveralls -coverprofile gover.coverprofile -service travis-ci --ignore=db/mock_db.go,db/db.go,db/mysql.go,db/sql_lite.go
 after_success:
-  - $HOME/gopath/bin/gox -osarch="linux/amd64 linux/386" -cgo -ldflags "-X github.com/ssalvatori/zbot-telegram-go/zbot.Version=`git describe --tags` -X github.com/ssalvatori/zbot-telegram-go/zbot.BuildTime=`TZ=UTC date -u '+%Y-%m-%dT%H:%M:%SZ'` -X github.com/ssalvatori/zbot-telegram-go/zbot.GitHash=`git rev-parse HEAD`" -output "dist/{{.Dir}}-{{.OS}}-{{.Arch}}"
+  - $HOME/gopath/bin/gox -osarch="linux/amd64 linux/386" -cgo -ldflags "-X github.com/ssalvatori/zbot-telegram-go/zbot.version=`git describe --tags` -X github.com/ssalvatori/zbot-telegram-go/zbot.buildTime=`TZ=UTC date -u '+%Y-%m-%dT%H:%M:%SZ'` -X github.com/ssalvatori/zbot-telegram-go/zbot.gitHash=`git rev-parse --short HEAD`" -output "dist/{{.Dir}}-{{.OS}}-{{.Arch}}"
 deploy:
   provider: releases
   skip_cleanup: true

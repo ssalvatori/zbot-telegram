@@ -23,10 +23,9 @@ _testmain.go
 *.test
 *.prof
 
-linux.db
-Makefile
-
 .vscode/
 .cover/
 coverage.sh
 *.coverprofile
+
+zbot-telegram-go

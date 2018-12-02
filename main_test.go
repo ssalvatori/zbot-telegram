@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSetUp(t *testing.T) {
+func Test_setUp(t *testing.T) {
 
 	os.Setenv("ZBOT_TOKEN", "test:test")
 	os.Setenv("ZBOT_SQLITE_DATABASE", "new_database.sql")
@@ -30,7 +30,7 @@ func TestSetUp(t *testing.T) {
 	assert.Equal(t, []string(nil), zbot.GetDisabledCommands(), "Setting DisableCommands")
 }
 
-func TestSetUpLog(t *testing.T) {
+func Test_setUpLog(t *testing.T) {
 
 	levels := map[string]string{
 		"info":  "info",
@@ -49,14 +49,14 @@ func TestSetUpLog(t *testing.T) {
 
 }
 
-func TestSetupNoDatabase(t *testing.T) {
+func Test_setupNoDatabase(t *testing.T) {
 
 	os.Setenv("ZBOT_DATABASE_TYPE", "")
 	setupDatabase()
 	assert.Equal(t, zbot.DatabaseType, "", "DataBaseType empty OK")
 }
 
-func TestSetupDatabaseSqLite(t *testing.T) {
+func Test_setupDatabaseSqLite(t *testing.T) {
 
 	os.Setenv("ZBOT_DATABASE_TYPE", "sqlite")
 	os.Setenv("ZBOT_SQLITE_DATABASE", "hola.sql")
@@ -66,7 +66,7 @@ func TestSetupDatabaseSqLite(t *testing.T) {
 
 }
 
-func TestSetupDatabaseMysql(t *testing.T) {
+func Test_setupDatabaseMysql(t *testing.T) {
 
 	os.Setenv("ZBOT_DATABASE_TYPE", "mysql")
 	os.Setenv("ZBOT_MYSQL_HOSTNAME", "localhost")
@@ -79,8 +79,26 @@ func TestSetupDatabaseMysql(t *testing.T) {
 
 }
 
-func TestSetDisabledCommands(t *testing.T) {
+func Test_setDisabledCommands(t *testing.T) {
 	assert.Equal(t, setDisabledCommands("main_test.go"), nil, "Set Disabled Commands")
 
 	assert.Error(t, setDisabledCommands("lala.json"), "", "Disabled Command Error")
+}
+
+func Test_setupFlags(t *testing.T) {
+	os.Unsetenv("ZBOT_FLAG_IGNORE")
+	setupFlags()
+	assert.Equal(t, zbot.Flags.Ignore, false, "Ignore Off")
+
+	os.Setenv("ZBOT_FLAG_IGNORE", "true")
+	setupFlags()
+	assert.Equal(t, zbot.Flags.Ignore, true, "Ignore ON")
+
+	os.Unsetenv("ZBOT_FLAG_LEVEL")
+	setupFlags()
+	assert.Equal(t, zbot.Flags.Level, false, "Level Off")
+
+	os.Setenv("ZBOT_FLAG_LEVEL", "true")
+	setupFlags()
+	assert.Equal(t, zbot.Flags.Level, true, "Level ON")
 }

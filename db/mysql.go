@@ -306,20 +306,23 @@ func (d *ZbotMysqlDatabase) UserIgnoreInsert(username string) error {
 	}
 	return nil
 }
-func (d *ZbotMysqlDatabase) UserCheckIgnore(username string) (bool, error) {
+
+//UserCheckIgnore check if user there is any row in ignore_list table for some username
+// and an until greater than the current time
+func (d *ZbotMysqlDatabase) UserCheckIgnore(username string) bool {
 	ignored := false
 
 	now := time.Now().Unix()
 
-	var level int = 0
+	var level int
 	statement := "SELECT count(*) as total FROM ignore_list WHERE username = ? AND until >= ?"
 	err := d.Db.QueryRow(statement, username, now).Scan(&level)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ignored = false
 		} else {
-			log.Fatal(err)
-			return ignored, err
+			log.Error(err)
+			return ignored
 
 		}
 	}
@@ -329,7 +332,7 @@ func (d *ZbotMysqlDatabase) UserCheckIgnore(username string) (bool, error) {
 		ignored = true
 	}
 
-	return ignored, nil
+	return ignored
 }
 func (d *ZbotMysqlDatabase) UserCleanIgnore() error {
 	for {

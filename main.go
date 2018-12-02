@@ -142,10 +142,27 @@ func setupDatabaseMysql() db.ZbotDatabase {
 	return database
 }
 
+//setupFlags Set flags configurations
+func setupFlags() {
+
+	var ok bool
+	_, ok = os.LookupEnv("ZBOT_FLAG_IGNORE")
+
+	if ok {
+		zbot.Flags.Ignore = true
+	}
+
+	_, ok = os.LookupEnv("ZBOT_FLAG_LEVEL")
+	if ok {
+		zbot.Flags.Level = true
+	}
+}
+
 func main() {
 	setUpLog()
 	setUp()
 	setupDatabase()
+	setupFlags()
 
 	zbot.Execute()
 }

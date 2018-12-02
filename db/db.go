@@ -2,6 +2,7 @@ package db
 
 import "database/sql"
 
+//ZbotDatabase DB interface for Zbot
 type ZbotDatabase interface {
 	GetConnectionInfo() string
 	Init() error
@@ -19,13 +20,15 @@ type ZbotDatabase interface {
 	Forget(DefinitionItem) error
 	UserLevel(string) (string, error)
 	UserIgnoreInsert(string) error
-	UserCheckIgnore(string) (bool, error)
+	//UserCheckIgnore return true if the user is on the ignore_list, false if it isn´t
+	UserCheckIgnore(string) bool
 	UserCleanIgnore() error
 	UserIgnoreList() ([]UserIgnore, error)
 
 	Lock(DefinitionItem) error
 }
 
+//DefinitionItem .
 type DefinitionItem struct {
 	Term    string
 	Meaning string
@@ -34,6 +37,7 @@ type DefinitionItem struct {
 	Id      int
 }
 
+//UserIgnore .
 type UserIgnore struct {
 	Username string
 	Since    string

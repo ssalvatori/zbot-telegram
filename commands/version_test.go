@@ -9,10 +9,11 @@ import (
 var versionCommand = VersionCommand{
 	Version:   "0.1",
 	BuildTime: "2017-04-16 11:25:17.626575284 +0300 EEST",
+	GitHash:   "6fd28bf",
 }
 
 func TestVersionCommandOK(t *testing.T) {
-	assert.Equal(t, "zbot golang version [0.1] build-time [2017-04-16 11:25:17.626575284 +0300 EEST]", versionCommand.ProcessText("!version", userTest), "version command OK")
+	assert.Equal(t, "zbot golang version [0.1] commit [6fd28bf] build-time [2017-04-16 11:25:17.626575284 +0300 EEST]", versionCommand.ProcessText("!version", userTest), "version command OK")
 }
 
 func TestVersionCommandNoNext(t *testing.T) {

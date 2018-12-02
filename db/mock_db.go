@@ -140,13 +140,14 @@ func (d *MockZbotDatabase) UserLevel(str string) (string, error) {
 	return d.Level, nil
 }
 
-func (d *MockZbotDatabase) UserCheckIgnore(str string) (bool, error) {
+//UserCheckIgnore Mock, it will return false if error is set otherwise it will return Ignore_User value
+func (d *MockZbotDatabase) UserCheckIgnore(str string) bool {
 
 	if d.Error {
-		return false, errors.New("mock")
+		return false
 	}
 
-	return d.Ignore_User, nil
+	return d.Ignore_User
 }
 
 func (d *MockZbotDatabase) UserIgnoreInsert(username string) error {

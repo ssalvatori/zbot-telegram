@@ -2,7 +2,6 @@ package zbot
 
 import (
 	"encoding/json"
-	"fmt"
 	"testing"
 
 	"github.com/ssalvatori/zbot-telegram-go/commands"
@@ -29,7 +28,7 @@ func TestProcessingIsCommandDisabled(t *testing.T) {
 
 }
 
-func TestProcessingVersion(t *testing.T) {
+func Test_ProcessingVersion(t *testing.T) {
 
 	dbMock := &db.MockZbotDatabase{
 		Level: "666",
@@ -46,7 +45,7 @@ func TestProcessingVersion(t *testing.T) {
 		},
 	}
 	result := processing(dbMock, botMsg)
-	assert.Equal(t, "zbot golang version ["+version+"] build-time ["+buildTime+"]", result, "!version default")
+	assert.Equal(t, "zbot golang version ["+version+"] commit [undefined] build-time ["+buildTime+"]", result, "!version default")
 }
 
 func TestProcessingStats(t *testing.T) {
@@ -200,13 +199,6 @@ func TestProcessingUserIgnoreInsert(t *testing.T) {
 	result = processing(dbMock, botMsg)
 	assert.Equal(t, "You can't ignore yourself", result, "!ignore add myself")
 
-	dbMock.Level = "10"
-	botMsg = tb.Message{
-		Text:   "!ignore add ssalvato",
-		Sender: &tb.User{FirstName: "ssalvato", Username: "ssalvato"},
-	}
-	result = processing(dbMock, botMsg)
-	assert.Equal(t, fmt.Sprintf("Your level is not enough < %d", 100), result, "!ignore")
 }
 
 func TestProcessingExternalModuleWithArgs(t *testing.T) {
