@@ -21,6 +21,11 @@ You **must** set the **ZBOT_TOKEN** environment variable using the Telegram's AP
 * ZBOT_DISABLED_COMMANDS: Json file with an array of disabled commands
 * ZBOT_DATABASE_TYPE: Database to be use (mysql or sqlite)
 
+## Feature Flags
+
+* ZBOT_FLAG_IGNORE
+* ZBOT_FLAG_LEVEL
+
 ## SQLite Configurations
 
 * ZBOT_SQLITE_DATABASE: Path to the SQLite file 

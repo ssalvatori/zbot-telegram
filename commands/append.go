@@ -18,7 +18,7 @@ type AppendCommand struct {
 
 func (handler *AppendCommand) ProcessText(text string, user user.User) string {
 
-	commandPattern := regexp.MustCompile(`^!append\s(\S*)\s(.*)`)
+	commandPattern := regexp.MustCompile(`(?s)^!append\s(\S*)\s(.*)`)
 	result := ""
 
 	if commandPattern.MatchString(text) {

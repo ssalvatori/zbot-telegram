@@ -19,7 +19,7 @@ type LearnCommand struct {
 //ProcessText Run module
 func (handler *LearnCommand) ProcessText(text string, user user.User) string {
 
-	commandPattern := regexp.MustCompile(`^!learn\s(\S*)\s(.*)`)
+	commandPattern := regexp.MustCompile(`(?s)^!learn\s(\S*)\s(.*)`)
 	result := ""
 
 	if commandPattern.MatchString(text) {
