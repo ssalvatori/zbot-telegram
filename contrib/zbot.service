@@ -1,0 +1,12 @@
+[Unit]
+Description=Zbot as a Service
+
+[Service]
+EnvironmentFile=/etc/default/zbot
+ExecStart=/usr/local/bin/zbot
+ExecStop=kill $(ps aux | grep '/usr/local/bin/zbot' | grep -v grep | awk '{print $2}')
+User=zbot
+Group=zbot
+
+[Install]
+WantedBy=multi-user.target

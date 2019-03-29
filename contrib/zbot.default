@@ -1,0 +1,10 @@
+#!/bin/bash
+
+#ZBOT configuration
+
+ZBOT_TOKEN=""
+ZBOT_LOG_LEVEL=debug
+ZBOT_DATABASE_TYPE=sqlite
+ZBOT_MODULES_PATH="/home/zbot/modules"
+ZBOT_DISABLED_COMMANDS="/home/zbot/disabled_commands.json"
+ZBOT_SQLITE_DATABASE="/home/zbot/db/database.db"
