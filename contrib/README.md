@@ -18,6 +18,6 @@ sudo systemctl status zbot
 
 Create symlink
 
-````
+```
 sudo ln -s /path/to//zbot-telegram-go-linux-amd64 /usr/local/bin/zbot
 ```
