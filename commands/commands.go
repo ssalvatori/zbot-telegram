@@ -28,6 +28,8 @@ type Levels struct {
 	Version  int
 	Ping     int
 	Last     int
+	Rand     int
+	Find     int
 }
 
 var (
@@ -37,7 +39,6 @@ var (
 // CommandsList list of commandElement
 type CommandsList struct {
 	List *list.List
-	Db   db.ZbotDatabase
 }
 
 type commandElement struct {
@@ -48,8 +49,6 @@ type commandElement struct {
 
 // Chain add a command and the required level to use it to the list of command
 func (cmdList *CommandsList) Chain(cmdDefinition string, cmd interface{}, level int) *CommandsList {
-
-	cmd.(zbotCommand).SetDB(cmdList.Db)
 
 	newCommand := &commandElement{
 		command:       cmd.(zbotCommand),
@@ -80,7 +79,6 @@ func (cmdList *CommandsList) Run(cmd string, msg string, user user.User) string 
 
 // zbotCommand interface to be implemented by each command
 type zbotCommand interface {
-	SetDB(db db.ZbotDatabase)
 	ProcessText(text string, username user.User) (string, error)
 }
 

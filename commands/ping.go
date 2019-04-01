@@ -10,10 +10,13 @@ import (
 
 // PingCommand command definition
 type PingCommand struct {
+	Db db.ZbotDatabase
 }
 
 //SetDb set db connection if the module need it
-func (handler *PingCommand) SetDb(db db.ZbotDatabase) {}
+func (handler *PingCommand) SetDb(db db.ZbotDatabase) {
+	handler.Db = db
+}
 
 // ProcessText run command
 func (handler *PingCommand) ProcessText(text string, user user.User) (string, error) {

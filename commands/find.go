@@ -1,6 +1,7 @@
 package command
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -10,29 +11,24 @@ import (
 	"github.com/ssalvatori/zbot-telegram-go/user"
 )
 
+//FindCommand defintion
 type FindCommand struct {
-	Next   HandlerCommand
-	Db     db.ZbotDatabase
-	Levels Levels
+	Db db.ZbotDatabase
 }
 
-func (handler *FindCommand) ProcessText(text string, user user.User) string {
+//ProcessText run command
+func (handler *FindCommand) ProcessText(text string, user user.User) (string, error) {
 
 	commandPattern := regexp.MustCompile(`^!find\s(\S*)`)
-	result := ""
 
 	if commandPattern.MatchString(text) {
 		term := commandPattern.FindStringSubmatch(text)
 		results, err := handler.Db.Find(term[1])
 		if err != nil {
-			log.Error(fmt.Errorf("Error learn %v", err))
-			return ""
+			log.Error(err)
+			return "", err
 		}
-		result = fmt.Sprintf("%s", strings.Join(getTerms(results), " "))
-	} else {
-		if handler.Next != nil {
-			result = handler.Next.ProcessText(text, user)
-		}
+		return fmt.Sprintf("%s", strings.Join(getTerms(results), " ")), nil
 	}
-	return result
+	return "", errors.New("text doesn't match")
 }

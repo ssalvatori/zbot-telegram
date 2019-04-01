@@ -102,17 +102,13 @@ var fake3Command = &FakeCommand2{cmd: "fakecommand3"}
 
 var cmdList = &CommandsList{
 	List: list.New(),
-	Db: &db.MockZbotDatabase{
-		Term:    "foo",
-		Meaning: "bar",
-	},
 }
 
 func TestChainAndRun(t *testing.T) {
 
 	cmdList.Chain("fakecommand1", fake1Command, 0)
 	cmdList.Chain("fakecommand2", fake2Command, 0)
-	cmdList.Chain("fakecommand3", fake2Command, 0)
+	cmdList.Chain("fakecommand3", fake3Command, 0)
 	assert.Equal(t, 3, cmdList.List.Len(), "Chain add elements in the list")
 
 	assert.Equal(t, "Fake 2", cmdList.Run("fakecommand2", "!fakecommand2", userTest))
