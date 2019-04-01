@@ -12,17 +12,29 @@ var randCommand = RandCommand{}
 func TestRandCommandOK(t *testing.T) {
 
 	randCommand.Db = &db.MockZbotDatabase{
-		Error: true,
+		Rand_def: db.DefinitionItem{Term: "foo", Meaning: "bar"},
 	}
 
-	assert.Equal(t, "", randCommand.ProcessText("!rand", userTest), "Rand error handler")
+	result, _ := randCommand.ProcessText("!rand", userTest)
+	assert.Equal(t, "[foo] - [bar]", result, "Rand command")
+
+}
+
+func TestRandCommandNotMatch(t *testing.T) {
+
+	result, _ := randCommand.ProcessText("!rand6", userTest)
+	assert.Equal(t, "", result, "Empty output doesn't match")
+
+	_, err := randCommand.ProcessText("!rand6", userTest)
+	assert.Equal(t, "text doesn't match", err.Error(), "Error output doesn't match")
+}
+
+func TestRandCommandError(t *testing.T) {
 
 	randCommand.Db = &db.MockZbotDatabase{
 		Rand_def: db.DefinitionItem{Term: "foo", Meaning: "bar"},
+		Error:    true,
 	}
-	assert.Equal(t, "[foo] - [bar]", randCommand.ProcessText("!rand", userTest), "Rand Command")
-	assert.Equal(t, "", randCommand.ProcessText("!rand6", userTest), "Rand no next command")
-
-	randCommand.Next = &FakeCommand{}
-	assert.Equal(t, "Fake OK", randCommand.ProcessText("!ping6", userTest), "Rand next command")
+	_, err := randCommand.ProcessText("!rand", userTest)
+	assert.Equal(t, "mock", err.Error(), "Db error")
 }

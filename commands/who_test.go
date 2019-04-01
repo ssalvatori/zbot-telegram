@@ -31,13 +31,12 @@ func TestWhoCommandNotMatch(t *testing.T) {
 	assert.Equal(t, "text doesn't match", err.Error(), "Error output doesn't match")
 }
 
-/*
 func TestWhoCommandError(t *testing.T) {
 
 	whoCommand.Db = &db.MockZbotDatabase{
-		Error: true,
+		Rand_def: db.DefinitionItem{Term: "foo", Meaning: "bar"},
+		Error:    true,
 	}
-	_, err := whoCommand.ProcessText("!who", userTest)
+	_, err := whoCommand.ProcessText("!who foo", userTest)
 	assert.Equal(t, "mock", err.Error(), "Db error")
 }
-*/

@@ -12,9 +12,12 @@ import (
 
 // WhoCommand definition
 type WhoCommand struct {
-	//Next   HandlerCommand
 	Db db.ZbotDatabase
-	//Levels Levels
+}
+
+//SetDb set db connection if the module need it
+func (handler *WhoCommand) SetDb(db db.ZbotDatabase) {
+	handler.Db = db
 }
 
 //ProcessText run command
@@ -23,7 +26,7 @@ func (handler *WhoCommand) ProcessText(text string, user user.User) (string, err
 	commandPattern := regexp.MustCompile(`^!who\s(\S*)$`)
 
 	if commandPattern.MatchString(text) {
-		//if user.IsAllow(handler.Levels.Who) {
+
 		term := commandPattern.FindStringSubmatch(text)
 		def := db.DefinitionItem{
 			Term: term[1],
@@ -33,15 +36,10 @@ func (handler *WhoCommand) ProcessText(text string, user user.User) (string, err
 			log.Error(err.Error())
 			return "", err
 		}
-		result := fmt.Sprintf("[%s] by [%s] on [%s]", Item.Term, Item.Author, Item.Date)
-		return result, nil
-		//}
+
+		return fmt.Sprintf("[%s] by [%s] on [%s]", Item.Term, Item.Author, Item.Date), nil
+
 	}
-	/*else {
-		if handler.Next != nil {
-			result = handler.Next.ProcessText(text, user)
-		}
-	}*/
 
 	return "", errors.New("text doesn't match")
 }

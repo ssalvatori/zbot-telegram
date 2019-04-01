@@ -29,7 +29,7 @@ func TestStatsCommandNotMatch(t *testing.T) {
 	assert.Equal(t, "text doesn't match", err.Error(), "Error output doesn't match")
 }
 
-func TestSearchCommandError(t *testing.T) {
+func TestStatsCommandError(t *testing.T) {
 
 	statsCommand.Db = &db.MockZbotDatabase{
 		Level:    "7",

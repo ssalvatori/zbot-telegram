@@ -4,14 +4,16 @@ import (
 	"errors"
 	"regexp"
 
+	"github.com/ssalvatori/zbot-telegram-go/db"
 	"github.com/ssalvatori/zbot-telegram-go/user"
 )
 
 // PingCommand command definition
 type PingCommand struct {
-	//	Next   HandlerCommand
-	//	Levels Levels
 }
+
+//SetDb set db connection if the module need it
+func (handler *PingCommand) SetDb(db db.ZbotDatabase) {}
 
 // ProcessText run command
 func (handler *PingCommand) ProcessText(text string, user user.User) (string, error) {

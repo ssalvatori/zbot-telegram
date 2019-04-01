@@ -12,10 +12,11 @@ import (
 
 // LastCommand definition
 type LastCommand struct {
-	//Next   HandlerCommand
 	Db db.ZbotDatabase
-	//Levels Levels
 }
+
+//SetDb set db connection if the module need it
+func (handler *LastCommand) SetDb(db db.ZbotDatabase) {}
 
 // ProcessText run command
 func (handler *LastCommand) ProcessText(text string, user user.User) (string, error) {
@@ -28,8 +29,7 @@ func (handler *LastCommand) ProcessText(text string, user user.User) (string, er
 			log.Error(err)
 			return "", err
 		}
-		result := fmt.Sprintf("[%s] - [%s]", lastItem.Term, lastItem.Meaning)
-		return result, nil
+		return fmt.Sprintf("[%s] - [%s]", lastItem.Term, lastItem.Meaning), nil
 	}
 	return "", errors.New("text doesn't match")
 }

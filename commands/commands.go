@@ -63,12 +63,14 @@ func (cmdList *CommandsList) Chain(cmdDefinition string, cmd interface{}, level 
 
 // Run commands against a msg for a given user
 func (cmdList *CommandsList) Run(cmd string, msg string, user user.User) string {
-	output := ""
+	var output string
+	var err error
 
 	for e := cmdList.List.Front(); e != nil; e = e.Next() {
-		output, err := e.Value.(commandElement).command.(zbotCommand).ProcessText(msg, user)
+		output, err = e.Value.(*commandElement).command.(zbotCommand).ProcessText(msg, user)
 		if err != nil {
 			output = err.Error()
+			continue
 		}
 		return output
 	}

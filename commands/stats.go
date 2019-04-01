@@ -13,8 +13,11 @@ import (
 // StatsCommand definition
 type StatsCommand struct {
 	Db db.ZbotDatabase
-	//	Next   HandlerCommand
-	//	Levels Levels
+}
+
+//SetDb set db connection if the module need it
+func (handler *StatsCommand) SetDb(db db.ZbotDatabase) {
+	handler.Db = db
 }
 
 // ProcessText run command
@@ -23,17 +26,12 @@ func (handler *StatsCommand) ProcessText(text string, user user.User) (string, e
 	commandPattern := regexp.MustCompile(`^!stats$`)
 
 	if commandPattern.MatchString(text) {
-		//if user.IsAllow(handler.Levels.Stats) {
 		statTotal, err := handler.Db.Statistics()
 		if err != nil {
 			log.Error(err)
 			return "", err
 		}
-		result := fmt.Sprintf("Count: %s", statTotal)
-		//} else {
-		//	result = fmt.Sprintf("Your level is not enough < %d", handler.Levels.Stats)
-		//}
-		return result, nil
+		return fmt.Sprintf("Count: %s", statTotal), nil
 
 	}
 	//	return "", result

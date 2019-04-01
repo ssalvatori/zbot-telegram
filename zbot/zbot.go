@@ -166,7 +166,7 @@ func processing(db db.ZbotDatabase, msg tb.Message) string {
 	*/
 
 	commandsList := &command.CommandsList{
-		List: list.List.Init(),
+		List: list.New(),
 		Db:   db,
 	}
 	commandsList.Chain("ping", command.PingCommand{}, levelsConfig.Ping)
