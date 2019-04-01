@@ -1,26 +1,26 @@
 package command
 
 import (
-	"github.com/ssalvatori/zbot-telegram-go/user"
+	"errors"
 	"regexp"
+
+	"github.com/ssalvatori/zbot-telegram-go/user"
 )
 
+// PingCommand command definition
 type PingCommand struct {
-	Next   HandlerCommand
-	Levels Levels
+	//	Next   HandlerCommand
+	//	Levels Levels
 }
 
-func (handler *PingCommand) ProcessText(text string, user user.User) string {
+// ProcessText run command
+func (handler *PingCommand) ProcessText(text string, user user.User) (string, error) {
 
 	commandPattern := regexp.MustCompile(`^!ping$`)
-	result := ""
 
 	if commandPattern.MatchString(text) {
-		result = "pong!!"
-	} else {
-		if handler.Next != nil {
-			result = handler.Next.ProcessText(text, user)
-		}
+		return "pong!!", nil
 	}
-	return result
+
+	return "", errors.New("text doesn't match")
 }

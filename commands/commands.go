@@ -5,12 +5,15 @@ import (
 	"regexp"
 	"strings"
 
+	"container/list"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/ssalvatori/zbot-telegram-go/db"
 	"github.com/ssalvatori/zbot-telegram-go/user"
 	"github.com/ssalvatori/zbot-telegram-go/utils"
 )
 
+// Levels command definition
 type Levels struct {
 	Ignore   int
 	Lock     int
@@ -22,11 +25,61 @@ type Levels struct {
 	LevelDel int
 	Top      int
 	Stats    int
+	Version  int
+	Ping     int
 }
 
 var (
 	DisabledCommands []string
 )
+
+// Commands list of commandElement
+type Commands struct {
+	list list.List
+	db   db.ZbotDatabase
+}
+
+type commandElement struct {
+	requiredLevel int
+	command       zbotCommand
+	cmdString     string
+}
+
+// Chain add a command and the required level to use it to the list of command
+func (cmdList *Commands) Chain(cmdDefinition string, cmd interface{}, level int) *Commands {
+
+	cmd.(zbotCommand).SetDB(cmdList.db)
+
+	newCommand := &commandElement{
+		command:       cmd.(zbotCommand),
+		requiredLevel: level,
+		cmdString:     cmdDefinition,
+	}
+
+	cmdList.list.PushBack(newCommand)
+	return cmdList
+}
+
+// Run commands against a msg for a given user
+func (cmdList *Commands) Run(cmd string, msg string, user user.User) string {
+	output := ""
+
+	for e := cmdList.list.Front(); e != nil; e = e.Next() {
+		output, err := e.Value.(commandElement).command.(zbotCommand).ProcessText(msg, user)
+		if err != nil {
+			output = err.Error()
+		}
+		return output
+	}
+
+	return output
+}
+
+// zbotCommand interface to be implemented by each command
+type zbotCommand interface {
+	SetDB(db db.ZbotDatabase)
+	ProcessText(text string, username user.User) (string, error)
+}
 
 type HandlerCommand interface {
 	ProcessText(text string, username user.User) string

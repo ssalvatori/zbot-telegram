@@ -8,8 +8,10 @@ import (
 	"strings"
 	"time"
 
+	"container/list"
+
 	log "github.com/Sirupsen/logrus"
-	"github.com/ssalvatori/zbot-telegram-go/commands"
+	command "github.com/ssalvatori/zbot-telegram-go/commands"
 	"github.com/ssalvatori/zbot-telegram-go/db"
 	"github.com/ssalvatori/zbot-telegram-go/user"
 	"github.com/ssalvatori/zbot-telegram-go/utils"
@@ -40,14 +42,16 @@ type ConfigurationFlags struct {
 var Db db.ZbotDatabase
 
 var levelsConfig = command.Levels{
-	Ignore: 100,
-	Lock:   1000,
-	Learn:  0,
-	Append: 0,
-	Forget: 1000,
-	Who:    0,
-	Top:    0,
-	Stats:  0,
+	Ignore:  100,
+	Lock:    1000,
+	Learn:   0,
+	Append:  0,
+	Forget:  1000,
+	Who:     0,
+	Top:     0,
+	Stats:   0,
+	Version: 0,
+	Ping:    0,
 }
 
 //Execute run Zbot
@@ -121,7 +125,7 @@ func checkIgnoreList(db db.ZbotDatabase, username string) bool {
 	return false
 }
 
-//processing process message using commands
+// processing process message using commands
 func processing(db db.ZbotDatabase, msg tb.Message) string {
 
 	commandName := command.GetCommandInformation(msg.Text)
@@ -140,50 +144,62 @@ func processing(db db.ZbotDatabase, msg tb.Message) string {
 		}
 	}
 
-	// TODO: how to clean this code
-	commands := &command.PingCommand{}
-	versionCommand := &command.VersionCommand{Version: version, BuildTime: buildTime, GitHash: gitHash}
-	statsCommand := &command.StatsCommand{Db: db, Levels: levelsConfig}
-	randCommand := &command.RandCommand{Db: db, Levels: levelsConfig}
-	topCommand := &command.TopCommand{Db: db, Levels: levelsConfig}
-	lastCommand := &command.LastCommand{Db: db, Levels: levelsConfig}
-	getCommand := &command.GetCommand{Db: db, Levels: levelsConfig}
-	findCommand := &command.FindCommand{Db: db, Levels: levelsConfig}
-	searchCommand := &command.SearchCommand{Db: db, Levels: levelsConfig}
-	learnCommand := &command.LearnCommand{Db: db, Levels: levelsConfig}
-	levelCommand := &command.LevelCommand{Db: db, Levels: levelsConfig}
-	ignoreCommand := &command.IgnoreCommand{Db: db, Levels: levelsConfig}
-	lockCommand := &command.LockCommand{Db: db, Levels: levelsConfig}
-	appendCommand := &command.AppendCommand{Db: db, Levels: levelsConfig}
-	whoCommand := &command.WhoCommand{Db: db, Levels: levelsConfig}
-	forgetCommand := &command.ForgetCommand{Db: db, Levels: levelsConfig}
+	/*
+		// TODO: how to clean this code
+		//commands := &command.PingCommand{}
+		//versionCommand := &command.VersionCommand{Version: version, BuildTime: buildTime, GitHash: gitHash}
+		//statsCommand := &command.StatsCommand{Db: db, Levels: levelsConfig}
+		randCommand := &command.RandCommand{Db: db, Levels: levelsConfig}
+		//topCommand := &command.TopCommand{Db: db, Levels: levelsConfig}
+		lastCommand := &command.LastCommand{Db: db, Levels: levelsConfig}
+		getCommand := &command.GetCommand{Db: db, Levels: levelsConfig}
+		findCommand := &command.FindCommand{Db: db, Levels: levelsConfig}
+		searchCommand := &command.SearchCommand{Db: db, Levels: levelsConfig}
+		learnCommand := &command.LearnCommand{Db: db, Levels: levelsConfig}
+		levelCommand := &command.LevelCommand{Db: db, Levels: levelsConfig}
+		ignoreCommand := &command.IgnoreCommand{Db: db, Levels: levelsConfig}
+		lockCommand := &command.LockCommand{Db: db, Levels: levelsConfig}
+		appendCommand := &command.AppendCommand{Db: db, Levels: levelsConfig}
+		whoCommand := &command.WhoCommand{Db: db, Levels: levelsConfig}
+		forgetCommand := &command.ForgetCommand{Db: db, Levels: levelsConfig}
+	*/
+
+	commandsList := &command.Commands{
+		list: list.List.Init(),
+		db:   db,
+	}
+	commandsList.Chain("ping", command.PingCommand{}, levelsConfig.Ping)
+	commandsList.Chain("version", command.VersionCommand{Version: version, BuildTime: buildTime}, levelsConfig.Version)
+	commandsList.Chain("top", command.TopCommand{}, levelsConfig.Top)
+	commandsList.Chain("stats", command.StatsCommand{}, levelsConfig.Stats)
 
 	/*
 		TODO: check error handler
 		!level add <username>
 		!level del <username>
 	*/
+	/*
+		externalCommand := &command.ExternalCommand{
+			PathModules: ModulesPath,
+		}
 
-	externalCommand := &command.ExternalCommand{
-		PathModules: ModulesPath,
-	}
-
-	commands.Next = versionCommand
-	versionCommand.Next = statsCommand
-	statsCommand.Next = randCommand
-	randCommand.Next = topCommand
-	topCommand.Next = lastCommand
-	lastCommand.Next = getCommand
-	getCommand.Next = findCommand
-	findCommand.Next = searchCommand
-	searchCommand.Next = learnCommand
-	learnCommand.Next = levelCommand
-	levelCommand.Next = lockCommand
-	lockCommand.Next = appendCommand
-	appendCommand.Next = whoCommand
-	whoCommand.Next = forgetCommand
-	forgetCommand.Next = ignoreCommand
-	ignoreCommand.Next = externalCommand
+		commands.Next = versionCommand
+		versionCommand.Next = statsCommand
+		statsCommand.Next = randCommand
+		randCommand.Next = topCommand
+		topCommand.Next = lastCommand
+		lastCommand.Next = getCommand
+		getCommand.Next = findCommand
+		findCommand.Next = searchCommand
+		searchCommand.Next = learnCommand
+		learnCommand.Next = levelCommand
+		levelCommand.Next = lockCommand
+		lockCommand.Next = appendCommand
+		appendCommand.Next = whoCommand
+		whoCommand.Next = forgetCommand
+		forgetCommand.Next = ignoreCommand
+		ignoreCommand.Next = externalCommand
+	*/
 
 	var messageString = msg.Text
 
@@ -191,7 +207,9 @@ func processing(db db.ZbotDatabase, msg tb.Message) string {
 		messageString = fmt.Sprintf("%s %s %s", messageString, msg.ReplyTo.Sender.Username, msg.ReplyTo.Text)
 	}
 
-	outputMsg := commands.ProcessText(messageString, user)
+	outputMsg := commandsList.Run(commandName, messageString, user)
+
+	//	outputMsg := commands.ProcessText(messageString, user)
 
 	return outputMsg
 }

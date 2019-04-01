@@ -1,6 +1,7 @@
 package command
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 
@@ -9,33 +10,32 @@ import (
 	"github.com/ssalvatori/zbot-telegram-go/user"
 )
 
+// StatsCommand definition
 type StatsCommand struct {
-	Db     db.ZbotDatabase
-	Next   HandlerCommand
-	Levels Levels
+	Db db.ZbotDatabase
+	//	Next   HandlerCommand
+	//	Levels Levels
 }
 
-func (handler *StatsCommand) ProcessText(text string, user user.User) string {
+// ProcessText run command
+func (handler *StatsCommand) ProcessText(text string, user user.User) (string, error) {
 
 	commandPattern := regexp.MustCompile(`^!stats$`)
-	result := ""
 
 	if commandPattern.MatchString(text) {
-		if user.IsAllow(handler.Levels.Stats) {
-			statTotal, err := handler.Db.Statistics()
-			if err != nil {
-				log.Error(err)
-				return ""
-			}
-			result = fmt.Sprintf("Count: %s", statTotal)
-		} else {
-			result = fmt.Sprintf("Your level is not enough < %d", handler.Levels.Stats)
+		//if user.IsAllow(handler.Levels.Stats) {
+		statTotal, err := handler.Db.Statistics()
+		if err != nil {
+			log.Error(err)
+			return "", err
 		}
+		result := fmt.Sprintf("Count: %s", statTotal)
+		//} else {
+		//	result = fmt.Sprintf("Your level is not enough < %d", handler.Levels.Stats)
+		//}
+		return result, nil
 
-	} else {
-		if handler.Next != nil {
-			result = handler.Next.ProcessText(text, user)
-		}
 	}
-	return result
+	//	return "", result
+	return "", errors.New("text doesn't match")
 }
