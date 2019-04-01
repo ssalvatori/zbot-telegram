@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// This userTest variable will be shared between all the test
+// userTest variable will be shared between all the test
 var userTest = user.User{
 	Username: "ssalvatori",
 	Ident:    "stefano",

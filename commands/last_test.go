@@ -14,16 +14,24 @@ func TestLastCommandOK(t *testing.T) {
 		Term:    "foo",
 		Meaning: "bar",
 	}
-	assert.Equal(t, "[foo] - [bar]", lastCommand.ProcessText("!last", userTest), "Last Command")
+	result, _ := lastCommand.ProcessText("!last", userTest)
+	assert.Equal(t, "[foo] - [bar]", result, "Last Command")
+}
 
+func TestLastCommandNotMatch(t *testing.T) {
+	result, _ := lastCommand.ProcessText("!last6", userTest)
+	assert.Equal(t, "", result, "Empty output doesn't match")
+
+	_, err := lastCommand.ProcessText("!last6", userTest)
+	assert.Equal(t, "text doesn't match", err.Error(), "Error output doesn't match")
+}
+
+func TestLastCommandError(t *testing.T) {
 	lastCommand.Db = &db.MockZbotDatabase{
-		Error: true,
+		Term:    "foo",
+		Meaning: "bar",
+		Error:   true,
 	}
-
-	assert.Equal(t, "", lastCommand.ProcessText("!last", userTest), "Error database")
-
-
-	assert.Equal(t, "", lastCommand.ProcessText("!last6", userTest), "Last no next command")
-	lastCommand.Next = &FakeCommand{}
-	assert.Equal(t, "Fake OK", lastCommand.ProcessText("!last6", userTest), "Last next command")
+	_, err := lastCommand.ProcessText("!last", userTest)
+	assert.Equal(t, "mock", err.Error(), "Db Error")
 }

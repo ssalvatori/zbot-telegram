@@ -18,31 +18,26 @@ func TestWhoCommand(t *testing.T) {
 		Date:    "2017-03-22",
 		Level:   "100",
 	}
-	whoCommand.Levels = Levels{
-		Who: 1,
-	}
+	result, _ := whoCommand.ProcessText("!who foo", userTest)
+	assert.Equal(t, "[foo] by [ssalvatori] on [2017-03-22]", result, "Who Command OK")
+}
 
-	assert.Equal(t, "[foo] by [ssalvatori] on [2017-03-22]", whoCommand.ProcessText("!who foo", userTest), "Who Command OK")
+func TestWhoCommandNotMatch(t *testing.T) {
 
-	whoCommand.Db = &db.MockZbotDatabase{
-		Term:    "foo",
-		Meaning: "bar",
-		Level:   "5",
-	}
-	whoCommand.Levels = Levels{
-		Who: 10,
-	}
+	result, _ := whoCommand.ProcessText("!who6", userTest)
+	assert.Equal(t, "", result, "Empty output doesn't match")
 
-	assert.Equal(t, "", whoCommand.ProcessText("!who foo", userTest), "Who Command No Level")
+	_, err := whoCommand.ProcessText("!who6", userTest)
+	assert.Equal(t, "text doesn't match", err.Error(), "Error output doesn't match")
+}
+
+/*
+func TestWhoCommandError(t *testing.T) {
 
 	whoCommand.Db = &db.MockZbotDatabase{
 		Error: true,
 	}
-	whoCommand.Levels = Levels{
-		Who: 1,
-	}
-	assert.Equal(t, "", whoCommand.ProcessText("!who foo", userTest), "Who with internal error")
-
-	whoCommand.Next = &FakeCommand{}
-	assert.Equal(t, "Fake OK", whoCommand.ProcessText("!who2 foo", userTest), "Who next command")
+	_, err := whoCommand.ProcessText("!who", userTest)
+	assert.Equal(t, "mock", err.Error(), "Db error")
 }
+*/

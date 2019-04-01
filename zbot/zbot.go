@@ -10,7 +10,7 @@ import (
 
 	"container/list"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	command "github.com/ssalvatori/zbot-telegram-go/commands"
 	"github.com/ssalvatori/zbot-telegram-go/db"
 	"github.com/ssalvatori/zbot-telegram-go/user"
@@ -52,6 +52,7 @@ var levelsConfig = command.Levels{
 	Stats:   0,
 	Version: 0,
 	Ping:    0,
+	Last:    0,
 }
 
 //Execute run Zbot
@@ -164,14 +165,15 @@ func processing(db db.ZbotDatabase, msg tb.Message) string {
 		forgetCommand := &command.ForgetCommand{Db: db, Levels: levelsConfig}
 	*/
 
-	commandsList := &command.Commands{
-		list: list.List.Init(),
-		db:   db,
+	commandsList := &command.CommandsList{
+		List: list.List.Init(),
+		Db:   db,
 	}
 	commandsList.Chain("ping", command.PingCommand{}, levelsConfig.Ping)
 	commandsList.Chain("version", command.VersionCommand{Version: version, BuildTime: buildTime}, levelsConfig.Version)
 	commandsList.Chain("top", command.TopCommand{}, levelsConfig.Top)
 	commandsList.Chain("stats", command.StatsCommand{}, levelsConfig.Stats)
+	commandsList.Chain("last", command.LastCommand{}, levelsConfig.Last)
 
 	/*
 		TODO: check error handler

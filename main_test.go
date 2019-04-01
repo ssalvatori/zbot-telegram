@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/ssalvatori/zbot-telegram-go/zbot"
 	"github.com/stretchr/testify/assert"
 )

@@ -12,9 +12,14 @@ func TestPingCommandOK(t *testing.T) {
 	result, _ := pingCommand.ProcessText("!ping", userTest)
 	assert.Equal(t, "pong!!", result, "Ping Command")
 }
-func TestPingCommandNoNext(t *testing.T) {
-	result, _ := pingCommand.ProcessText("!ping6", userTest)
-	assert.Equal(t, "", result, "Ping no next command")
+
+func TestPingCommandNotMatch(t *testing.T) {
+
+	result, _ := statsCommand.ProcessText("!ping6", userTest)
+	assert.Equal(t, "", result, "Empty output doesn't match")
+
+	_, err := statsCommand.ProcessText("!ping6", userTest)
+	assert.Equal(t, "text doesn't match", err.Error(), "Error output doesn't match")
 }
 
 /*

@@ -7,7 +7,7 @@ import (
 
 	"container/list"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/ssalvatori/zbot-telegram-go/db"
 	"github.com/ssalvatori/zbot-telegram-go/user"
 	"github.com/ssalvatori/zbot-telegram-go/utils"
@@ -27,16 +27,17 @@ type Levels struct {
 	Stats    int
 	Version  int
 	Ping     int
+	Last     int
 }
 
 var (
 	DisabledCommands []string
 )
 
-// Commands list of commandElement
-type Commands struct {
-	list list.List
-	db   db.ZbotDatabase
+// CommandsList list of commandElement
+type CommandsList struct {
+	List *list.List
+	Db   db.ZbotDatabase
 }
 
 type commandElement struct {
@@ -46,9 +47,9 @@ type commandElement struct {
 }
 
 // Chain add a command and the required level to use it to the list of command
-func (cmdList *Commands) Chain(cmdDefinition string, cmd interface{}, level int) *Commands {
+func (cmdList *CommandsList) Chain(cmdDefinition string, cmd interface{}, level int) *CommandsList {
 
-	cmd.(zbotCommand).SetDB(cmdList.db)
+	cmd.(zbotCommand).SetDB(cmdList.Db)
 
 	newCommand := &commandElement{
 		command:       cmd.(zbotCommand),
@@ -56,15 +57,15 @@ func (cmdList *Commands) Chain(cmdDefinition string, cmd interface{}, level int)
 		cmdString:     cmdDefinition,
 	}
 
-	cmdList.list.PushBack(newCommand)
+	cmdList.List.PushBack(newCommand)
 	return cmdList
 }
 
 // Run commands against a msg for a given user
-func (cmdList *Commands) Run(cmd string, msg string, user user.User) string {
+func (cmdList *CommandsList) Run(cmd string, msg string, user user.User) string {
 	output := ""
 
-	for e := cmdList.list.Front(); e != nil; e = e.Next() {
+	for e := cmdList.List.Front(); e != nil; e = e.Next() {
 		output, err := e.Value.(commandElement).command.(zbotCommand).ProcessText(msg, user)
 		if err != nil {
 			output = err.Error()
