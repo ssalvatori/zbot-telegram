@@ -170,5 +170,8 @@ func (d *MockZbotDatabase) Append(item DefinitionItem) error {
 }
 
 func (d *MockZbotDatabase) Forget(item DefinitionItem) error {
+	if d.Error {
+		return errors.New("mock")
+	}
 	return nil
 }

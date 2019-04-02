@@ -11,40 +11,27 @@ var forgetCommand = ForgetCommand{}
 
 func TestForgetCommandOK(t *testing.T) {
 
-	forgetCommand.Db = &db.MockZbotDatabase{
-		Term:    "foo",
-		Meaning: "bar",
-		Level:   "100",
-	}
-	forgetCommand.Levels = Levels{
-		Ignore: 10,
-		Append: 10,
-		Learn:  10,
-		Lock:   10,
-		Forget: 10,
-	}
+	forgetCommand.Db = &db.MockZbotDatabase{}
 
-	userTest.Level = 100
+	result, _ := forgetCommand.ProcessText("!forget foo", userTest)
 
-	assert.Equal(t, "[foo] deleted", forgetCommand.ProcessText("!forget foo", userTest), "Forget Command OK")
+	assert.Equal(t, "[foo] deleted", result, "Forget Command OK")
 }
 
-func TestForgetCommandNoLevel(t *testing.T) {
+func TestForgetCommandNotMatch(t *testing.T) {
+
+	result, _ := forgetCommand.ProcessText("!forget6", userTest)
+	assert.Equal(t, "", result, "Empty output doesn't match")
+
+	_, err := forgetCommand.ProcessText("!forget6", userTest)
+	assert.Equal(t, "text doesn't match", err.Error(), "Error output doesn't match")
+}
+
+func TestForgetCommandError(t *testing.T) {
 
 	forgetCommand.Db = &db.MockZbotDatabase{
-		Term:    "foo",
-		Meaning: "bar",
-		Level:   "5",
+		Error: true,
 	}
-	forgetCommand.Levels = Levels{
-		Ignore: 10,
-		Append: 10,
-		Learn:  10,
-		Lock:   10,
-		Forget: 1000,
-	}
-
-	userTest.Level = 5
-
-	assert.Equal(t, "", forgetCommand.ProcessText("!forget foo", userTest), "Forget Command No Level")
+	_, err := forgetCommand.ProcessText("!forget lal", userTest)
+	assert.Equal(t, "mock", err.Error(), "Db error")
 }

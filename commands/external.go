@@ -10,16 +10,15 @@ import (
 	"github.com/ssalvatori/zbot-telegram-go/user"
 )
 
+//ExternalCommand definition
 type ExternalCommand struct {
 	PathModules string
-	Next        HandlerCommand
-	Levels      Levels
 }
 
-func (handler *ExternalCommand) ProcessText(text string, user user.User) string {
+// ProcessText run command
+func (handler *ExternalCommand) ProcessText(text string, user user.User) (string, error) {
 
 	commandPattern := regexp.MustCompile(`^!([a-zA-Z0-9\_\-]+)([\s(\S*)]*)?`)
-	result := ""
 
 	if commandPattern.MatchString(text) {
 		args := commandPattern.FindStringSubmatch(text)
@@ -31,7 +30,7 @@ func (handler *ExternalCommand) ProcessText(text string, user user.User) string 
 
 		if err != nil {
 			log.Error(err)
-			return ""
+			return "", err
 		}
 
 		cmd := exec.Command(binary, user.Username, strconv.Itoa(user.Level), args[2])
@@ -40,13 +39,9 @@ func (handler *ExternalCommand) ProcessText(text string, user user.User) string 
 		err = cmd.Run()
 		if err != nil {
 			log.Error(err)
-			return ""
+			return "", err
 		}
-		result = out.String()
-	} else {
-		if handler.Next != nil {
-			result = handler.Next.ProcessText(text, user)
-		}
+		return out.String(), nil
 	}
-	return result
+	return "", nil
 }

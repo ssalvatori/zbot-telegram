@@ -1,6 +1,7 @@
 package command
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"time"
@@ -10,16 +11,15 @@ import (
 	"github.com/ssalvatori/zbot-telegram-go/user"
 )
 
+// AppendCommand definition
 type AppendCommand struct {
-	Next   HandlerCommand
-	Db     db.ZbotDatabase
-	Levels Levels
+	Db db.ZbotDatabase
 }
 
-func (handler *AppendCommand) ProcessText(text string, user user.User) string {
+// ProcessText run command
+func (handler *AppendCommand) ProcessText(text string, user user.User) (string, error) {
 
 	commandPattern := regexp.MustCompile(`(?s)^!append\s(\S*)\s(.*)`)
-	result := ""
 
 	if commandPattern.MatchString(text) {
 		term := commandPattern.FindStringSubmatch(text)
@@ -31,20 +31,16 @@ func (handler *AppendCommand) ProcessText(text string, user user.User) string {
 		}
 		err := handler.Db.Append(def)
 		if err != nil {
-			log.Error(fmt.Errorf("Error append %v", err))
-			return ""
+			log.Error(err)
+			return "", err
 		}
 		def, err = handler.Db.Get(def.Term)
 		if err != nil {
-			log.Error(fmt.Errorf("Error append %v", err))
-			return ""
+			log.Error(err)
+			return "", err
 		}
-		result = fmt.Sprintf("[%s] = [%s]", def.Term, def.Meaning)
-	} else {
-		if handler.Next != nil {
-			result = handler.Next.ProcessText(text, user)
-		}
+		return fmt.Sprintf("[%s] = [%s]", def.Term, def.Meaning), nil
 	}
 
-	return result
+	return "", errors.New("text doesn't match")
 }

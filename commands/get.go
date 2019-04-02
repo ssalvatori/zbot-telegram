@@ -11,12 +11,12 @@ import (
 	"github.com/ssalvatori/zbot-telegram-go/user"
 )
 
-//RandCommand definition
+//GetCommand definition
 type GetCommand struct {
 	Db db.ZbotDatabase
 }
 
-// ProcessText run command
+//ProcessText run command
 func (handler *GetCommand) ProcessText(text string, user user.User) (string, error) {
 
 	commandPattern := regexp.MustCompile(`^\?\s(\S*)`)
@@ -27,7 +27,7 @@ func (handler *GetCommand) ProcessText(text string, user user.User) (string, err
 		definition, err := handler.Db.Get(strings.ToLower(term[1]))
 		if err != nil {
 			log.Error(err)
-			return "",err
+			return "", err
 		}
 		if definition.Term != "" {
 			result = fmt.Sprintf("[%s] - [%s]", definition.Term, definition.Meaning)

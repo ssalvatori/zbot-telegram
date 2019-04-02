@@ -32,6 +32,7 @@ type Levels struct {
 	Find     int
 	Get      int
 	Search   int
+	External int
 }
 
 var (

@@ -42,21 +42,22 @@ type ConfigurationFlags struct {
 var Db db.ZbotDatabase
 
 var levelsConfig = command.Levels{
-	Ignore:  100,
-	Lock:    1000,
-	Learn:   0,
-	Append:  0,
-	Forget:  1000,
-	Who:     0,
-	Top:     0,
-	Stats:   0,
-	Version: 0,
-	Ping:    0,
-	Last:    0,
-	Rand:    0,
-	Find:    0,
-	Get:     0,
-	Search:  0,
+	Ignore:   100,
+	Lock:     1000,
+	Learn:    0,
+	Append:   0,
+	Forget:   1000,
+	Who:      0,
+	Top:      0,
+	Stats:    0,
+	Version:  0,
+	Ping:     0,
+	Last:     0,
+	Rand:     0,
+	Find:     0,
+	Get:      0,
+	Search:   0,
+	External: 0,
 }
 
 //Execute run Zbot
@@ -150,13 +151,9 @@ func processing(db db.ZbotDatabase, msg tb.Message) string {
 	}
 
 	/*
-		searchCommand := &command.SearchCommand{Db: db, Levels: levelsConfig}
-		learnCommand := &command.LearnCommand{Db: db, Levels: levelsConfig}
 		levelCommand := &command.LevelCommand{Db: db, Levels: levelsConfig}
 		ignoreCommand := &command.IgnoreCommand{Db: db, Levels: levelsConfig}
 		lockCommand := &command.LockCommand{Db: db, Levels: levelsConfig}
-		appendCommand := &command.AppendCommand{Db: db, Levels: levelsConfig}
-		forgetCommand := &command.ForgetCommand{Db: db, Levels: levelsConfig}
 	*/
 
 	commandsList := &command.CommandsList{
@@ -177,6 +174,9 @@ func processing(db db.ZbotDatabase, msg tb.Message) string {
 	commandsList.Chain("get", &command.GetCommand{Db: db}, levelsConfig.Get)
 	commandsList.Chain("search", &command.SearchCommand{Db: db}, levelsConfig.Search)
 	commandsList.Chain("learn", &command.LearnCommand{Db: db}, levelsConfig.Learn)
+	commandsList.Chain("learn", &command.AppendCommand{Db: db}, levelsConfig.Append)
+	commandsList.Chain("learn", &command.ForgetCommand{Db: db}, levelsConfig.Forget)
+	commandsList.Chain("external", &command.ExternalCommand{}, levelsConfig.External)
 
 	/*
 		TODO: check error handler
@@ -188,11 +188,9 @@ func processing(db db.ZbotDatabase, msg tb.Message) string {
 			PathModules: ModulesPath,
 		}
 
-		learnCommand.Next = levelCommand
+
 		levelCommand.Next = lockCommand
 		lockCommand.Next = appendCommand
-		appendCommand.Next = whoCommand
-		forgetCommand.Next = ignoreCommand
 		ignoreCommand.Next = externalCommand
 	*/
 

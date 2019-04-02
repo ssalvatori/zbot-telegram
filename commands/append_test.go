@@ -16,19 +16,33 @@ func TestAppendCommandOK(t *testing.T) {
 		Meaning: "bar",
 	}
 
-	assert.Equal(t, "[foo] = [bar]", appendCommand.ProcessText("!append foo bar", userTest), "Append Command")
+	result, _ := appendCommand.ProcessText("!append foo bar", userTest)
+	assert.Equal(t, "[foo] = [bar]", result, "Append Command")
+
+}
+
+func TestAppendCommandNotMatch(t *testing.T) {
+
+	result, _ := appendCommand.ProcessText("!append6 foor ala", userTest)
+	assert.Equal(t, "", result, "Empty output doesn't match")
+
+	_, err := appendCommand.ProcessText("!append6 fo lala", userTest)
+	assert.Equal(t, "text doesn't match", err.Error(), "Error output doesn't match")
+}
+
+func TestAppendCommandError(t *testing.T) {
 
 	appendCommand.Db = &db.MockZbotDatabase{
-		Error: true,
+		Rand_def: db.DefinitionItem{Term: "foo", Meaning: "bar"},
+		Error:    true,
 	}
-
-	assert.Equal(t, "", appendCommand.ProcessText("!append foo bar2", userTest), "Append Error Set")
+	_, err := appendCommand.ProcessText("!append foo lala", userTest)
+	assert.Equal(t, "mock", err.Error(), "Db error")
 
 	appendCommand.Db = &db.MockZbotDatabase{
 		ErrorAppend: true,
 	}
-	assert.Equal(t, "", appendCommand.ProcessText("!append foo bar2", userTest), "Append Error Get")
 
-	appendCommand.Next = &FakeCommand{}
-	assert.Equal(t, "Fake OK", appendCommand.ProcessText("??", userTest), "Append next command")
+	_, err = appendCommand.ProcessText("!append foo bar2", userTest)
+	assert.Equal(t, "mock", err.Error(), "Append Error Get")
 }
