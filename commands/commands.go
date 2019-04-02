@@ -30,6 +30,8 @@ type Levels struct {
 	Last     int
 	Rand     int
 	Find     int
+	Get      int
+	Search   int
 }
 
 var (

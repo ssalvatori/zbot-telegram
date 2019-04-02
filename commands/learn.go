@@ -1,6 +1,7 @@
 package command
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"time"
@@ -10,17 +11,15 @@ import (
 	"github.com/ssalvatori/zbot-telegram-go/user"
 )
 
+//LearnCommand defintion
 type LearnCommand struct {
-	Next   HandlerCommand
-	Db     db.ZbotDatabase
-	Levels Levels
+	Db db.ZbotDatabase
 }
 
 //ProcessText Run module
-func (handler *LearnCommand) ProcessText(text string, user user.User) string {
+func (handler *LearnCommand) ProcessText(text string, user user.User) (string, error) {
 
 	commandPattern := regexp.MustCompile(`(?s)^!learn\s(\S*)\s(.*)`)
-	result := ""
 
 	if commandPattern.MatchString(text) {
 		nowDate := time.Now().Format("2006-01-02")
@@ -33,14 +32,11 @@ func (handler *LearnCommand) ProcessText(text string, user user.User) string {
 		}
 		usedTerm, err := handler.Db.Set(def)
 		if err != nil {
-			log.Error(fmt.Errorf("Error learn %v", err))
-			return ""
+			log.Error()
+			return "", err
 		}
-		result = fmt.Sprintf("[%s] - [%s]", usedTerm, def.Meaning)
-	} else {
-		if handler.Next != nil {
-			result = handler.Next.ProcessText(text, user)
-		}
+		return fmt.Sprintf("[%s] - [%s]", usedTerm, def.Meaning), nil
 	}
-	return result
+
+	return "", errors.New("text doesn't match")
 }

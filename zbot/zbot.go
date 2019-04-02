@@ -55,6 +55,8 @@ var levelsConfig = command.Levels{
 	Last:    0,
 	Rand:    0,
 	Find:    0,
+	Get:     0,
+	Search:  0,
 }
 
 //Execute run Zbot
@@ -148,7 +150,6 @@ func processing(db db.ZbotDatabase, msg tb.Message) string {
 	}
 
 	/*
-		getCommand := &command.GetCommand{Db: db, Levels: levelsConfig}
 		searchCommand := &command.SearchCommand{Db: db, Levels: levelsConfig}
 		learnCommand := &command.LearnCommand{Db: db, Levels: levelsConfig}
 		levelCommand := &command.LevelCommand{Db: db, Levels: levelsConfig}
@@ -173,6 +174,9 @@ func processing(db db.ZbotDatabase, msg tb.Message) string {
 	commandsList.Chain("rand", &command.RandCommand{Db: db}, levelsConfig.Rand)
 	commandsList.Chain("who", &command.WhoCommand{Db: db}, levelsConfig.Who)
 	commandsList.Chain("find", &command.FindCommand{Db: db}, levelsConfig.Find)
+	commandsList.Chain("get", &command.GetCommand{Db: db}, levelsConfig.Get)
+	commandsList.Chain("search", &command.SearchCommand{Db: db}, levelsConfig.Search)
+	commandsList.Chain("learn", &command.LearnCommand{Db: db}, levelsConfig.Learn)
 
 	/*
 		TODO: check error handler
@@ -184,8 +188,6 @@ func processing(db db.ZbotDatabase, msg tb.Message) string {
 			PathModules: ModulesPath,
 		}
 
-		getCommand.Next = findCommand
-		searchCommand.Next = learnCommand
 		learnCommand.Next = levelCommand
 		levelCommand.Next = lockCommand
 		lockCommand.Next = appendCommand

@@ -11,18 +11,37 @@ var searchCommand = SearchCommand{}
 
 func TestSearchCommandOK(t *testing.T) {
 
+	var result string
+
 	searchCommand.Db = &db.MockZbotDatabase{
 		Search_terms: []string{"foo", "bar"},
 	}
-	assert.Equal(t, "foo bar", searchCommand.ProcessText("!search foo", userTest), "Search Command")
+
+	result, _ = searchCommand.ProcessText("!search foo", userTest)
+	assert.Equal(t, "foo bar", result, "Search Command")
+
 	searchCommand.Db = &db.MockZbotDatabase{
 		Search_terms: []string{},
 	}
-	assert.Equal(t, "", searchCommand.ProcessText("!search", userTest), "Search no next command")
 
-	searchCommand.Db = &db.MockZbotDatabase{Error: true}
-	assert.Equal(t, "", searchCommand.ProcessText("!search foo ", userTest), "Search error")
+	result, _ = searchCommand.ProcessText("!search", userTest)
+	assert.Equal(t, "", result, "Search empty")
+}
+func TestSearchCommandNotMatch(t *testing.T) {
 
-	searchCommand.Next = &FakeCommand{}
-	assert.Equal(t, "Fake OK", searchCommand.ProcessText("?? ", userTest), "Search next command")
+	result, _ := searchCommand.ProcessText("!search6", userTest)
+	assert.Equal(t, "", result, "Empty output doesn't match")
+
+	_, err := searchCommand.ProcessText("!search6", userTest)
+	assert.Equal(t, "text doesn't match", err.Error(), "Error output doesn't match")
+}
+
+func TestSearchCommandError(t *testing.T) {
+
+	searchCommand.Db = &db.MockZbotDatabase{
+		Rand_def: db.DefinitionItem{Term: "foo", Meaning: "bar"},
+		Error:    true,
+	}
+	_, err := searchCommand.ProcessText("!search foo", userTest)
+	assert.Equal(t, "mock", err.Error(), "Db error")
 }

@@ -1,6 +1,7 @@
 package command
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -10,30 +11,24 @@ import (
 	"github.com/ssalvatori/zbot-telegram-go/user"
 )
 
+//SearchCommand definition
 type SearchCommand struct {
-	Next   HandlerCommand
-	Db     db.ZbotDatabase
-	Levels Levels
+	Db db.ZbotDatabase
 }
 
 //ProcessText Run module
-func (handler *SearchCommand) ProcessText(text string, user user.User) string {
+func (handler *SearchCommand) ProcessText(text string, user user.User) (string, error) {
 
 	commandPattern := regexp.MustCompile(`^!search\s(\S*)`)
-	result := ""
 
 	if commandPattern.MatchString(text) {
 		term := commandPattern.FindStringSubmatch(text)
 		results, err := handler.Db.Search(term[1])
 		if err != nil {
-			log.Error(fmt.Errorf("Error search %v", err))
-			return ""
+			log.Error(err)
+			return "", err
 		}
-		result = fmt.Sprintf("%s", strings.Join(getTerms(results), " "))
-	} else {
-		if handler.Next != nil {
-			result = handler.Next.ProcessText(text, user)
-		}
+		return fmt.Sprintf("%s", strings.Join(getTerms(results), " ")), nil
 	}
-	return result
+	return "", errors.New("text doesn't match")
 }

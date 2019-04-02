@@ -15,11 +15,6 @@ type RandCommand struct {
 	Db db.ZbotDatabase
 }
 
-//SetDb set db connection if the module need it
-func (handler *RandCommand) SetDb(db db.ZbotDatabase) {
-	handler.Db = db
-}
-
 // ProcessText run command
 func (handler *RandCommand) ProcessText(text string, user user.User) (string, error) {
 
