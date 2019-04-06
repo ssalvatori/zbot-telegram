@@ -201,56 +201,6 @@ func TestProcessingUserIgnoreInsert(t *testing.T) {
 
 }
 
-func TestProcessingExternalModuleWithArgs(t *testing.T) {
-
-	dbMock := &db.MockZbotDatabase{
-		Level: "666",
-		File:  "hola.db",
-	}
-
-	botMsg := tb.Message{Text: "!test arg1 arg2",
-		Sender: &tb.User{
-			Username:  "ssalvatori",
-			FirstName: "stefano",
-		},
-	}
-	result := processing(dbMock, botMsg)
-
-	assert.Equal(t, "OK ssalvatori 666 arg1 arg2\n", result, "!test module with args")
-}
-
-func TestProcessingExternalModuleWithoutArgs(t *testing.T) {
-
-	dbMock := &db.MockZbotDatabase{
-		Level: "666",
-		File:  "hola.db",
-	}
-
-	botMsg := tb.Message{
-		Text: "!test",
-		Sender: &tb.User{
-			Username:  "ssalvatori",
-			FirstName: "stefano",
-		},
-	}
-	result := processing(dbMock, botMsg)
-
-	assert.Equal(t, "OK ssalvatori 666\n", result, "external module without args")
-}
-
-func TestProcessingExternalModuleNotFound(t *testing.T) {
-
-	dbMock := &db.MockZbotDatabase{
-		Level: "666",
-		File:  "hola.db",
-	}
-
-	botMsg := tb.Message{Text: "!external arg1 arg2", Sender: &tb.User{Username: "zbot_test"}}
-	result := processing(dbMock, botMsg)
-
-	assert.Equal(t, "", result, "external module not found")
-}
-
 func TestProcessingLearnReplyTo(t *testing.T) {
 	dbMock := &db.MockZbotDatabase{
 		Level: "666",

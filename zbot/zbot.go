@@ -154,6 +154,7 @@ func processing(db db.ZbotDatabase, msg tb.Message) string {
 	commandsList := &command.CommandsList{
 		List: list.New(),
 	}
+
 	commandsList.Chain("ping", &command.PingCommand{Db: db}, levelsConfig.Ping)
 	commandsList.Chain("version", &command.VersionCommand{
 		GitHash:   gitHash,
@@ -171,21 +172,10 @@ func processing(db db.ZbotDatabase, msg tb.Message) string {
 	commandsList.Chain("learn", &command.LearnCommand{Db: db}, levelsConfig.Learn)
 	commandsList.Chain("append", &command.AppendCommand{Db: db}, levelsConfig.Append)
 	commandsList.Chain("forget", &command.ForgetCommand{Db: db}, levelsConfig.Forget)
-	commandsList.Chain("level", &command.LevelCommand{}, levelsConfig.Level)
-	commandsList.Chain("lock", &command.LockCommand{}, levelsConfig.Lock)
-	commandsList.Chain("ignore", &command.IgnoreCommand{}, levelsConfig.Ignore)
-	commandsList.Chain("external", &command.ExternalCommand{}, levelsConfig.External)
-
-	/*
-		TODO: check error handler
-		!level add <username>
-		!level del <username>
-	*/
-	/*
-		externalCommand := &command.ExternalCommand{
-			PathModules: ModulesPath,
-		}
-	*/
+	commandsList.Chain("level", &command.LevelCommand{Db: db}, levelsConfig.Level)
+	commandsList.Chain("lock", &command.LockCommand{Db: db}, levelsConfig.Lock)
+	commandsList.Chain("ignore", &command.IgnoreCommand{Db: db}, levelsConfig.Ignore)
+	commandsList.Chain("external", &command.ExternalCommand{PathModules: ModulesPath}, levelsConfig.External)
 
 	var messageString = msg.Text
 
