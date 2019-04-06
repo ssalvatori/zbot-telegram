@@ -58,6 +58,7 @@ var levelsConfig = command.Levels{
 	Get:      0,
 	Search:   0,
 	External: 0,
+	Level:    0,
 }
 
 //Execute run Zbot
@@ -150,12 +151,6 @@ func processing(db db.ZbotDatabase, msg tb.Message) string {
 		}
 	}
 
-	/*
-		levelCommand := &command.LevelCommand{Db: db, Levels: levelsConfig}
-		ignoreCommand := &command.IgnoreCommand{Db: db, Levels: levelsConfig}
-		lockCommand := &command.LockCommand{Db: db, Levels: levelsConfig}
-	*/
-
 	commandsList := &command.CommandsList{
 		List: list.New(),
 	}
@@ -174,8 +169,11 @@ func processing(db db.ZbotDatabase, msg tb.Message) string {
 	commandsList.Chain("get", &command.GetCommand{Db: db}, levelsConfig.Get)
 	commandsList.Chain("search", &command.SearchCommand{Db: db}, levelsConfig.Search)
 	commandsList.Chain("learn", &command.LearnCommand{Db: db}, levelsConfig.Learn)
-	commandsList.Chain("learn", &command.AppendCommand{Db: db}, levelsConfig.Append)
-	commandsList.Chain("learn", &command.ForgetCommand{Db: db}, levelsConfig.Forget)
+	commandsList.Chain("append", &command.AppendCommand{Db: db}, levelsConfig.Append)
+	commandsList.Chain("forget", &command.ForgetCommand{Db: db}, levelsConfig.Forget)
+	commandsList.Chain("level", &command.LevelCommand{}, levelsConfig.Level)
+	commandsList.Chain("lock", &command.LockCommand{}, levelsConfig.Lock)
+	commandsList.Chain("ignore", &command.IgnoreCommand{}, levelsConfig.Ignore)
 	commandsList.Chain("external", &command.ExternalCommand{}, levelsConfig.External)
 
 	/*
@@ -187,11 +185,6 @@ func processing(db db.ZbotDatabase, msg tb.Message) string {
 		externalCommand := &command.ExternalCommand{
 			PathModules: ModulesPath,
 		}
-
-
-		levelCommand.Next = lockCommand
-		lockCommand.Next = appendCommand
-		ignoreCommand.Next = externalCommand
 	*/
 
 	var messageString = msg.Text

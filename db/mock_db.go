@@ -133,9 +133,10 @@ func (d *MockZbotDatabase) Search(str string) ([]DefinitionItem, error) {
 	return items, nil
 }
 
+//UserLevel Mock
 func (d *MockZbotDatabase) UserLevel(str string) (string, error) {
 	if d.Error {
-		return "", errors.New("Mock")
+		return "", errors.New("mock")
 	}
 	return d.Level, nil
 }
@@ -158,7 +159,11 @@ func (d *MockZbotDatabase) UserCleanIgnore() error {
 	return nil
 }
 
+//Lock defintion mock
 func (d *MockZbotDatabase) Lock(item DefinitionItem) error {
+	if d.Error {
+		return errors.New("mock")
+	}
 	return nil
 }
 

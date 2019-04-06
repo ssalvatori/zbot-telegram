@@ -1,6 +1,7 @@
 package command
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -12,15 +13,15 @@ import (
 	"github.com/ssalvatori/zbot-telegram-go/user"
 )
 
+//IgnoreCommand definition
 type IgnoreCommand struct {
-	Next   HandlerCommand
-	Db     db.ZbotDatabase
-	Levels Levels
+	Db db.ZbotDatabase
 }
 
 const dateFormat string = "02-01-2006 15:04:05 MST" //dd-mm-yyyy hh:ii:ss TZ
 
-func (handler *IgnoreCommand) ProcessText(text string, user user.User) string {
+//ProcessText run command
+func (handler *IgnoreCommand) ProcessText(text string, user user.User) (string, error) {
 	commandPattern := regexp.MustCompile(`^!ignore\s(\S*)(\s(\S*))?`)
 	result := ""
 
@@ -30,33 +31,28 @@ func (handler *IgnoreCommand) ProcessText(text string, user user.User) string {
 		switch args[1] {
 		case "help":
 			result = "*!ignore* Options available: \n list (show all user ignored) \n add <username> (ignore a user for 10 minutes)"
-			break
 		case "list":
 			ignoredUsers, err := handler.Db.UserIgnoreList()
 			if err != nil {
 				log.Error(err)
+				return "", err
 			}
 			result = fmt.Sprintf(strings.Join(getUserIgnored(ignoredUsers), "/n"))
-			break
-
 		case "add":
 			if strings.ToLower(args[3]) != strings.ToLower(user.Username) {
 				err := handler.Db.UserIgnoreInsert(args[3])
 				if err != nil {
 					log.Error(err)
+					return "", err
 				}
 				result = fmt.Sprintf("User [%s] ignored for 10 minutes", args[3])
 			} else {
 				result = "You can't ignore yourself"
 			}
-			break
 		}
-	} else {
-		if handler.Next != nil {
-			result = handler.Next.ProcessText(text, user)
-		}
+		return result, nil
 	}
-	return result
+	return "", errors.New("text doesn't match")
 }
 
 func getUserIgnored(users []db.UserIgnore) []string {

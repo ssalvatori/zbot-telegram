@@ -1,6 +1,7 @@
 package command
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 
@@ -9,38 +10,29 @@ import (
 	"github.com/ssalvatori/zbot-telegram-go/user"
 )
 
+//LockCommand definition
 type LockCommand struct {
-	Next   HandlerCommand
-	Db     db.ZbotDatabase
-	Levels Levels
+	Db db.ZbotDatabase
 }
 
-func (handler *LockCommand) ProcessText(text string, user user.User) string {
+//ProcessText run command
+func (handler *LockCommand) ProcessText(text string, user user.User) (string, error) {
 
 	commandPattern := regexp.MustCompile(`^!lock\s(\S*)$`)
-	result := ""
 
 	if commandPattern.MatchString(text) {
-		if user.IsAllow(handler.Levels.Lock) {
-			term := commandPattern.FindStringSubmatch(text)
-			def := db.DefinitionItem{
-				Author: user.Username,
-				Term:   term[1],
-			}
-			err := handler.Db.Lock(def)
-			if err != nil {
-				log.Error(err)
-			}
-			result = fmt.Sprintf("[%s] locked", def.Term)
-
-		} else {
-			result = fmt.Sprintf("Your level is not enough < %d", handler.Levels.Lock)
+		term := commandPattern.FindStringSubmatch(text)
+		def := db.DefinitionItem{
+			Author: user.Username,
+			Term:   term[1],
 		}
-	} else {
-		if handler.Next != nil {
-			result = handler.Next.ProcessText(text, user)
+		err := handler.Db.Lock(def)
+		if err != nil {
+			log.Error(err)
+			return "", err
 		}
+		return fmt.Sprintf("[%s] locked", def.Term), nil
 	}
 
-	return result
+	return "", errors.New("text doesn't match")
 }

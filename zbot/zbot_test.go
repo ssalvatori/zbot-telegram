@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/ssalvatori/zbot-telegram-go/commands"
+	command "github.com/ssalvatori/zbot-telegram-go/commands"
 	"github.com/ssalvatori/zbot-telegram-go/db"
 	"github.com/stretchr/testify/assert"
 	tb "gopkg.in/tucnak/telebot.v2"
@@ -146,7 +146,7 @@ func TestProcessingUserLevel(t *testing.T) {
 		Sender: &tb.User{FirstName: "ssalvato", Username: "ssalvato"},
 	}
 	result := processing(dbMock, botMsg)
-	assert.Equal(t, "ssalvato level 666", result, "!rand")
+	assert.Equal(t, "ssalvato level 666", result, "!level self user")
 }
 
 func TestProcessingUserIgnoreList(t *testing.T) {

@@ -1,7 +1,6 @@
 package command
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/ssalvatori/zbot-telegram-go/db"
@@ -17,31 +16,17 @@ func TestTemplateCommandOK(t *testing.T) {
 		Meaning: "bar",
 		Level:   "100",
 	}
-	lockCommand.Levels = Levels{
-		Ignore: 10,
-		Append: 10,
-		Learn:  10,
-		Lock:   1,
-	}
 
-	assert.Equal(t, "[foo] locked", lockCommand.ProcessText("!lock foo", userTest), "Template Command")
+	result, _ := lockCommand.ProcessText("!lock foo", userTest)
+	assert.Equal(t, "[foo] locked", result, "Template Command")
 }
 
-func TestTemplateCommandNoLevel(t *testing.T) {
+func TestTemplateCommandErro(t *testing.T) {
 
 	lockCommand.Db = &db.MockZbotDatabase{
-		Term:    "foo",
-		Meaning: "bar",
-		Level:   "5",
-	}
-	lockCommand.Levels = Levels{
-		Ignore: 10,
-		Append: 10,
-		Learn:  10,
-		Lock:   100,
+		Error: true,
 	}
 
-	userTest.Level = 5
-
-	assert.Equal(t, fmt.Sprintf("Your level is not enough < %d", lockCommand.Levels.Lock), lockCommand.ProcessText("!lock foo", userTest), "Lock Command No Level")
+	_, err := lockCommand.ProcessText("!lock foo", userTest)
+	assert.Equal(t, "mock", err.Error(), "Db error")
 }
