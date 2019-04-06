@@ -86,10 +86,7 @@ type zbotCommand interface {
 	ProcessText(text string, username user.User) (string, error)
 }
 
-type HandlerCommand interface {
-	ProcessText(text string, username user.User) string
-}
-
+//getTerms transform DefinitionItem array into an array of term
 func getTerms(items []db.DefinitionItem) []string {
 	var terms []string
 	for _, item := range items {
