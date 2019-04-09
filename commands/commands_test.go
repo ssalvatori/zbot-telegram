@@ -29,14 +29,6 @@ var minimumLevels = Levels{
 	Stats:  0,
 }
 
-type FakeCommand struct {
-	Next HandlerCommand
-}
-
-func (handler *FakeCommand) ProcessText(text string, user user.User) string {
-	return "Fake OK"
-}
-
 func TestGetTerms(t *testing.T) {
 	items := []db.DefinitionItem{
 		{Term: "foo", Meaning: "bar"},
