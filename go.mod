@@ -9,5 +9,4 @@ require (
 	github.com/sirupsen/logrus v1.6.0 // indirect
 	golang.org/x/sys v0.0.0-20200523222454-059865788121 // indirect
 	gopkg.in/tucnak/telebot.v2 v2.0.0-20200522115256-76430783a7a2 // indirect
-	github.com/ssalvatori/zbot-telegram.dev
 )

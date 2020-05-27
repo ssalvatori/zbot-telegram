@@ -6,8 +6,8 @@ import (
 
 	"fmt"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/caarlos0/env/v6"
+	log "github.com/sirupsen/logrus"
 	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/ssalvatori/zbot-telegram/zbot"
 )
