@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/ssalvatori/zbot-telegram-go/zbot"
+	"github.com/ssalvatori/zbot-telegram/zbot"
 	"github.com/stretchr/testify/assert"
 )
 

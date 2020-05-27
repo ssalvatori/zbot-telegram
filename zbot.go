@@ -11,10 +11,10 @@ import (
 	"container/list"
 
 	log "github.com/sirupsen/logrus"
-	command "github.com/ssalvatori/zbot-telegram-go/commands"
-	"github.com/ssalvatori/zbot-telegram-go/db"
-	"github.com/ssalvatori/zbot-telegram-go/user"
-	"github.com/ssalvatori/zbot-telegram-go/utils"
+	command "github.com/ssalvatori/zbot-telegram/commands"
+	"github.com/ssalvatori/zbot-telegram/db"
+	"github.com/ssalvatori/zbot-telegram/user"
+	"github.com/ssalvatori/zbot-telegram/utils"
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 

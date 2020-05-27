@@ -8,9 +8,9 @@ import (
 	"container/list"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/ssalvatori/zbot-telegram-go/db"
-	"github.com/ssalvatori/zbot-telegram-go/user"
-	"github.com/ssalvatori/zbot-telegram-go/utils"
+	"github.com/ssalvatori/zbot-telegram/db"
+	"github.com/ssalvatori/zbot-telegram/user"
+	"github.com/ssalvatori/zbot-telegram/utils"
 )
 
 // Levels command definition

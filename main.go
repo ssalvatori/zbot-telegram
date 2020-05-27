@@ -7,9 +7,9 @@ import (
 	"fmt"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/caarlos0/env"
-	"github.com/ssalvatori/zbot-telegram-go/db"
-	"github.com/ssalvatori/zbot-telegram-go/zbot"
+	"github.com/caarlos0/env/v6"
+	"github.com/ssalvatori/zbot-telegram/db"
+	"github.com/ssalvatori/zbot-telegram/zbot"
 )
 
 // setUp

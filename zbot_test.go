@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	command "github.com/ssalvatori/zbot-telegram-go/commands"
-	"github.com/ssalvatori/zbot-telegram-go/db"
+	command "github.com/ssalvatori/zbot-telegram/commands"
+	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/stretchr/testify/assert"
 	tb "gopkg.in/tucnak/telebot.v2"
 )

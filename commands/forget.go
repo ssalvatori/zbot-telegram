@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/ssalvatori/zbot-telegram-go/db"
-	"github.com/ssalvatori/zbot-telegram-go/user"
+	"github.com/ssalvatori/zbot-telegram/db"
+	"github.com/ssalvatori/zbot-telegram/user"
 )
 
 // ForgetCommand definition

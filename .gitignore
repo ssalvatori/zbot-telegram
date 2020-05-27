@@ -28,4 +28,4 @@ _testmain.go
 coverage.sh
 *.coverprofile
 
-zbot-telegram-go
+zbot-telegram

@@ -11,15 +11,15 @@ before_install:
   - go get github.com/mitchellh/gox
   - go get github.com/modocache/gover
 script:
-  - go test -v github.com/ssalvatori/zbot-telegram-go/zbot -coverprofile=zbot.coverprofile
-  - go test -v github.com/ssalvatori/zbot-telegram-go/utils -coverprofile=utils.coverprofile
-  - go test -v github.com/ssalvatori/zbot-telegram-go/user -coverprofile=user.coverprofile
-  - go test -v github.com/ssalvatori/zbot-telegram-go/db -coverprofile=db.coverprofile
-  - go test -v github.com/ssalvatori/zbot-telegram-go/commands -coverprofile=db.coverprofile
+  - go test -v github.com/ssalvatori/zbot-telegram/zbot -coverprofile=zbot.coverprofile
+  - go test -v github.com/ssalvatori/zbot-telegram/utils -coverprofile=utils.coverprofile
+  - go test -v github.com/ssalvatori/zbot-telegram/user -coverprofile=user.coverprofile
+  - go test -v github.com/ssalvatori/zbot-telegram/db -coverprofile=db.coverprofile
+  - go test -v github.com/ssalvatori/zbot-telegram/commands -coverprofile=db.coverprofile
   - $HOME/gopath/bin/gover
   - $HOME/gopath/bin/goveralls -coverprofile gover.coverprofile -service travis-ci --ignore=db/mock_db.go,db/db.go,db/mysql.go,db/sql_lite.go
 after_success:
-  - $HOME/gopath/bin/gox -osarch="linux/amd64 linux/386" -cgo -ldflags "-X github.com/ssalvatori/zbot-telegram-go/zbot.version=`git describe --tags` -X github.com/ssalvatori/zbot-telegram-go/zbot.buildTime=`TZ=UTC date -u '+%Y-%m-%dT%H:%M:%SZ'` -X github.com/ssalvatori/zbot-telegram-go/zbot.gitHash=`git rev-parse --short HEAD`" -output "dist/{{.Dir}}-{{.OS}}-{{.Arch}}"
+  - $HOME/gopath/bin/gox -osarch="linux/amd64 linux/386" -cgo -ldflags "-X github.com/ssalvatori/zbot-telegram/zbot.version=`git describe --tags` -X github.com/ssalvatori/zbot-telegram/zbot.buildTime=`TZ=UTC date -u '+%Y-%m-%dT%H:%M:%SZ'` -X github.com/ssalvatori/zbot-telegram/zbot.gitHash=`git rev-parse --short HEAD`" -output "dist/{{.Dir}}-{{.OS}}-{{.Arch}}"
 deploy:
   provider: releases
   skip_cleanup: true

@@ -3,7 +3,7 @@ package user
 import (
 	"testing"
 
-	"github.com/ssalvatori/zbot-telegram-go/db"
+	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/stretchr/testify/assert"
 	tb "gopkg.in/tucnak/telebot.v2"
 )

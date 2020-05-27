@@ -1,7 +1,7 @@
 package user
 
 import (
-	"github.com/ssalvatori/zbot-telegram-go/db"
+	"github.com/ssalvatori/zbot-telegram/db"
 
 	"strconv"
 	"strings"

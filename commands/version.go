@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/ssalvatori/zbot-telegram-go/user"
+	"github.com/ssalvatori/zbot-telegram/user"
 )
 
 //VersionCommand configuration for version

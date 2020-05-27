@@ -6,8 +6,8 @@ import (
 	"regexp"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/ssalvatori/zbot-telegram-go/db"
-	"github.com/ssalvatori/zbot-telegram-go/user"
+	"github.com/ssalvatori/zbot-telegram/db"
+	"github.com/ssalvatori/zbot-telegram/user"
 )
 
 // WhoCommand definition

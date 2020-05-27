@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/ssalvatori/zbot-telegram-go/user"
+	"github.com/ssalvatori/zbot-telegram/user"
 )
 
 //ExecCommand handler to exec.Command
