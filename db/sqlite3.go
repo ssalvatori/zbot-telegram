@@ -14,16 +14,16 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type ZbotSqliteDatabase struct {
+type ZbotSqlite3Database struct {
 	Db   *sql.DB
 	File string
 }
 
-func (d *ZbotSqliteDatabase) GetConnectionInfo() string {
+func (d *ZbotSqlite3Database) GetConnectionString() string {
 	return fmt.Sprintf("DB: %s", d.File)
 }
 
-func (d *ZbotSqliteDatabase) UserIgnoreList() ([]UserIgnore, error) {
+func (d *ZbotSqlite3Database) UserIgnoreList() ([]UserIgnore, error) {
 	log.Debug("Getting ignore list")
 	statement := "SELECT username, since, until FROM ignore_list"
 	stmt, err := d.Db.Prepare(statement)
@@ -51,7 +51,7 @@ func (d *ZbotSqliteDatabase) UserIgnoreList() ([]UserIgnore, error) {
 }
 
 //Init start connection with sql database
-func (d *ZbotSqliteDatabase) Init() error {
+func (d *ZbotSqlite3Database) Init() error {
 
 	if _, err := os.Stat(d.File); os.IsNotExist(err) {
 		log.Fatal(fmt.Sprintf("Sqlite file [%s] does not exist!", d.File))
@@ -72,12 +72,12 @@ func (d *ZbotSqliteDatabase) Init() error {
 	return nil
 }
 
-func (d *ZbotSqliteDatabase) Close() {
+func (d *ZbotSqlite3Database) Close() {
 	log.Debug("Closing connection")
 	d.Db.Close()
 }
 
-func (d *ZbotSqliteDatabase) Statistics() (string, error) {
+func (d *ZbotSqlite3Database) Statistics() (string, error) {
 	statement := "select count(*) as total from definitions"
 	var totalCount string
 	err := d.Db.QueryRow(statement).Scan(&totalCount)
@@ -92,7 +92,7 @@ func (d *ZbotSqliteDatabase) Statistics() (string, error) {
 	return totalCount, err
 }
 
-func (d *ZbotSqliteDatabase) Top() ([]DefinitionItem, error) {
+func (d *ZbotSqlite3Database) Top() ([]DefinitionItem, error) {
 
 	statement := "SELECT term FROM definitions ORDER BY hits DESC LIMIT 10"
 	rows, err := d.Db.Query(statement)
@@ -113,7 +113,7 @@ func (d *ZbotSqliteDatabase) Top() ([]DefinitionItem, error) {
 
 	return items, nil
 }
-func (d *ZbotSqliteDatabase) Rand() (DefinitionItem, error) {
+func (d *ZbotSqlite3Database) Rand() (DefinitionItem, error) {
 	var def DefinitionItem
 
 	statement := "SELECT term, meaning FROM definitions ORDER BY random() LIMIT 1"
@@ -134,7 +134,7 @@ func (d *ZbotSqliteDatabase) Rand() (DefinitionItem, error) {
 
 }
 
-func (d *ZbotSqliteDatabase) Last() (DefinitionItem, error) {
+func (d *ZbotSqlite3Database) Last() (DefinitionItem, error) {
 	var def DefinitionItem
 	statement := "SELECT term, meaning FROM definitions ORDER BY id DESC LIMIT 1"
 
@@ -150,7 +150,7 @@ func (d *ZbotSqliteDatabase) Last() (DefinitionItem, error) {
 
 	return def, nil
 }
-func (d *ZbotSqliteDatabase) Get(term string) (DefinitionItem, error) {
+func (d *ZbotSqlite3Database) Get(term string) (DefinitionItem, error) {
 	var def DefinitionItem
 	statement := "SELECT id, term, meaning, author, date FROM definitions WHERE term = ? COLLATE NOCASE LIMIT 1"
 	err := d.Db.QueryRow(statement, term).Scan(&def.Id, &def.Term, &def.Meaning, &def.Author, &def.Date)
@@ -178,7 +178,7 @@ func (d *ZbotSqliteDatabase) Get(term string) (DefinitionItem, error) {
 	return def, nil
 }
 
-func (d *ZbotSqliteDatabase) _set(term string, def DefinitionItem) (sql.Result, error) {
+func (d *ZbotSqlite3Database) _set(term string, def DefinitionItem) (sql.Result, error) {
 	statement := "INSERT INTO definitions (term, meaning, author, locked, active, date, hits, link) VALUES (?,?,?,?,?,?,?,?)"
 
 	stmt, err := d.Db.Prepare(statement)
@@ -189,7 +189,7 @@ func (d *ZbotSqliteDatabase) _set(term string, def DefinitionItem) (sql.Result, 
 
 }
 
-func (d *ZbotSqliteDatabase) Set(def DefinitionItem) (string, error) {
+func (d *ZbotSqlite3Database) Set(def DefinitionItem) (string, error) {
 	count := 1
 	term := def.Term
 	log.Debug(def)
@@ -213,7 +213,7 @@ func (d *ZbotSqliteDatabase) Set(def DefinitionItem) (string, error) {
 
 }
 
-func (d *ZbotSqliteDatabase) Append(def DefinitionItem) error {
+func (d *ZbotSqlite3Database) Append(def DefinitionItem) error {
 	statement := "UPDATE definitions SET meaning = meaning || ?, date = ?, author = ? WHERE term = ?"
 	stmt, err := d.Db.Prepare(statement)
 	if err != nil {
@@ -226,7 +226,7 @@ func (d *ZbotSqliteDatabase) Append(def DefinitionItem) error {
 	return nil
 }
 
-func (d *ZbotSqliteDatabase) Find(criteria string) ([]DefinitionItem, error) {
+func (d *ZbotSqlite3Database) Find(criteria string) ([]DefinitionItem, error) {
 	var items []DefinitionItem
 	statement := "SELECT term FROM definitions WHERE meaning like ? ORDER BY random() COLLATE NOCASE LIMIT 20"
 	stmt, err := d.Db.Prepare(statement)
@@ -251,7 +251,7 @@ func (d *ZbotSqliteDatabase) Find(criteria string) ([]DefinitionItem, error) {
 	}
 	return items, nil
 }
-func (d *ZbotSqliteDatabase) Search(criteria string) ([]DefinitionItem, error) {
+func (d *ZbotSqlite3Database) Search(criteria string) ([]DefinitionItem, error) {
 	statement := "SELECT term FROM definitions WHERE term like ? ORDER BY random() COLLATE NOCASE LIMIT 10"
 	stmt, err := d.Db.Prepare(statement)
 	if err != nil {
@@ -277,7 +277,7 @@ func (d *ZbotSqliteDatabase) Search(criteria string) ([]DefinitionItem, error) {
 	return items, nil
 }
 
-func (d *ZbotSqliteDatabase) UserLevel(username string) (string, error) {
+func (d *ZbotSqlite3Database) UserLevel(username string) (string, error) {
 	var level string
 	statement := "SELECT level FROM users WHERE username = ? COLLATE NOCASE LIMIT 1"
 	err := d.Db.QueryRow(statement, username).Scan(&level)
@@ -291,7 +291,7 @@ func (d *ZbotSqliteDatabase) UserLevel(username string) (string, error) {
 
 	return level, nil
 }
-func (d *ZbotSqliteDatabase) UserIgnoreInsert(username string) error {
+func (d *ZbotSqlite3Database) UserIgnoreInsert(username string) error {
 	statement := "INSERT INTO ignore_list (username, since, until) VALUES (?,?,?)"
 	stmt, err := d.Db.Prepare(statement)
 
@@ -313,7 +313,7 @@ func (d *ZbotSqliteDatabase) UserIgnoreInsert(username string) error {
 
 //UserCheckIgnore check if user there is any row in ignore_list table for some username
 // and an until greater than the current time
-func (d *ZbotSqliteDatabase) UserCheckIgnore(username string) bool {
+func (d *ZbotSqlite3Database) UserCheckIgnore(username string) bool {
 	ignored := false
 
 	now := time.Now().Unix()
@@ -337,7 +337,7 @@ func (d *ZbotSqliteDatabase) UserCheckIgnore(username string) bool {
 
 	return ignored
 }
-func (d *ZbotSqliteDatabase) UserCleanIgnore() error {
+func (d *ZbotSqlite3Database) UserCleanupIgnorelist() error {
 	for {
 		log.Debug("Cleaning ignore list")
 		now := time.Now().Unix()
@@ -356,7 +356,7 @@ func (d *ZbotSqliteDatabase) UserCleanIgnore() error {
 	}
 }
 
-func (d *ZbotSqliteDatabase) Lock(item DefinitionItem) error {
+func (d *ZbotSqlite3Database) Lock(item DefinitionItem) error {
 
 	statement := "UPDATE definitions SET locked = 1, locked_by = ? WHERE term = ?"
 
@@ -375,7 +375,7 @@ func (d *ZbotSqliteDatabase) Lock(item DefinitionItem) error {
 
 }
 
-func (d *ZbotSqliteDatabase) Forget(item DefinitionItem) error {
+func (d *ZbotSqlite3Database) Forget(item DefinitionItem) error {
 	statement := "DELETE definitions WHERE term = ? LIMIT 1"
 
 	stmt, err := d.Db.Prepare(statement)

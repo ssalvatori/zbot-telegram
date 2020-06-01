@@ -1,7 +1,7 @@
 sudo: required
 language: go
 go:
-  - 1.12.x
+  - 1.14.x
 env:
   - BOT_TOKEN=1234:334
 before_install:
@@ -27,4 +27,4 @@ deploy:
   file: dist/*
   api_key: "$GITHUB_API_SECURED"
   on:
-      tags: true
+    tags: true

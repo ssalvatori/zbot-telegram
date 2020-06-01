@@ -4,7 +4,7 @@ import "database/sql"
 
 //ZbotDatabase DB interface for Zbot
 type ZbotDatabase interface {
-	GetConnectionInfo() string
+	GetConnectionString() string
 	Init() error
 	Close()
 	Statistics() (string, error)
@@ -22,7 +22,7 @@ type ZbotDatabase interface {
 	UserIgnoreInsert(string) error
 	//UserCheckIgnore return true if the user is on the ignore_list, false if it isn´t
 	UserCheckIgnore(string) bool
-	UserCleanIgnore() error
+	UserCleanupIgnorelist() error
 	UserIgnoreList() ([]UserIgnore, error)
 
 	Lock(DefinitionItem) error

@@ -1,7 +1,6 @@
 package zbot
 
 import (
-	"encoding/json"
 	"testing"
 
 	command "github.com/ssalvatori/zbot-telegram/commands"
@@ -23,12 +22,12 @@ func TestProcessingIsCommandDisabled(t *testing.T) {
 	}
 
 	botMsg := tb.Message{Text: "!learn", Sender: &tb.User{Username: "zbot_test"}}
-	result := processing(dbMock, botMsg)
+	result := cmdProcessing(dbMock, botMsg)
 	assert.Equal(t, "", result, "command disabled")
 
 }
 
-func Test_ProcessingVersion(t *testing.T) {
+func TestProcessingVersion(t *testing.T) {
 
 	dbMock := &db.MockZbotDatabase{
 		Level: "666",
@@ -44,7 +43,7 @@ func Test_ProcessingVersion(t *testing.T) {
 			Username: "zbot_test",
 		},
 	}
-	result := processing(dbMock, botMsg)
+	result := cmdProcessing(dbMock, botMsg)
 	assert.Equal(t, "zbot golang version ["+version+"] commit [undefined] build-time ["+buildTime+"]", result, "!version default")
 }
 
@@ -56,7 +55,7 @@ func TestProcessingStats(t *testing.T) {
 	}
 
 	botMsg := tb.Message{Text: "!stats", Sender: &tb.User{Username: "zbot_test"}}
-	result := processing(dbMock, botMsg)
+	result := cmdProcessing(dbMock, botMsg)
 	assert.Equal(t, result, "Count: 666", "!stats")
 }
 
@@ -68,7 +67,7 @@ func TestProcessingPing(t *testing.T) {
 	}
 
 	botMsg := tb.Message{Text: "!ping", Sender: &tb.User{Username: "zbot_test"}}
-	result := processing(dbMock, botMsg)
+	result := cmdProcessing(dbMock, botMsg)
 	assert.Equal(t, result, "pong!!", "!ping")
 }
 
@@ -79,7 +78,7 @@ func TestProcessingRand(t *testing.T) {
 	}
 
 	botMsg := tb.Message{Text: "!rand", Sender: &tb.User{Username: "zbot_test"}}
-	result := processing(dbMock, botMsg)
+	result := cmdProcessing(dbMock, botMsg)
 	assert.Equal(t, "[hola] - [gatolinux]", result, "!rand")
 }
 
@@ -93,7 +92,7 @@ func TestProcessingGet(t *testing.T) {
 	}
 
 	botMsg := tb.Message{Text: "? hola", Sender: &tb.User{Username: "zbot_test"}}
-	result := processing(dbMock, botMsg)
+	result := cmdProcessing(dbMock, botMsg)
 	assert.Equal(t, result, "[hola] - [foo bar!]", "? def fail")
 
 }
@@ -108,7 +107,7 @@ func TestProcessingFind(t *testing.T) {
 	}
 
 	botMsg := tb.Message{Text: "!find hola", Sender: &tb.User{Username: "zbot_test"}}
-	result := processing(dbMock, botMsg)
+	result := cmdProcessing(dbMock, botMsg)
 	assert.Equal(t, result, "hola", "!find fail")
 }
 
@@ -125,7 +124,7 @@ func TestProcessingSearch(t *testing.T) {
 	}
 
 	botMsg := tb.Message{Text: "!search hola", Sender: &tb.User{Username: "zbot_test"}}
-	result := processing(dbMock, botMsg)
+	result := cmdProcessing(dbMock, botMsg)
 	assert.Equal(t, "hola chao foobar", result, "!rand")
 }
 
@@ -145,7 +144,7 @@ func TestProcessingUserLevel(t *testing.T) {
 		Text:   "!level",
 		Sender: &tb.User{FirstName: "ssalvato", Username: "ssalvato"},
 	}
-	result := processing(dbMock, botMsg)
+	result := cmdProcessing(dbMock, botMsg)
 	assert.Equal(t, "ssalvato level 666", result, "!level self user")
 }
 
@@ -168,7 +167,7 @@ func TestProcessingUserIgnoreList(t *testing.T) {
 		Text:   "!ignore list",
 		Sender: &tb.User{FirstName: "ssalvato", Username: "ssalvato"},
 	}
-	result := processing(dbMock, botMsg)
+	result := cmdProcessing(dbMock, botMsg)
 	assert.Equal(t, "[ @ssalvato ] since [01-01-1970 00:20:31 UTC] until [01-01-1970 01:16:04 UTC]", result, "!ignore list")
 }
 
@@ -189,14 +188,14 @@ func TestProcessingUserIgnoreInsert(t *testing.T) {
 		Text:   "!ignore add rigo",
 		Sender: &tb.User{FirstName: "ssalvatori", Username: "ssalvatori"},
 	}
-	result := processing(dbMock, botMsg)
+	result := cmdProcessing(dbMock, botMsg)
 	assert.Equal(t, "User [rigo] ignored for 10 minutes", result, "!ignore add OK")
 
 	botMsg = tb.Message{
 		Text:   "!ignore add ssalvatori",
 		Sender: &tb.User{FirstName: "ssalvatori", Username: "ssalvatori"},
 	}
-	result = processing(dbMock, botMsg)
+	result = cmdProcessing(dbMock, botMsg)
 	assert.Equal(t, "You can't ignore yourself", result, "!ignore add myself")
 
 }
@@ -219,7 +218,7 @@ func TestProcessingLearnReplyTo(t *testing.T) {
 			},
 		},
 	}
-	result := processing(dbMock, botMsg)
+	result := cmdProcessing(dbMock, botMsg)
 
 	assert.Equal(t, "[arg1] - [otheruser message in reply-to]", result, "!learn with replayto")
 }
@@ -229,6 +228,8 @@ func TestMessageProcessing(t *testing.T) {
 		Level: "666",
 		File:  "hola.db",
 	}
+
+	Flags.Ignore = false
 
 	botMsg := tb.Message{Text: "!learn arg1",
 		Sender: &tb.User{
@@ -248,38 +249,76 @@ func TestMessageProcessing(t *testing.T) {
 	assert.Equal(t, "[arg1] - [otheruser message in reply-to]", result, "!learn with replayto")
 }
 
+func TestMessagesProcessingIgnoredUser(t *testing.T) {
+	dbMock := &db.MockZbotDatabase{
+		Level:       "666",
+		File:        "hola.db",
+		Ignore_User: true,
+	}
+
+	Flags.Ignore = true
+
+	botMsg := tb.Message{Text: "!learn arg1",
+		Sender: &tb.User{
+			Username:  "ssalvatori",
+			FirstName: "stefano",
+		},
+		ReplyTo: &tb.Message{
+			Text: "message in reply-to",
+			Sender: &tb.User{
+				Username: "otheruser",
+			},
+		},
+	}
+
+	result := messagesProcessing(dbMock, &botMsg)
+	assert.Equal(t, "", result, "!learn ignored")
+}
+
 func TestGetDisabledCommands(t *testing.T) {
-
-	commands := `["level","ignore"]`
-	jsonRaw := json.RawMessage(commands)
-	binary, _ := jsonRaw.MarshalJSON()
-
-	SetDisabledCommands(binary)
-
-	assert.Equal(t, []string{"ignore", "level"}, GetDisabledCommands(), "Get Disabled Commands")
-
-	commands = `["level]`
-	jsonRaw = json.RawMessage(commands)
-	binary, _ = jsonRaw.MarshalJSON()
-	SetDisabledCommands(binary)
-
-	assert.Equal(t, []string(nil), GetDisabledCommands(), "Get Disabled Commands")
+	cmds := []string{"cmd1", "cmd2", "cmd3"}
+	SetDisabledCommands(cmds)
+	assert.Equal(t, cmds, GetDisabledCommands(), "Get Disabled Commands")
 
 }
 
-/*
-func TestMessagesProcessing(t *testing.T) {
+func TestProcessingNotEnoughPermissions(t *testing.T) {
 	dbMock := &db.MockZbotDatabase{
+		Level:       "666",
+		File:        "hola.db",
 		Ignore_User: true,
 	}
-	msgChan := make(chan tb.Message)
-	bot := &tb.Bot{Messages: msgChan}
 
-	msgObj := tb.Message{
-		Text:   "!hola",
-		Sender: tb.User{FirstName: "Stefano", Username: "Ssalvato"},
+	Flags.Level = true
+	Flags.Ignore = false
+
+	botMsg := tb.Message{Text: "!forget arg1",
+		Sender: &tb.User{
+			Username:  "ssalvatori",
+			FirstName: "stefano",
+		},
+		ReplyTo: &tb.Message{
+			Text: "message in reply-to",
+			Sender: &tb.User{
+				Username: "otheruser",
+			},
+		},
 	}
-	bot.Messages <- msgObj
-	go messagesProcessing(dbMock, bot)
+
+	result := messagesProcessing(dbMock, &botMsg)
+	assert.Equal(t, "Your level is not enough < 1000", result, "Not enough permissions to use a command")
+}
+
+/*
+func TestExecute(t *testing.T) {
+	dbMock := &db.MockZbotDatabase{
+		Level:             "666",
+		File:              "hola.db",
+		IgnoreListCleaned: false,
+	}
+
+	Flags.Ignore = true
+	Execute()
+	assert.Equal(t, true, dbMock.IgnoreListCleaned, "Ignore List Called")
 }
 */

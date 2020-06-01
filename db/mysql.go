@@ -8,30 +8,37 @@ import (
 	"strings"
 	"time"
 
+	_ "github.com/go-sql-driver/mysql" //sql driver for mysql
 	log "github.com/sirupsen/logrus"
-	_ "github.com/go-sql-driver/mysql"
 )
 
+//ZbotMysqlDatabase principal struct
 type ZbotMysqlDatabase struct {
 	Db         *sql.DB
 	Connection MysqlConnection
 }
 
+//MysqlConnection databse configuration used to generate DSN
 type MysqlConnection struct {
 	Username     string
 	Password     string
 	DatabaseName string
 	HostName     string
+	Protocol     string
 	Port         int
 }
 
-func (d *ZbotMysqlDatabase) GetConnectionInfo() string {
-	return fmt.Sprintf("%s:%s@%s:%d/%s", d.Connection.Username, d.Connection.Password, d.Connection.HostName, d.Connection.Port, d.Connection.DatabaseName)
+//GetConnectionString create connection string
+func (d *ZbotMysqlDatabase) GetConnectionString() string {
+	connectionDSN := fmt.Sprintf("%s:%s@%s(%s:%d)/%s", d.Connection.Username, d.Connection.Password, d.Connection.Protocol, d.Connection.HostName, d.Connection.Port, d.Connection.DatabaseName)
+	log.Debug("Using DSN: " + connectionDSN)
+	return connectionDSN
 }
 
+//Init start a connection to database
 func (d *ZbotMysqlDatabase) Init() error {
-	log.Debug("Connecting to database")
-	connectionData := d.GetConnectionInfo()
+	log.Debug("Connecting to mysql database")
+	connectionData := d.GetConnectionString()
 	connection, err := sql.Open("mysql", connectionData)
 	if err != nil {
 		log.Error(err)
@@ -41,11 +48,13 @@ func (d *ZbotMysqlDatabase) Init() error {
 	return nil
 }
 
+//Close connection to database
 func (d *ZbotMysqlDatabase) Close() {
 	log.Debug("Closing connection")
 	d.Db.Close()
 }
 
+//UserIgnoreList get list of ignored users
 func (d *ZbotMysqlDatabase) UserIgnoreList() ([]UserIgnore, error) {
 	log.Debug("Getting ignore list")
 	statement := "SELECT username, since, until FROM ignore_list"
@@ -73,6 +82,7 @@ func (d *ZbotMysqlDatabase) UserIgnoreList() ([]UserIgnore, error) {
 	return users, nil
 }
 
+//Statistics get the number of definitions in the db
 func (d *ZbotMysqlDatabase) Statistics() (string, error) {
 	statement := "select count(*) as total from definitions"
 	var totalCount string
@@ -88,6 +98,8 @@ func (d *ZbotMysqlDatabase) Statistics() (string, error) {
 	return totalCount, err
 }
 
+//Top the 10 definitions with more hits
+//TODO: add parameter to change the number of definitions
 func (d *ZbotMysqlDatabase) Top() ([]DefinitionItem, error) {
 
 	statement := "SELECT term FROM definitions ORDER BY hits DESC LIMIT 10"
@@ -109,6 +121,8 @@ func (d *ZbotMysqlDatabase) Top() ([]DefinitionItem, error) {
 
 	return items, nil
 }
+
+//Rand get a random definition from the database
 func (d *ZbotMysqlDatabase) Rand() (DefinitionItem, error) {
 	var def DefinitionItem
 
@@ -334,7 +348,7 @@ func (d *ZbotMysqlDatabase) UserCheckIgnore(username string) bool {
 
 	return ignored
 }
-func (d *ZbotMysqlDatabase) UserCleanIgnore() error {
+func (d *ZbotMysqlDatabase) UserCleanupIgnorelist() error {
 	for {
 		log.Debug("Cleaning ignore list")
 		now := time.Now().Unix()

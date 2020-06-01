@@ -1,10 +1,8 @@
 package zbot
 
 import (
-	"encoding/json"
 	"fmt"
 	"regexp"
-	"sort"
 	"strings"
 	"time"
 
@@ -87,7 +85,7 @@ func Execute() {
 	}
 
 	if Flags.Ignore {
-		go Db.UserCleanIgnore()
+		go Db.UserCleanupIgnorelist()
 	}
 
 	bot.Handle(tb.OnText, func(m *tb.Message) {
@@ -110,7 +108,7 @@ func messagesProcessing(db db.ZbotDatabase, message *tb.Message) string {
 	if !checkIgnoreList(db, username) {
 		if processingMsg.MatchString(message.Text) {
 			log.Debug(fmt.Sprintf("Received a message from %s with the text: %s", username, message.Text))
-			return processing(db, *message)
+			return cmdProcessing(db, *message)
 		}
 	} else {
 		log.Debug(fmt.Sprintf("User [%s] ignored", username))
@@ -132,8 +130,8 @@ func checkIgnoreList(db db.ZbotDatabase, username string) bool {
 	return false
 }
 
-// processing process message using commands
-func processing(db db.ZbotDatabase, msg tb.Message) string {
+//cmdProcessing process message using commands
+func cmdProcessing(db db.ZbotDatabase, msg tb.Message) string {
 
 	commandName := command.GetCommandInformation(msg.Text)
 
@@ -191,17 +189,8 @@ func processing(db db.ZbotDatabase, msg tb.Message) string {
 }
 
 //SetDisabledCommands setup disabled commands
-func SetDisabledCommands(dataBinaryContent []byte) {
-	var c []string
-	err := json.Unmarshal(dataBinaryContent, &c)
-
-	if err != nil {
-		log.Debug("No disabled commands")
-		command.DisabledCommands = []string{}
-	}
-
-	command.DisabledCommands = c
-	sort.Strings(command.DisabledCommands)
+func SetDisabledCommands(cmdList []string) {
+	command.DisabledCommands = cmdList
 }
 
 //GetDisabledCommands get disabled zbot commands

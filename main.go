@@ -1,60 +1,36 @@
 package main
 
 import (
-	"io/ioutil"
 	"os"
+	"strings"
 
 	"fmt"
 
-	"github.com/caarlos0/env/v6"
+	env "github.com/caarlos0/env/v6"
 	log "github.com/sirupsen/logrus"
 	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/ssalvatori/zbot-telegram/zbot"
 )
 
-// setUp
-func setUp() {
+func setDisabledCommands(cmds string) []string {
 
-	type EnvironmentVariables struct {
-		Token            string `env:"ZBOT_TOKEN,required"`
-		ModulesPath      string `env:"ZBOT_MODULES_PATH" envDefault:"."`
-		DisabledCommands string `env:"ZBOT_DISABLED_COMMANDS" `
+	if len(cmds) == 0 {
+		return []string{}
 	}
 
-	cfg := EnvironmentVariables{}
-	err := env.Parse(&cfg)
-	if err != nil {
-		log.Fatal(fmt.Sprintf("%+v\n", err))
+	log.Debug("Creating disabled commands list")
+	cmdList := strings.Split(cmds, ",")
+
+	for i := range cmdList {
+		cmdList[i] = strings.TrimSpace(cmdList[i])
 	}
 
-	log.Debug(fmt.Sprintf("%+v\n", cfg))
-
-	zbot.APIToken = cfg.Token
-	zbot.ModulesPath = cfg.ModulesPath + "/"
-
-	if os.Getenv("ZBOT_DISABLED_COMMANDS") != "" {
-		log.Info("Disabled modules configuration = ", os.Getenv("ZBOT_DISABLED_COMMANDS"))
-		setDisabledCommands(os.Getenv("ZBOT_DISABLED_COMMANDS"))
-	}
-
-}
-
-func setDisabledCommands(file string) error {
-
-	log.Debug("Reading file ", file)
-	raw, err := ioutil.ReadFile(file)
-
-	if err != nil {
-		log.Error(fmt.Sprintf("ccould not file: %v", err))
-		return fmt.Errorf("could not file: %v", err)
-	}
-
-	zbot.SetDisabledCommands(raw)
-	return nil
+	return cmdList
 }
 
 // setUpLog setup log level using environment variables
-func setUpLog() {
+func setupLog() {
+	log.SetOutput(os.Stdout)
 
 	switch os.Getenv("ZBOT_LOG_LEVEL") {
 	case "debug":
@@ -63,58 +39,50 @@ func setUpLog() {
 	case "info":
 		log.SetLevel(log.InfoLevel)
 		break
-	case "warn":
-		log.SetLevel(log.WarnLevel)
-		break
 	case "error":
 		log.SetLevel(log.ErrorLevel)
-		break
-	case "fatal":
-		log.SetLevel(log.FatalLevel)
-		break
-	case "panic":
-		log.SetLevel(log.PanicLevel)
 		break
 	default:
 		log.SetLevel(log.InfoLevel)
 		break
 	}
-
 }
 
 // setupDatabase this function will get the data
-func setupDatabase() {
+func setupDatabase() db.ZbotDatabase {
+
+	var db db.ZbotDatabase
 
 	switch os.Getenv("ZBOT_DATABASE_TYPE") {
 	case "mysql":
 		log.Info("Setting up mysql connections")
-		zbot.Db = setupDatabaseMysql()
+		db = setupDatabaseMysql()
 		break
-	case "sqlite":
+	case "sqlite3":
 		log.Info("Setting up sqlite connections")
-		zbot.Db = setupDatabaseSqlite()
+		db = setupDatabaseSqlite3()
 		break
 	default:
-		log.Error("Select a database type (mysql o sqlite)")
+		log.Fatal("Select a database type (mysql o sqlite3)")
 		break
 	}
+	return db
 
 }
 
-func setupDatabaseSqlite() db.ZbotDatabase {
-	zbot.DatabaseType = "sqlite"
+func setupDatabaseSqlite3() db.ZbotDatabase {
+	zbot.DatabaseType = "sqlite3"
 
 	type SqliteEnvironmentConfig struct {
-		File string `env:"ZBOT_SQLITE_DATABASE"`
+		File string `env:"ZBOT_SQLITE3_DATABASE"`
 	}
 
 	cfg := SqliteEnvironmentConfig{}
-	err := env.Parse(&cfg)
-	if err != nil {
+	if err := env.Parse(&cfg); err != nil {
 		log.Fatal(fmt.Printf("%+v\n", err))
 	}
 
-	database := new(db.ZbotSqliteDatabase)
+	database := new(db.ZbotSqlite3Database)
 	database.File = cfg.File
 	return database
 }
@@ -127,12 +95,12 @@ func setupDatabaseMysql() db.ZbotDatabase {
 		Password     string `env:"ZBOT_MYSQL_PASSWORD,required"`
 		DatabaseName string `env:"ZBOT_MYSQL_DATABASE,required"`
 		HostName     string `env:"ZBOT_MYSQL_HOSTNAME,required"`
+		Protocol     string `env:"ZBOT_MYSQL_PROTOCOL" envDefault:"tcp"`
 		Port         int    `env:"ZBOT_MYSQL_PORT" envDefault:"3306"`
 	}
 
 	cfg := MysqlConnection{}
-	err := env.Parse(&cfg)
-	if err != nil {
+	if err := env.Parse(&cfg); err != nil {
 		log.Fatal(fmt.Printf("%+v\n", err))
 	}
 
@@ -144,25 +112,51 @@ func setupDatabaseMysql() db.ZbotDatabase {
 
 //setupFlags Set flags configurations
 func setupFlags() {
-
 	var ok bool
-	_, ok = os.LookupEnv("ZBOT_FLAG_IGNORE")
+	_, ok = os.LookupEnv("ZBOT_FLAG_ACTIVATE_IGNORE")
 
 	if ok {
 		zbot.Flags.Ignore = true
 	}
 
-	_, ok = os.LookupEnv("ZBOT_FLAG_LEVEL")
+	_, ok = os.LookupEnv("ZBOT_FLAG_ACTIVATE_LEVELS")
 	if ok {
 		zbot.Flags.Level = true
 	}
+
+}
+
+func setup() {
+
+	type EnvironmentVariables struct {
+		Token            string `env:"ZBOT_TOKEN,required"`
+		ModulesPath      string `env:"ZBOT_MODULES_PATH" envDefault:"."`
+		DisabledCommands string `env:"ZBOT_DISABLED_COMMANDS" `
+	}
+
+	cfg := EnvironmentVariables{}
+	if err := env.Parse(&cfg); err != nil {
+		log.Fatal(fmt.Sprintf("%+v\n", err))
+	}
+
+	log.Debug(fmt.Sprintf("%+v\n", cfg))
+
+	zbot.APIToken = cfg.Token
+	zbot.ModulesPath = cfg.ModulesPath + "/"
+
+	if os.Getenv("ZBOT_DISABLED_COMMANDS") != "" {
+		zbot.SetDisabledCommands(setDisabledCommands(os.Getenv("ZBOT_DISABLED_COMMANDS")))
+	}
+
+}
+
+func init() {
+	setupLog()
+	setupFlags()
 }
 
 func main() {
-	setUpLog()
-	setUp()
-	setupDatabase()
-	setupFlags()
-
+	setup()
+	zbot.Db = setupDatabase()
 	zbot.Execute()
 }

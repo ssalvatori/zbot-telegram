@@ -9,25 +9,26 @@ import (
 )
 
 type MockZbotDatabase struct {
-	Level        string
-	File         string
-	Term         string
-	Meaning      string
-	Author       string
-	Date         string
-	Find_terms   []string
-	Search_terms []string
-	Not_found    bool
-	Rand_def     DefinitionItem
-	User         telebot.User
-	Ignore_list  []string
-	User_ignored []UserIgnore
-	Ignore_User  bool
-	Error        bool
-	ErrorAppend  bool
+	Level             string
+	File              string
+	Term              string
+	Meaning           string
+	Author            string
+	Date              string
+	Find_terms        []string
+	Search_terms      []string
+	Not_found         bool
+	Rand_def          DefinitionItem
+	User              telebot.User
+	Ignore_list       []string
+	User_ignored      []UserIgnore
+	Ignore_User       bool
+	Error             bool
+	ErrorAppend       bool
+	IgnoreListCleaned bool
 }
 
-func (d *MockZbotDatabase) GetConnectionInfo() string {
+func (d *MockZbotDatabase) GetConnectionString() string {
 	return "mock"
 }
 
@@ -155,7 +156,9 @@ func (d *MockZbotDatabase) UserIgnoreInsert(username string) error {
 	return nil
 }
 
-func (d *MockZbotDatabase) UserCleanIgnore() error {
+//UserCleanupIgnorelist Cleanup ignore list
+func (d *MockZbotDatabase) UserCleanupIgnorelist() error {
+	d.IgnoreListCleaned = true
 	return nil
 }
 
