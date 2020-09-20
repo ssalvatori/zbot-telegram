@@ -1,7 +1,6 @@
 package command
 
 import (
-	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -75,7 +74,7 @@ func (handler *LevelCommand) PaserCommand(cmd string, user string) map[string]st
 }
 
 //ProcessText run command
-func (handler *LevelCommand) ProcessText(text string, user user.User) (string, error) {
+func (handler *LevelCommand) ProcessText(text string, user user.User, chat string) (string, error) {
 	commandPattern := regexp.MustCompile(`^!level(\s|$)(\S*)\s?(\S+)?\s?(\d+)?`)
 	var result string
 	var err error
@@ -97,5 +96,5 @@ func (handler *LevelCommand) ProcessText(text string, user user.User) (string, e
 
 		return result, nil
 	}
-	return "", errors.New("text doesn't match")
+	return "", ErrNextCommand
 }

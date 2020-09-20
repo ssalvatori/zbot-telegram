@@ -11,24 +11,24 @@ var ignoreCommand = IgnoreCommand{}
 
 func TestIgnoreCommandHelp(t *testing.T) {
 	want := "*!ignore* Options available: \n list (show all user ignored) \n add <username> (ignore a user for 10 minutes)"
-	res, _ := ignoreCommand.ProcessText("!ignore help", userTest)
+	res, _ := ignoreCommand.ProcessText("!ignore help", userTest, "testchat")
 	assert.Equal(t, want, res, "Ignore help")
 }
 
 func TestIgnoreCommandList(t *testing.T) {
-	ignoreCommand.Db = &db.MockZbotDatabase{
+	ignoreCommand.Db = &db.ZbotDatabaseMock{
 		User_ignored: []db.UserIgnore{
 			{Username: "rigo", Since: "12", Until: "22"},
 			{Username: "jav", Since: "32", Until: "42"},
 		},
 	}
 	expected := "[ @rigo ] since [01-01-1970 00:00:12 UTC] until [01-01-1970 00:00:22 UTC]/n[ @jav ] since [01-01-1970 00:00:32 UTC] until [01-01-1970 00:00:42 UTC]"
-	res, _ := ignoreCommand.ProcessText("!ignore list", userTest)
+	res, _ := ignoreCommand.ProcessText("!ignore list", userTest, "testchat")
 	assert.Equal(t, expected, res, "Last Command")
 }
 
 func TestIgnoreCommandAdd(t *testing.T) {
-	ignoreCommand.Db = &db.MockZbotDatabase{
+	ignoreCommand.Db = &db.ZbotDatabaseMock{
 		Level: "1000",
 		User_ignored: []db.UserIgnore{
 			{Username: "rigo", Since: "12", Until: "12"},
@@ -38,13 +38,13 @@ func TestIgnoreCommandAdd(t *testing.T) {
 
 	userTest.Level = 1000
 	expected := "User [rigo] ignored for 10 minutes"
-	res, _ := ignoreCommand.ProcessText("!ignore add rigo", userTest)
+	res, _ := ignoreCommand.ProcessText("!ignore add rigo", userTest, "testchat")
 	assert.Equal(t, expected, res, "Ignore add Command")
 
-	res, _ = ignoreCommand.ProcessText("!ignore add ssalvatori", userTest)
+	res, _ = ignoreCommand.ProcessText("!ignore add ssalvatori", userTest, "testchat")
 	assert.Equal(t, "You can't ignore yourself", res, "Ignore add myself")
 
-	ignoreCommand.Db = &db.MockZbotDatabase{
+	ignoreCommand.Db = &db.ZbotDatabaseMock{
 		Level: "10",
 	}
 
@@ -63,10 +63,10 @@ func TestConvertDates(t *testing.T) {
 
 func TestIgnoreError(t *testing.T) {
 
-	ignoreCommand.Db = &db.MockZbotDatabase{
+	ignoreCommand.Db = &db.ZbotDatabaseMock{
 		Error: true,
 	}
 
-	_, err := ignoreCommand.ProcessText("!ignore6", userTest)
-	assert.Equal(t, "text doesn't match", err.Error(), "Db error")
+	_, err := ignoreCommand.ProcessText("!ignore6", userTest, "testchat")
+	assert.Equal(t, "no action in command", err.Error(), "Db error")
 }

@@ -1,7 +1,6 @@
 package command
 
 import (
-	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -21,7 +20,7 @@ type IgnoreCommand struct {
 const dateFormat string = "02-01-2006 15:04:05 MST" //dd-mm-yyyy hh:ii:ss TZ
 
 //ProcessText run command
-func (handler *IgnoreCommand) ProcessText(text string, user user.User) (string, error) {
+func (handler *IgnoreCommand) ProcessText(text string, user user.User, chat string) (string, error) {
 	commandPattern := regexp.MustCompile(`^!ignore\s(\S*)(\s(\S*))?`)
 	result := ""
 
@@ -52,7 +51,7 @@ func (handler *IgnoreCommand) ProcessText(text string, user user.User) (string, 
 		}
 		return result, nil
 	}
-	return "", errors.New("text doesn't match")
+	return "", ErrNextCommand
 }
 
 func getUserIgnored(users []db.UserIgnore) []string {

@@ -1,7 +1,6 @@
 package command
 
 import (
-	"errors"
 	"regexp"
 
 	"github.com/ssalvatori/zbot-telegram/db"
@@ -14,7 +13,7 @@ type PingCommand struct {
 }
 
 //ProcessText run command
-func (handler *PingCommand) ProcessText(text string, user user.User) (string, error) {
+func (handler *PingCommand) ProcessText(text string, user user.User, chat string) (string, error) {
 
 	commandPattern := regexp.MustCompile(`^!ping$`)
 
@@ -22,5 +21,5 @@ func (handler *PingCommand) ProcessText(text string, user user.User) (string, er
 		return "pong!!", nil
 	}
 
-	return "", errors.New("text doesn't match")
+	return "", ErrNextCommand
 }

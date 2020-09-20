@@ -1,7 +1,6 @@
 package command
 
 import (
-	"errors"
 	"fmt"
 	"regexp"
 
@@ -16,13 +15,13 @@ type VersionCommand struct {
 }
 
 //ProcessText run command
-func (handler *VersionCommand) ProcessText(text string, user user.User) (string, error) {
+func (handler *VersionCommand) ProcessText(text string, user user.User, chat string) (string, error) {
 
 	commandPattern := regexp.MustCompile(`^!version$`)
 
 	if commandPattern.MatchString(text) {
 		return fmt.Sprintf("zbot golang version [%s] commit [%s] build-time [%s]", handler.Version, handler.GitHash, handler.BuildTime), nil
 	}
-	return "", errors.New("text doesn't match")
+	return "", ErrNextCommand
 
 }

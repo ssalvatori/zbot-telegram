@@ -13,15 +13,15 @@ var versionCommand = VersionCommand{
 }
 
 func TestVersionCommandOK(t *testing.T) {
-	result, _ := versionCommand.ProcessText("!version", userTest)
+	result, _ := versionCommand.ProcessText("!version", userTest, "testchat")
 	assert.Equal(t, "zbot golang version [0.1] commit [6fd28bf] build-time [2017-04-16 11:25:17.626575284 +0300 EEST]", result, "version command OK")
 }
 
 func TestVersionCommandNotMatch(t *testing.T) {
 
-	result, _ := statsCommand.ProcessText("!version6", userTest)
+	result, _ := statsCommand.ProcessText("!version6", userTest, "testchat")
 	assert.Equal(t, "", result, "Empty output doesn't match")
 
-	_, err := statsCommand.ProcessText("!version", userTest)
-	assert.Equal(t, "text doesn't match", err.Error(), "Error output doesn't match")
+	_, err := statsCommand.ProcessText("!version", userTest, "testchat")
+	assert.Equal(t, "no action in command", err.Error(), "Error output doesn't match")
 }

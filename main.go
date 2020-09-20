@@ -56,25 +56,25 @@ func setupDatabase() db.ZbotDatabase {
 	switch os.Getenv("ZBOT_DATABASE_TYPE") {
 	case "mysql":
 		log.Info("Setting up mysql connections")
-		db = setupDatabaseMysql()
+		//db = setupDatabaseMysql()
 		break
-	case "sqlite3":
+	case "sqlite":
 		log.Info("Setting up sqlite connections")
-		db = setupDatabaseSqlite3()
+		db = setupDatabaseSqlite()
 		break
 	default:
-		log.Fatal("Select a database type (mysql o sqlite3)")
+		log.Fatal("Select a database type (mysql o sqlite)")
 		break
 	}
 	return db
 
 }
 
-func setupDatabaseSqlite3() db.ZbotDatabase {
-	zbot.DatabaseType = "sqlite3"
+func setupDatabaseSqlite() db.ZbotDatabase {
+	zbot.DatabaseType = "sqlite"
 
 	type SqliteEnvironmentConfig struct {
-		File string `env:"ZBOT_SQLITE3_DATABASE"`
+		File string `env:"ZBOT_SQLITE_DATABASE"`
 	}
 
 	cfg := SqliteEnvironmentConfig{}
@@ -82,33 +82,33 @@ func setupDatabaseSqlite3() db.ZbotDatabase {
 		log.Fatal(fmt.Printf("%+v\n", err))
 	}
 
-	database := new(db.ZbotSqlite3Database)
+	database := new(db.ZbotDatabaseSqlite)
 	database.File = cfg.File
 	return database
 }
 
-func setupDatabaseMysql() db.ZbotDatabase {
-	zbot.DatabaseType = "mysql"
+// func setupDatabaseMysql() db.ZbotDatabase {
+// 	zbot.DatabaseType = "mysql"
 
-	type MysqlConnection struct {
-		Username     string `env:"ZBOT_MYSQL_USERNAME,required"`
-		Password     string `env:"ZBOT_MYSQL_PASSWORD,required"`
-		DatabaseName string `env:"ZBOT_MYSQL_DATABASE,required"`
-		HostName     string `env:"ZBOT_MYSQL_HOSTNAME,required"`
-		Protocol     string `env:"ZBOT_MYSQL_PROTOCOL" envDefault:"tcp"`
-		Port         int    `env:"ZBOT_MYSQL_PORT" envDefault:"3306"`
-	}
+// 	type MysqlConnection struct {
+// 		Username     string `env:"ZBOT_MYSQL_USERNAME,required"`
+// 		Password     string `env:"ZBOT_MYSQL_PASSWORD,required"`
+// 		DatabaseName string `env:"ZBOT_MYSQL_DATABASE,required"`
+// 		HostName     string `env:"ZBOT_MYSQL_HOSTNAME,required"`
+// 		Protocol     string `env:"ZBOT_MYSQL_PROTOCOL" envDefault:"tcp"`
+// 		Port         int    `env:"ZBOT_MYSQL_PORT" envDefault:"3306"`
+// 	}
 
-	cfg := MysqlConnection{}
-	if err := env.Parse(&cfg); err != nil {
-		log.Fatal(fmt.Printf("%+v\n", err))
-	}
+// 	cfg := MysqlConnection{}
+// 	if err := env.Parse(&cfg); err != nil {
+// 		log.Fatal(fmt.Printf("%+v\n", err))
+// 	}
 
-	database := new(db.ZbotMysqlDatabase)
-	database.Connection = db.MysqlConnection(cfg)
+// 	database := new(db.ZbotMysqlDatabase)
+// 	database.Connection = db.MysqlConnection(cfg)
 
-	return database
-}
+// 	return database
+// }
 
 //setupFlags Set flags configurations
 func setupFlags() {

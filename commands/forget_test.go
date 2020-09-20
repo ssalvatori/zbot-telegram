@@ -11,27 +11,27 @@ var forgetCommand = ForgetCommand{}
 
 func TestForgetCommandOK(t *testing.T) {
 
-	forgetCommand.Db = &db.MockZbotDatabase{}
+	forgetCommand.Db = &db.ZbotDatabaseMock{}
 
-	result, _ := forgetCommand.ProcessText("!forget foo", userTest)
+	result, _ := forgetCommand.ProcessText("!forget foo", userTest, "testchat")
 
 	assert.Equal(t, "[foo] deleted", result, "Forget Command OK")
 }
 
 func TestForgetCommandNotMatch(t *testing.T) {
 
-	result, _ := forgetCommand.ProcessText("!forget6", userTest)
+	result, _ := forgetCommand.ProcessText("!forget6", userTest, "testchat")
 	assert.Equal(t, "", result, "Empty output doesn't match")
 
-	_, err := forgetCommand.ProcessText("!forget6", userTest)
-	assert.Equal(t, "text doesn't match", err.Error(), "Error output doesn't match")
+	_, err := forgetCommand.ProcessText("!forget6", userTest, "testchat")
+	assert.Equal(t, "no action in command", err.Error(), "Error output doesn't match")
 }
 
 func TestForgetCommandError(t *testing.T) {
 
-	forgetCommand.Db = &db.MockZbotDatabase{
+	forgetCommand.Db = &db.ZbotDatabaseMock{
 		Error: true,
 	}
-	_, err := forgetCommand.ProcessText("!forget lal", userTest)
-	assert.Equal(t, "mock", err.Error(), "Db error")
+	_, err := forgetCommand.ProcessText("!forget lal", userTest, "testchat")
+	assert.Error(t, err, "DB error")
 }

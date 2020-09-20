@@ -11,38 +11,40 @@ var getCommand = GetCommand{}
 
 func TestGetCommandOK(t *testing.T) {
 
-	getCommand.Db = &db.MockZbotDatabase{
+	getCommand.Db = &db.ZbotDatabaseMock{
 		Term:    "foo",
 		Meaning: "bar",
 	}
 
-	result, _ := getCommand.ProcessText("? foo", userTest)
-	assert.Equal(t, "[foo] - [bar]", result, "Last Command")
+	result, _ := getCommand.ProcessText("? foo", userTest, "testchat")
+	assert.Equal(t, "[foo] - [bar]", result, "Get Command")
 
-	getCommand.Db = &db.MockZbotDatabase{
-		Not_found: true,
+}
+
+func TestGetCommandNoFound(t *testing.T) {
+	getCommand.Db = &db.ZbotDatabaseMock{
+		NotFound: true,
 	}
 
-	result, _ = getCommand.ProcessText("? foo2", userTest)
-	assert.Equal(t, "[foo2] Not found!", result, "Last no next command")
-
+	result, _ := getCommand.ProcessText("? foo2", userTest, "testchat")
+	assert.Equal(t, "[foo2] Not found!", result, "Get no next command")
 }
 
 func TestGetCommandNotMatch(t *testing.T) {
 
-	result, _ := getCommand.ProcessText("?6", userTest)
+	result, _ := getCommand.ProcessText("?6", userTest, "testchat")
 	assert.Equal(t, "", result, "Empty output doesn't match")
 
-	_, err := getCommand.ProcessText("?6", userTest)
-	assert.Equal(t, "text doesn't match", err.Error(), "Error output doesn't match")
+	_, err := getCommand.ProcessText("?6", userTest, "testchat")
+	assert.Equal(t, "no action in command", err.Error(), "Error output doesn't match")
 }
 
 func TestGetCommandError(t *testing.T) {
 
-	getCommand.Db = &db.MockZbotDatabase{
-		Rand_def: db.DefinitionItem{Term: "foo", Meaning: "bar"},
-		Error:    true,
+	getCommand.Db = &db.ZbotDatabaseMock{
+		RandDef: []db.Definition{db.Definition{Term: "foo", Meaning: "bar"}},
+		Error:   true,
 	}
-	_, err := getCommand.ProcessText("? foo", userTest)
-	assert.Equal(t, "mock", err.Error(), "Db error")
+	_, err := getCommand.ProcessText("? foo", userTest, "testchat")
+	assert.Error(t, err, "DB error")
 }

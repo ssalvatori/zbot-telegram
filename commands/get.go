@@ -17,24 +17,30 @@ type GetCommand struct {
 }
 
 //ProcessText run command
-func (handler *GetCommand) ProcessText(text string, user user.User) (string, error) {
+func (handler *GetCommand) ProcessText(text string, user user.User, chat string) (string, error) {
 
 	commandPattern := regexp.MustCompile(`^\?\s(\S*)`)
 	var result string
 
 	if commandPattern.MatchString(text) {
 		term := commandPattern.FindStringSubmatch(text)
-		definition, err := handler.Db.Get(strings.ToLower(term[1]))
+		definition, err := handler.Db.Get(strings.ToLower(term[1]), chat)
 		if err != nil {
-			log.Error(err)
-			return "", err
+			if errors.Is(err, db.ErrNotFound) {
+				return fmt.Sprintf("[%s] Not found!", term[1]), nil
+			}
+			log.Error(err.Error())
+			return "", ErrInternalError
+
 		}
-		if definition.Term != "" {
-			result = fmt.Sprintf("[%s] - [%s]", definition.Term, definition.Meaning)
-		} else {
-			result = fmt.Sprintf("[%s] Not found!", term[1])
+		err = handler.Db.IncreaseHits(definition.ID)
+		if err != nil {
+			log.Error(err.Error())
+			return "", ErrInternalError
 		}
+		result = fmt.Sprintf("[%s] - [%s]", definition.Term, definition.Meaning)
+		//		}
 		return result, nil
 	}
-	return "", errors.New("text doesn't match")
+	return "", ErrNextCommand
 }

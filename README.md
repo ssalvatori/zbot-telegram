@@ -1,7 +1,7 @@
 # zbot-telegram
 
 [![Build Status](https://travis-ci.org/ssalvatori/zbot-telegram.svg?branch=master)](https://travis-ci.org/ssalvatori/zbot-telegram)
-[![Coverage Status](https://coveralls.io/repos/github/ssalvatori/zbot-telegram/badge.svg?branch=master)](https://coveralls.io/github/ssalvatori/zbot-telegram?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/ssalvatori/zbot-telegram/badge.svg?branch=dev)](https://coveralls.io/github/ssalvatori/zbot-telegram?branch=dev)
 [![Go Report Card](https://goreportcard.com/badge/github.com/ssalvatori/zbot-telegram)](https://goreportcard.com/report/github.com/ssalvatori/zbot-telegram)
 [![Build status](https://ci.appveyor.com/api/projects/status/sml2sck29885bh4g?svg=true)](https://ci.appveyor.com/project/ssalvatori/zbot-telegram)
 [![Build Status](https://cloud.drone.io/api/badges/ssalvatori/zbot-telegram/status.svg)](https://cloud.drone.io/ssalvatori/zbot-telegram)
@@ -18,13 +18,13 @@ You **must** set the **ZBOT_TOKEN** environment variable using the Telegram's AP
 * ZBOT_TOKEN : Use to connect to telegram
 * ZBOT_LOG_LEVEL : Use to set the log level the alternatives are debug,info, warn, error, panic
 * ZBOT_MODULES_PATH : Path to the externals modules directory
-* ZBOT_DISABLED_COMMANDS: Json file with an array of disabled commands
+* ZBOT_DISABLED_COMMANDS: Commands to be ignored (separated by a ,)
 * ZBOT_DATABASE_TYPE: Database to be use (mysql or sqlite)
 
 ## Feature Flags
 
-* ZBOT_FLAG_IGNORE
-* ZBOT_FLAG_LEVEL
+* ZBOT_FLAG_ACTIVATE_IGNORE
+* ZBOT_FLAG_ACTIVATE_LEVELS
 
 ## SQLite Configurations
 
@@ -37,6 +37,7 @@ You **must** set the **ZBOT_TOKEN** environment variable using the Telegram's AP
 * ZBOT_MYSQL_DATABASE : Database name
 * ZBOT_MYSQL_HOSTNAME : Database hostname 
 * ZBOT_MYSQL_PORT : Database port (default: 3306)
+* ZBOT_MYSQL_PROTOCOL: Protocol (default: tcp)
 
 ## Database Schemas
 
@@ -44,7 +45,7 @@ You **must** set the **ZBOT_TOKEN** environment variable using the Telegram's AP
 
 ```sql
 CREATE TABLE `definitions` ( 
-    id INTEGER PRIMARY KEY AUTOINCREMENT, 
+    id INTEGER PRIMARY KEY AUTO_INCREMENT, 
     term TEXT UNIQUE, 
     meaning TEXT NOT NULL, 
     author TEXT NOT NULL, 

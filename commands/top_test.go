@@ -10,31 +10,31 @@ import (
 var topCommand = TopCommand{}
 
 func TestTopCommandOK(t *testing.T) {
-	topCommand.Db = &db.MockZbotDatabase{
-		Level:      "7",
-		Find_terms: []string{"foo", "bar"},
-		Rand_def:   db.DefinitionItem{Term: "foo", Meaning: "bar"},
+	topCommand.Db = &db.ZbotDatabaseMock{
+		Level:     "7",
+		FindTerms: []string{"foo", "bar"},
+		RandDef:   []db.Definition{db.Definition{Term: "foo", Meaning: "bar"}},
 	}
 
-	result, _ := topCommand.ProcessText("!top", userTest)
+	result, _ := topCommand.ProcessText("!top", userTest, "testchat")
 	assert.Equal(t, "foo bar", result, "Top Command")
 
 }
 
 func TestTopCommandNotMatch(t *testing.T) {
 
-	result, _ := topCommand.ProcessText("!top6", userTest)
+	result, _ := topCommand.ProcessText("!top6", userTest, "testchat")
 	assert.Equal(t, "", result, "Empty output doesn't match")
 
-	_, err := topCommand.ProcessText("!top6", userTest)
-	assert.Equal(t, "text doesn't match", err.Error(), "Error output doesn't match")
+	_, err := topCommand.ProcessText("!top6", userTest, "testchat")
+	assert.Equal(t, "no action in command", err.Error(), "Error output doesn't match")
 }
 
 func TestTopCommandError(t *testing.T) {
 
-	topCommand.Db = &db.MockZbotDatabase{
+	topCommand.Db = &db.ZbotDatabaseMock{
 		Error: true,
 	}
-	_, err := topCommand.ProcessText("!top", userTest)
-	assert.Equal(t, "mock", err.Error(), "Db error")
+	_, err := topCommand.ProcessText("!top", userTest, "testchat")
+	assert.Equal(t, "Internal error, check logs", err.Error(), "Db error")
 }

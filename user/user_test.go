@@ -12,7 +12,7 @@ func TestBuildUser(t *testing.T) {
 	sender := tb.User{}
 	newUser := User{}
 
-	mockDatabase := &db.MockZbotDatabase{
+	mockDatabase := &db.ZbotDatabaseMock{
 		Level: "10",
 	}
 
@@ -46,13 +46,13 @@ func TestBuildUser(t *testing.T) {
 func TestGetUserLevel(t *testing.T) {
 	userTest := User{Username: "ssalvatori"}
 
-	mockDatabase := &db.MockZbotDatabase{
+	mockDatabase := &db.ZbotDatabaseMock{
 		Level: "10",
 	}
 
 	assert.Equal(t, 10, GetUserLevel(mockDatabase, userTest.Username), "Getting user level")
 
-	mockDatabase = &db.MockZbotDatabase{
+	mockDatabase = &db.ZbotDatabaseMock{
 		Level: "10",
 		Error: true,
 	}

@@ -1,7 +1,6 @@
 package command
 
 import (
-	"errors"
 	"fmt"
 	"regexp"
 
@@ -16,7 +15,7 @@ type StatsCommand struct {
 }
 
 // ProcessText run command
-func (handler *StatsCommand) ProcessText(text string, user user.User) (string, error) {
+func (handler *StatsCommand) ProcessText(text string, user user.User, chat string) (string, error) {
 
 	commandPattern := regexp.MustCompile(`^!stats$`)
 
@@ -24,11 +23,11 @@ func (handler *StatsCommand) ProcessText(text string, user user.User) (string, e
 		statTotal, err := handler.Db.Statistics()
 		if err != nil {
 			log.Error(err)
-			return "", err
+			return "", db.ErrInternalError
 		}
-		return fmt.Sprintf("Count: %s", statTotal), nil
+		return fmt.Sprintf("Number of definitions: %s", statTotal), nil
 
 	}
 	//	return "", result
-	return "", errors.New("text doesn't match")
+	return "", ErrNextCommand
 }

@@ -11,22 +11,22 @@ var lockCommand = LockCommand{}
 
 func TestTemplateCommandOK(t *testing.T) {
 
-	lockCommand.Db = &db.MockZbotDatabase{
+	lockCommand.Db = &db.ZbotDatabaseMock{
 		Term:    "foo",
 		Meaning: "bar",
 		Level:   "100",
 	}
 
-	result, _ := lockCommand.ProcessText("!lock foo", userTest)
+	result, _ := lockCommand.ProcessText("!lock foo", userTest, "testchat")
 	assert.Equal(t, "[foo] locked", result, "Template Command")
 }
 
 func TestTemplateCommandErro(t *testing.T) {
 
-	lockCommand.Db = &db.MockZbotDatabase{
+	lockCommand.Db = &db.ZbotDatabaseMock{
 		Error: true,
 	}
 
-	_, err := lockCommand.ProcessText("!lock foo", userTest)
-	assert.Equal(t, "mock", err.Error(), "Db error")
+	_, err := lockCommand.ProcessText("!lock foo", userTest, "testchat")
+	assert.Error(t, err, "Internal error")
 }

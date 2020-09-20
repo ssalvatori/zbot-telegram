@@ -21,25 +21,36 @@ func (handler *WhoCommand) SetDb(db db.ZbotDatabase) {
 }
 
 //ProcessText run command
-func (handler *WhoCommand) ProcessText(text string, user user.User) (string, error) {
+func (handler *WhoCommand) ProcessText(text string, user user.User, chat string) (string, error) {
 
 	commandPattern := regexp.MustCompile(`^!who\s(\S*)$`)
 
 	if commandPattern.MatchString(text) {
 
 		term := commandPattern.FindStringSubmatch(text)
-		def := db.DefinitionItem{
+		item := db.Definition{
 			Term: term[1],
 		}
-		Item, err := handler.Db.Get(def.Term)
+		Item, err := handler.Db.Get(item.Term, chat)
 		if err != nil {
+			if errors.Is(err, db.ErrNotFound) {
+				return "", fmt.Errorf("Definition [%s] not found", item.Term)
+			}
 			log.Error(err.Error())
-			return "", err
+			return "", ErrInternalError
 		}
 
-		return fmt.Sprintf("[%s] by [%s] on [%s]", Item.Term, Item.Author, Item.Date), nil
+		err = handler.Db.IncreaseHits(Item.ID)
+		if err != nil {
+			log.Error(err.Error())
+			return "", ErrInternalError
+			// if !errors.Is(err, db.ErrInternalError) {
+			// 	return "Internal Error, check logs", nil
+			// }
+		}
 
+		return fmt.Sprintf("[%s] by [%s] on [%s] hits [%d]", Item.Term, Item.Author, Item.UpdatedAt.Format("2006-01-02"), Item.Hits), nil
 	}
 
-	return "", errors.New("text doesn't match")
+	return "", ErrNextCommand
 }

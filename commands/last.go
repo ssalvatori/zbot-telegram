@@ -1,9 +1,9 @@
 package command
 
 import (
-	"errors"
 	"fmt"
 	"regexp"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/ssalvatori/zbot-telegram/db"
@@ -19,17 +19,26 @@ type LastCommand struct {
 func (handler *LastCommand) SetDb(db db.ZbotDatabase) {}
 
 // ProcessText run command
-func (handler *LastCommand) ProcessText(text string, user user.User) (string, error) {
+func (handler *LastCommand) ProcessText(text string, user user.User, chat string) (string, error) {
 
 	commandPattern := regexp.MustCompile(`^!last$`)
 
 	if commandPattern.MatchString(text) {
-		lastItem, err := handler.Db.Last()
+		lastItems, err := handler.Db.Last(10)
 		if err != nil {
 			log.Error(err)
 			return "", err
 		}
-		return fmt.Sprintf("[%s] - [%s]", lastItem.Term, lastItem.Meaning), nil
+		return PrintTerms(lastItems), nil
 	}
-	return "", errors.New("text doesn't match")
+	return "", ErrNextCommand
+}
+
+//PrintTerms .
+func PrintTerms(items []db.Definition) string {
+	keys := make([]string, 0, len(items))
+	for item := range items {
+		keys = append(keys, items[item].Term)
+	}
+	return fmt.Sprintf("[ %s ]", strings.Join(keys, " "))
 }

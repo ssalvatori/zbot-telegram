@@ -13,10 +13,10 @@ var levelCommand = LevelCommand{}
 
 func TestLevelCommandOK(t *testing.T) {
 
-	levelCommand.Db = &db.MockZbotDatabase{
+	levelCommand.Db = &db.ZbotDatabaseMock{
 		Level: "1000",
 	}
-	result, _ := levelCommand.ProcessText("!level", userTest)
+	result, _ := levelCommand.ProcessText("!level", userTest, "testchat")
 	assert.Equal(t, "ssalvatori level 1000", result, "Get Level from the same user")
 }
 
@@ -34,13 +34,13 @@ func TestProcessText(t *testing.T) {
 		{"del other", "!level2 del rigo", user.User{Username: "ssalvatori"}, ""},
 	}
 
-	levelCommand.Db = &db.MockZbotDatabase{
+	levelCommand.Db = &db.ZbotDatabaseMock{
 		Level: "1000",
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got, _ := levelCommand.ProcessText(tt.cmd, tt.user); !reflect.DeepEqual(got, tt.want) {
+			if got, _ := levelCommand.ProcessText(tt.cmd, tt.user, "testchat"); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("LevelCommand.ProcessText() = %v, want %v", got, tt.want)
 			}
 		})
@@ -61,7 +61,7 @@ func TestPaserCommand(t *testing.T) {
 		{"del other", "!level del rigo", "ssalvatori", map[string]string{"subcommand": "del", "user": "rigo", "level": "0"}},
 	}
 
-	levelCommand.Db = &db.MockZbotDatabase{}
+	levelCommand.Db = &db.ZbotDatabaseMock{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -74,11 +74,12 @@ func TestPaserCommand(t *testing.T) {
 
 func TestLevelCommandError(t *testing.T) {
 
-	levelCommand.Db = &db.MockZbotDatabase{
-		Rand_def: db.DefinitionItem{Term: "foo", Meaning: "bar"},
-		Error:    true,
+	levelCommand.Db = &db.ZbotDatabaseMock{
+		RandDef: []db.Definition{db.Definition{Term: "foo", Meaning: "bar"}},
+		Error:   true,
 	}
 
-	_, err := levelCommand.ProcessText("!level", userTest)
-	assert.Equal(t, "mock", err.Error(), "Db error")
+	_, err := levelCommand.ProcessText("!level", userTest, "testchat")
+	// assert.Equal(t, "Internal error", err.Error(), "Db error")
+	assert.Error(t, err, "Internal Error")
 }

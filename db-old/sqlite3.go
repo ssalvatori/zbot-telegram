@@ -2,60 +2,28 @@ package db
 
 import (
 	"database/sql"
-
 	"errors"
 	"fmt"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 
-	_ "github.com/go-sql-driver/mysql" //sql driver for mysql
+	_ "github.com/mattn/go-sqlite3"
+
 	log "github.com/sirupsen/logrus"
 )
 
-//ZbotMysqlDatabase principal struct
-type ZbotMysqlDatabase struct {
-	Db         *sql.DB
-	Connection MysqlConnection
+type ZbotSqlite3Database struct {
+	Db   *sql.DB
+	File string
 }
 
-//MysqlConnection databse configuration used to generate DSN
-type MysqlConnection struct {
-	Username     string
-	Password     string
-	DatabaseName string
-	HostName     string
-	Protocol     string
-	Port         int
+func (d *ZbotSqlite3Database) GetConnectionInfo() string {
+	return fmt.Sprintf("DB: %s", d.File)
 }
 
-//GetConnectionString create connection string
-func (d *ZbotMysqlDatabase) GetConnectionString() string {
-	connectionDSN := fmt.Sprintf("%s:%s@%s(%s:%d)/%s", d.Connection.Username, d.Connection.Password, d.Connection.Protocol, d.Connection.HostName, d.Connection.Port, d.Connection.DatabaseName)
-	log.Debug("Using DSN: " + connectionDSN)
-	return connectionDSN
-}
-
-//Init start a connection to database
-func (d *ZbotMysqlDatabase) Init() error {
-	log.Debug("Connecting to mysql database")
-	connectionData := d.GetConnectionString()
-	connection, err := sql.Open("mysql", connectionData)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-	d.Db = connection
-	return nil
-}
-
-//Close connection to database
-func (d *ZbotMysqlDatabase) Close() {
-	log.Debug("Closing connection")
-	d.Db.Close()
-}
-
-//UserIgnoreList get list of ignored users
-func (d *ZbotMysqlDatabase) UserIgnoreList() ([]UserIgnore, error) {
+func (d *ZbotSqlite3Database) UserIgnoreList() ([]UserIgnore, error) {
 	log.Debug("Getting ignore list")
 	statement := "SELECT username, since, until FROM ignore_list"
 	stmt, err := d.Db.Prepare(statement)
@@ -82,25 +50,49 @@ func (d *ZbotMysqlDatabase) UserIgnoreList() ([]UserIgnore, error) {
 	return users, nil
 }
 
-//Statistics get the number of definitions in the db
-func (d *ZbotMysqlDatabase) Statistics() (string, error) {
-	statement := "select count(*) as total from definitions"
+//Init start connection with sql database
+func (d *ZbotSqlite3Database) Init() error {
+
+	if _, err := os.Stat(d.File); os.IsNotExist(err) {
+		log.Fatal(fmt.Sprintf("Sqlite file [%s] does not exist!", d.File))
+	}
+
+	log.Info("Connecting to database: " + d.File)
+	db, err := sql.Open("sqlite3", "file:"+d.File+"?cache=shared&mode=rwc")
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	if db == nil {
+		log.Error(err)
+		return errors.New("Error connecting")
+	}
+	d.Db = db
+
+	return nil
+}
+
+func (d *ZbotSqlite3Database) Close() {
+	log.Debug("Closing connection")
+	d.Db.Close()
+}
+
+//Statistics get the number of definitions in the db for a given chat
+func (d *ZbotSqlite3Database) Statistics(chat string) (string, error) {
+	statement := "select count(*) as total from definitions where chat = ?"
 	var totalCount string
-	err := d.Db.QueryRow(statement).Scan(&totalCount)
+	err := d.Db.QueryRow(statement, chat).Scan(&totalCount)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return totalCount, errors.New("No Rows found")
-		} else {
-			return totalCount, err
 		}
+		return totalCount, err
 	}
 
 	return totalCount, err
 }
 
-//Top the 10 definitions with more hits
-//TODO: add parameter to change the number of definitions
-func (d *ZbotMysqlDatabase) Top() ([]DefinitionItem, error) {
+func (d *ZbotSqlite3Database) Top() ([]Definition, error) {
 
 	statement := "SELECT term FROM definitions ORDER BY hits DESC LIMIT 10"
 	rows, err := d.Db.Query(statement)
@@ -109,22 +101,20 @@ func (d *ZbotMysqlDatabase) Top() ([]DefinitionItem, error) {
 	}
 	defer rows.Close()
 
-	var items []DefinitionItem
+	var items []Definition
 	for rows.Next() {
 		var key string
 		err2 := rows.Scan(&key)
 		if err2 != nil {
 			return nil, err2
 		}
-		items = append(items, DefinitionItem{Term: key})
+		items = append(items, Definition{Term: key})
 	}
 
 	return items, nil
 }
-
-//Rand get a random definition from the database
-func (d *ZbotMysqlDatabase) Rand() (DefinitionItem, error) {
-	var def DefinitionItem
+func (d *ZbotSqlite3Database) Rand() (Definition, error) {
+	var def Definition
 
 	statement := "SELECT term, meaning FROM definitions ORDER BY random() LIMIT 1"
 	rows, err := d.Db.Query(statement)
@@ -144,8 +134,8 @@ func (d *ZbotMysqlDatabase) Rand() (DefinitionItem, error) {
 
 }
 
-func (d *ZbotMysqlDatabase) Last() (DefinitionItem, error) {
-	var def DefinitionItem
+func (d *ZbotSqlite3Database) Last() (Definition, error) {
+	var def Definition
 	statement := "SELECT term, meaning FROM definitions ORDER BY id DESC LIMIT 1"
 
 	err := d.Db.QueryRow(statement).Scan(&def.Term, &def.Meaning)
@@ -160,17 +150,18 @@ func (d *ZbotMysqlDatabase) Last() (DefinitionItem, error) {
 
 	return def, nil
 }
-func (d *ZbotMysqlDatabase) Get(term string) (DefinitionItem, error) {
-	var def DefinitionItem
-	statement := "SELECT id, term, meaning, author, date FROM definitions WHERE term = ? COLLATE NOCASE LIMIT 1"
-	err := d.Db.QueryRow(statement, term).Scan(&def.Id, &def.Term, &def.Meaning, &def.Author, &def.Date)
+
+//Get fetch a definition for a given term and chat
+func (d *ZbotSqlite3Database) Get(term string, chat string) (Definition, error) {
+	var def Definition
+	statement := "SELECT id, term, meaning, chat, author, date FROM definitions WHERE term = ? and chat = ? COLLATE NOCASE LIMIT 1"
+	err := d.Db.QueryRow(statement, term, chat).Scan(&def.ID, &def.Term, &def.Meaning, &def.Chat, &def.Author, &def.Date)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return DefinitionItem{Term: "", Meaning: ""}, nil
-		} else {
-			log.Fatal(err)
-			return def, err
+			return Definition{Term: "", Meaning: ""}, nil
 		}
+		log.Fatal(err)
+		return def, err
 	}
 
 	statement = "UPDATE definitions SET hits = hits + 1 WHERE id = ?"
@@ -180,7 +171,7 @@ func (d *ZbotMysqlDatabase) Get(term string) (DefinitionItem, error) {
 		return def, err
 	}
 
-	_, err = stmt.Exec(def.Id)
+	_, err = stmt.Exec(def.ID)
 	if err != nil {
 		return def, err
 	}
@@ -188,7 +179,7 @@ func (d *ZbotMysqlDatabase) Get(term string) (DefinitionItem, error) {
 	return def, nil
 }
 
-func (d *ZbotMysqlDatabase) _set(term string, def DefinitionItem) (sql.Result, error) {
+func (d *ZbotSqlite3Database) _set(term string, def Definition) (sql.Result, error) {
 	statement := "INSERT INTO definitions (term, meaning, author, locked, active, date, hits, link) VALUES (?,?,?,?,?,?,?,?)"
 
 	stmt, err := d.Db.Prepare(statement)
@@ -199,7 +190,8 @@ func (d *ZbotMysqlDatabase) _set(term string, def DefinitionItem) (sql.Result, e
 
 }
 
-func (d *ZbotMysqlDatabase) Set(def DefinitionItem) (string, error) {
+//Set add new definition in to the db
+func (d *ZbotSqlite3Database) Set(def Definition) (string, error) {
 	count := 1
 	term := def.Term
 	log.Debug(def)
@@ -223,7 +215,7 @@ func (d *ZbotMysqlDatabase) Set(def DefinitionItem) (string, error) {
 
 }
 
-func (d *ZbotMysqlDatabase) Append(def DefinitionItem) error {
+func (d *ZbotSqlite3Database) Append(def Definition) error {
 	statement := "UPDATE definitions SET meaning = meaning || ?, date = ?, author = ? WHERE term = ?"
 	stmt, err := d.Db.Prepare(statement)
 	if err != nil {
@@ -236,16 +228,17 @@ func (d *ZbotMysqlDatabase) Append(def DefinitionItem) error {
 	return nil
 }
 
-func (d *ZbotMysqlDatabase) Find(criteria string) ([]DefinitionItem, error) {
-	var items []DefinitionItem
-	statement := "SELECT term FROM definitions WHERE meaning like ? ORDER BY random() COLLATE NOCASE LIMIT 20"
+//Find search for a list of term with a pattern in the meaning for a given chat
+func (d *ZbotSqlite3Database) Find(criteria string, chat string) ([]Definition, error) {
+	var items []Definition
+	statement := "SELECT term FROM definitions WHERE chat = ? and meaning like ? ORDER BY random() COLLATE NOCASE LIMIT 20"
 	stmt, err := d.Db.Prepare(statement)
 	if err != nil {
 		log.Fatal(err)
 		return items, err
 	}
 	defer stmt.Close()
-	rows, err2 := stmt.Query(criteria)
+	rows, err2 := stmt.Query(chat, criteria)
 	if err2 != nil {
 		return items, err
 	}
@@ -257,37 +250,39 @@ func (d *ZbotMysqlDatabase) Find(criteria string) ([]DefinitionItem, error) {
 		if err2 != nil {
 			return items, err2
 		}
-		items = append(items, DefinitionItem{Term: result})
+		items = append(items, Definition{Term: result})
 	}
 	return items, nil
 }
-func (d *ZbotMysqlDatabase) Search(criteria string) ([]DefinitionItem, error) {
-	statement := "SELECT term FROM definitions WHERE term like ? ORDER BY random() COLLATE NOCASE LIMIT 10"
+
+//Search look for a list of term with a pattern in it for given chat
+func (d *ZbotSqlite3Database) Search(criteria string, chat string) ([]Definition, error) {
+	statement := "SELECT term FROM definitions WHERE chat = ?  and term like ? ORDER BY random() COLLATE NOCASE LIMIT 10"
 	stmt, err := d.Db.Prepare(statement)
 	if err != nil {
 		log.Fatal(err)
 		return nil, err
 	}
 	defer stmt.Close()
-	rows, err2 := stmt.Query(criteria)
+	rows, err2 := stmt.Query(chat, criteria)
 	if err2 != nil {
 		panic(err2)
 	}
 	defer rows.Close()
 
-	var items []DefinitionItem
+	var items []Definition
 	var result string
 	for rows.Next() {
 		err2 := rows.Scan(&result)
 		if err2 != nil {
 			return nil, err2
 		}
-		items = append(items, DefinitionItem{Term: result})
+		items = append(items, Definition{Term: result})
 	}
 	return items, nil
 }
 
-func (d *ZbotMysqlDatabase) UserLevel(username string) (string, error) {
+func (d *ZbotSqlite3Database) UserLevel(username string) (string, error) {
 	var level string
 	statement := "SELECT level FROM users WHERE username = ? COLLATE NOCASE LIMIT 1"
 	err := d.Db.QueryRow(statement, username).Scan(&level)
@@ -301,7 +296,7 @@ func (d *ZbotMysqlDatabase) UserLevel(username string) (string, error) {
 
 	return level, nil
 }
-func (d *ZbotMysqlDatabase) UserIgnoreInsert(username string) error {
+func (d *ZbotSqlite3Database) UserIgnoreInsert(username string) error {
 	statement := "INSERT INTO ignore_list (username, since, until) VALUES (?,?,?)"
 	stmt, err := d.Db.Prepare(statement)
 
@@ -323,12 +318,12 @@ func (d *ZbotMysqlDatabase) UserIgnoreInsert(username string) error {
 
 //UserCheckIgnore check if user there is any row in ignore_list table for some username
 // and an until greater than the current time
-func (d *ZbotMysqlDatabase) UserCheckIgnore(username string) bool {
+func (d *ZbotSqlite3Database) UserCheckIgnore(username string) bool {
 	ignored := false
 
 	now := time.Now().Unix()
 
-	var level int
+	var level string
 	statement := "SELECT count(*) as total FROM ignore_list WHERE username = ? AND until >= ?"
 	err := d.Db.QueryRow(statement, username, now).Scan(&level)
 	if err != nil {
@@ -337,18 +332,17 @@ func (d *ZbotMysqlDatabase) UserCheckIgnore(username string) bool {
 		} else {
 			log.Error(err)
 			return ignored
-
 		}
 	}
-
-	log.Debug("Ingored ", level)
-	if level > 0 {
+	levelInt, _ := strconv.Atoi(level)
+	log.Debug("Ingored ", levelInt)
+	if levelInt > 0 {
 		ignored = true
 	}
 
 	return ignored
 }
-func (d *ZbotMysqlDatabase) UserCleanupIgnorelist() error {
+func (d *ZbotSqlite3Database) UserCleanupIgnorelist() error {
 	for {
 		log.Debug("Cleaning ignore list")
 		now := time.Now().Unix()
@@ -367,7 +361,7 @@ func (d *ZbotMysqlDatabase) UserCleanupIgnorelist() error {
 	}
 }
 
-func (d *ZbotMysqlDatabase) Lock(item DefinitionItem) error {
+func (d *ZbotSqlite3Database) Lock(item Definition) error {
 
 	statement := "UPDATE definitions SET locked = 1, locked_by = ? WHERE term = ?"
 
@@ -386,7 +380,7 @@ func (d *ZbotMysqlDatabase) Lock(item DefinitionItem) error {
 
 }
 
-func (d *ZbotMysqlDatabase) Forget(item DefinitionItem) error {
+func (d *ZbotSqlite3Database) Forget(item Definition) error {
 	statement := "DELETE definitions WHERE term = ? LIMIT 1"
 
 	stmt, err := d.Db.Prepare(statement)

@@ -101,6 +101,11 @@ func Execute() {
 //messagesProcessing
 func messagesProcessing(db db.ZbotDatabase, message *tb.Message) string {
 
+	/*
+		message.Chat.Title // Channel name
+		message.Chat.Type == "private" && title == ""
+	*/
+
 	//we're going to process only the message starting with ! or ?
 	processingMsg := regexp.MustCompilePOSIX(`^[!|?].*`)
 	username := strings.ToLower(message.Sender.Username)
@@ -134,6 +139,7 @@ func checkIgnoreList(db db.ZbotDatabase, username string) bool {
 func cmdProcessing(db db.ZbotDatabase, msg tb.Message) string {
 
 	commandName := command.GetCommandInformation(msg.Text)
+	chatName := ""
 
 	if command.IsCommandDisabled(commandName) {
 		log.Debug("Command [", commandName, "] is disabled")
@@ -141,6 +147,9 @@ func cmdProcessing(db db.ZbotDatabase, msg tb.Message) string {
 	}
 
 	user := user.BuildUser(msg.Sender, db)
+	if msg.Chat.Type != "private" {
+		chatName = msg.Chat.Title
+	}
 
 	if Flags.Level {
 		requiredLevel := command.GetMinimumLevel(commandName, levelsConfig)
@@ -181,7 +190,7 @@ func cmdProcessing(db db.ZbotDatabase, msg tb.Message) string {
 		messageString = fmt.Sprintf("%s %s %s", messageString, msg.ReplyTo.Sender.Username, msg.ReplyTo.Text)
 	}
 
-	outputMsg := commandsList.Run(commandName, messageString, user)
+	outputMsg := commandsList.Run(commandName, messageString, user, chatName)
 
 	//	outputMsg := commands.ProcessText(messageString, user)
 

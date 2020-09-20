@@ -22,7 +22,7 @@ type ExternalCommand struct {
 }
 
 // ProcessText run command
-func (handler *ExternalCommand) ProcessText(text string, user user.User) (string, error) {
+func (handler *ExternalCommand) ProcessText(text string, user user.User, chat string) (string, error) {
 
 	commandPattern := regexp.MustCompile(`^!([a-zA-Z0-9\_\-]+)([\s(\S*)]*)?`)
 
@@ -36,7 +36,7 @@ func (handler *ExternalCommand) ProcessText(text string, user user.User) (string
 
 		if err != nil {
 			log.Error(err)
-			return "", err
+			return "", fmt.Errorf("Internal error with command [%s]", externalModule)
 		}
 
 		return handler.RunCommand(fullPathToBinary, user.Username, strconv.Itoa(user.Level), args[2]), nil

@@ -80,18 +80,19 @@ func TestExternalCommandOK(t *testing.T) {
 		LookPathCommand = exec.LookPath
 	}()
 
-	result, _ := externalCommand.ProcessText("!external_module arg1 arg2 arg3", userTest)
+	result, _ := externalCommand.ProcessText("!external_module arg1 arg2 arg3", userTest, "testchat")
 	assert.Equal(t, "/home/ssalvatori/module/external_module ssalvatori 100  arg1 arg2 arg3\n", result, "external")
 
-	_, err := externalCommand.ProcessText("!mock-error arg1 arg2", userTest)
-	assert.Equal(t, "mock", err.Error(), "external mock")
+	_, err := externalCommand.ProcessText("!mock-error arg1 arg2", userTest, "testchat")
+	// assert.Equal(t, "Internal error", err.Error(), "external mock")
+	assert.Error(t, err, "Internal Error")
 
 }
 
 func TestExternalCommandInject(t *testing.T) {
 	userTest.Level = 100
 
-	result, _ := externalCommand.ProcessText("!../../test arg1 arg2 arg3", userTest)
+	result, _ := externalCommand.ProcessText("!../../test arg1 arg2 arg3", userTest, "testchat")
 
 	assert.Equal(t, "", result, "external commmand inject")
 }

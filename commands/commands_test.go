@@ -2,7 +2,6 @@ package command
 
 import (
 	"container/list"
-	"errors"
 	"testing"
 
 	"github.com/ssalvatori/zbot-telegram/db"
@@ -30,14 +29,14 @@ var minimumLevels = Levels{
 }
 
 func TestGetTerms(t *testing.T) {
-	items := []db.DefinitionItem{
+	items := []db.Definition{
 		{Term: "foo", Meaning: "bar"},
 		{Term: "foo2", Meaning: "bar2"},
 		{Term: "foo3", Meaning: "bar3"},
 	}
 	assert.Equal(t, []string{"foo", "foo2", "foo3"}, getTerms(items))
 	var terms []string
-	assert.Equal(t, terms, getTerms([]db.DefinitionItem{}))
+	assert.Equal(t, terms, getTerms([]db.Definition{}))
 }
 
 func TestIsCommandDisable(t *testing.T) {
@@ -77,9 +76,9 @@ type FakeCommand2 struct {
 	cmd string
 }
 
-func (handler *FakeCommand2) ProcessText(text string, user user.User) (string, error) {
+func (handler *FakeCommand2) ProcessText(text string, user user.User, chat string) (string, error) {
 	if text != "!fakecommand2" {
-		return "", errors.New("text doesn't match")
+		return "", ErrNextCommand
 	}
 	return "Fake 2", nil
 }
@@ -103,9 +102,9 @@ func TestChainAndRun(t *testing.T) {
 	cmdList.Chain("fakecommand3", fake3Command, 0)
 	assert.Equal(t, 3, cmdList.List.Len(), "Chain add elements in the list")
 
-	assert.Equal(t, "Fake 2", cmdList.Run("fakecommand2", "!fakecommand2", userTest))
-	assert.Equal(t, "text doesn't match", cmdList.Run("fakecommand1", "!fakecommand1", userTest))
-	assert.Equal(t, "text doesn't match", cmdList.Run("fakecommand2", "!fakecommand5", userTest))
+	assert.Equal(t, "Fake 2", cmdList.Run("fakecommand2", "!fakecommand2", userTest, "test"))
+	assert.Equal(t, "", cmdList.Run("fakecommand1", "!fakecommand1", userTest, "test"))
+	assert.Equal(t, "", cmdList.Run("fakecommand2", "!fakecommand5", userTest, "test"))
 
 }
 

@@ -11,37 +11,37 @@ var findCommand = FindCommand{}
 
 func TestFindCommandOK(t *testing.T) {
 
-	findCommand.Db = &db.MockZbotDatabase{
+	findCommand.Db = &db.ZbotDatabaseMock{
 		Term:    "bar",
 		Meaning: "bar",
 	}
 
 	var result string
 
-	result, _ = findCommand.ProcessText("!find foo", userTest)
+	result, _ = findCommand.ProcessText("!find foo", userTest, "testchat")
 	assert.Equal(t, "bar", result, "Last Command")
-	findCommand.Db = &db.MockZbotDatabase{
-		Not_found: true,
+	findCommand.Db = &db.ZbotDatabaseMock{
+		NotFound: true,
 	}
-	result, _ = findCommand.ProcessText("!find lalal", userTest)
+	result, _ = findCommand.ProcessText("!find lalal", userTest, "testchat")
 	assert.Equal(t, "", result, "Last Command")
 
 }
 func TestFindCommandNotMatch(t *testing.T) {
 
-	result, _ := findCommand.ProcessText("!find6", userTest)
+	result, _ := findCommand.ProcessText("!find6", userTest, "testchat")
 	assert.Equal(t, "", result, "Empty output doesn't match")
 
-	_, err := findCommand.ProcessText("!find6", userTest)
-	assert.Equal(t, "text doesn't match", err.Error(), "Error output doesn't match")
+	_, err := findCommand.ProcessText("!find6", userTest, "testchat")
+	assert.Equal(t, "no action in command", err.Error(), "Error output doesn't match")
 }
 
 func TestFindCommandError(t *testing.T) {
 
-	findCommand.Db = &db.MockZbotDatabase{
-		Rand_def: db.DefinitionItem{Term: "foo", Meaning: "bar"},
-		Error:    true,
+	findCommand.Db = &db.ZbotDatabaseMock{
+		RandDef: []db.Definition{db.Definition{Term: "foo", Meaning: "bar"}},
+		Error:   true,
 	}
-	_, err := findCommand.ProcessText("!find lala", userTest)
-	assert.Equal(t, "mock", err.Error(), "Db error")
+	_, err := findCommand.ProcessText("!find lala", userTest, "testchat")
+	assert.Error(t, err, "DB Error")
 }

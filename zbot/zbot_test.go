@@ -11,7 +11,7 @@ import (
 
 func TestProcessingIsCommandDisabled(t *testing.T) {
 
-	dbMock := &db.MockZbotDatabase{
+	dbMock := &db.ZbotDatabaseMock{
 		Level: "666",
 		File:  "hola.db",
 	}
@@ -29,7 +29,7 @@ func TestProcessingIsCommandDisabled(t *testing.T) {
 
 func TestProcessingVersion(t *testing.T) {
 
-	dbMock := &db.MockZbotDatabase{
+	dbMock := &db.ZbotDatabaseMock{
 		Level: "666",
 		File:  "hola.db",
 	}
@@ -42,6 +42,10 @@ func TestProcessingVersion(t *testing.T) {
 		Sender: &tb.User{
 			Username: "zbot_test",
 		},
+		Chat: &tb.Chat{
+			Type:  "supergroup",
+			Title: "testgroup",
+		},
 	}
 	result := cmdProcessing(dbMock, botMsg)
 	assert.Equal(t, "zbot golang version ["+version+"] commit [undefined] build-time ["+buildTime+"]", result, "!version default")
@@ -49,49 +53,67 @@ func TestProcessingVersion(t *testing.T) {
 
 func TestProcessingStats(t *testing.T) {
 
-	dbMock := &db.MockZbotDatabase{
+	dbMock := &db.ZbotDatabaseMock{
 		Level: "666",
 		File:  "hola.db",
 	}
 
-	botMsg := tb.Message{Text: "!stats", Sender: &tb.User{Username: "zbot_test"}}
+	botMsg := tb.Message{
+		Text: "!stats",
+		Sender: &tb.User{
+			Username: "zbot_test",
+		},
+		Chat: &tb.Chat{
+			Type:  "supergroup",
+			Title: "testgroup",
+		},
+	}
 	result := cmdProcessing(dbMock, botMsg)
-	assert.Equal(t, result, "Count: 666", "!stats")
+	assert.Equal(t, result, "Number of definitions: 666", "!stats")
 }
 
 func TestProcessingPing(t *testing.T) {
 
-	dbMock := &db.MockZbotDatabase{
+	dbMock := &db.ZbotDatabaseMock{
 		Level: "666",
 		File:  "hola.db",
 	}
 
-	botMsg := tb.Message{Text: "!ping", Sender: &tb.User{Username: "zbot_test"}}
+	botMsg := tb.Message{
+		Text: "!ping",
+		Sender: &tb.User{
+			Username: "zbot_test",
+		},
+		Chat: &tb.Chat{
+			Type:  "supergroup",
+			Title: "testgroup",
+		},
+	}
 	result := cmdProcessing(dbMock, botMsg)
 	assert.Equal(t, result, "pong!!", "!ping")
 }
 
 func TestProcessingRand(t *testing.T) {
 
-	dbMock := &db.MockZbotDatabase{
-		Rand_def: db.DefinitionItem{Term: "hola", Meaning: "gatolinux"},
+	dbMock := &db.ZbotDatabaseMock{
+		RandDef: []db.Definition{db.Definition{Term: "hola", Meaning: "gatolinux"}},
 	}
 
-	botMsg := tb.Message{Text: "!rand", Sender: &tb.User{Username: "zbot_test"}}
+	botMsg := tb.Message{Text: "!rand", Sender: &tb.User{Username: "zbot_test"}, Chat: &tb.Chat{Type: "private"}}
 	result := cmdProcessing(dbMock, botMsg)
 	assert.Equal(t, "[hola] - [gatolinux]", result, "!rand")
 }
 
 func TestProcessingGet(t *testing.T) {
 
-	dbMock := &db.MockZbotDatabase{
+	dbMock := &db.ZbotDatabaseMock{
 		Level:   "666",
 		File:    "hola.db",
 		Term:    "hola",
 		Meaning: "foo bar!",
 	}
 
-	botMsg := tb.Message{Text: "? hola", Sender: &tb.User{Username: "zbot_test"}}
+	botMsg := tb.Message{Text: "? hola", Sender: &tb.User{Username: "zbot_test"}, Chat: &tb.Chat{Type: "private"}}
 	result := cmdProcessing(dbMock, botMsg)
 	assert.Equal(t, result, "[hola] - [foo bar!]", "? def fail")
 
@@ -99,50 +121,51 @@ func TestProcessingGet(t *testing.T) {
 
 func TestProcessingFind(t *testing.T) {
 
-	dbMock := &db.MockZbotDatabase{
+	dbMock := &db.ZbotDatabaseMock{
 		Level:   "666",
 		File:    "hola.db",
 		Term:    "hola",
 		Meaning: "foo bar!",
 	}
 
-	botMsg := tb.Message{Text: "!find hola", Sender: &tb.User{Username: "zbot_test"}}
+	botMsg := tb.Message{Text: "!find hola", Sender: &tb.User{Username: "zbot_test"}, Chat: &tb.Chat{Type: "private"}}
 	result := cmdProcessing(dbMock, botMsg)
 	assert.Equal(t, result, "hola", "!find fail")
 }
 
 func TestProcessingSearch(t *testing.T) {
 
-	dbMock := &db.MockZbotDatabase{
-		Level:        "666",
-		File:         "hola.db",
-		Term:         "hola",
-		Meaning:      "foo bar!",
-		Find_terms:   []string{"hola", "chao", "foo_bar"},
-		Rand_def:     db.DefinitionItem{Term: "hola", Meaning: "gatolinux"},
-		Search_terms: []string{"hola", "chao", "foobar"},
+	dbMock := &db.ZbotDatabaseMock{
+		Level:       "666",
+		File:        "hola.db",
+		Term:        "hola",
+		Meaning:     "foo bar!",
+		FindTerms:   []string{"hola", "chao", "foo_bar"},
+		RandDef:     []db.Definition{db.Definition{Term: "hola", Meaning: "gatolinux"}},
+		SearchTerms: []string{"hola", "chao", "foobar"},
 	}
 
-	botMsg := tb.Message{Text: "!search hola", Sender: &tb.User{Username: "zbot_test"}}
+	botMsg := tb.Message{Text: "!search hola", Sender: &tb.User{Username: "zbot_test"}, Chat: &tb.Chat{Type: "private"}}
 	result := cmdProcessing(dbMock, botMsg)
 	assert.Equal(t, "hola chao foobar", result, "!rand")
 }
 
 func TestProcessingUserLevel(t *testing.T) {
 
-	dbMock := &db.MockZbotDatabase{
-		Level:        "666",
-		File:         "hola.db",
-		Term:         "hola",
-		Meaning:      "foo bar!",
-		Find_terms:   []string{"hola", "chao", "foo_bar"},
-		Rand_def:     db.DefinitionItem{Term: "hola", Meaning: "gatolinux"},
-		Search_terms: []string{"hola", "chao", "foobar"},
+	dbMock := &db.ZbotDatabaseMock{
+		Level:       "666",
+		File:        "hola.db",
+		Term:        "hola",
+		Meaning:     "foo bar!",
+		FindTerms:   []string{"hola", "chao", "foo_bar"},
+		RandDef:     []db.Definition{db.Definition{Term: "hola", Meaning: "gatolinux"}},
+		SearchTerms: []string{"hola", "chao", "foobar"},
 	}
 
 	botMsg := tb.Message{
 		Text:   "!level",
 		Sender: &tb.User{FirstName: "ssalvato", Username: "ssalvato"},
+		Chat:   &tb.Chat{Type: "private"},
 	}
 	result := cmdProcessing(dbMock, botMsg)
 	assert.Equal(t, "ssalvato level 666", result, "!level self user")
@@ -150,14 +173,14 @@ func TestProcessingUserLevel(t *testing.T) {
 
 func TestProcessingUserIgnoreList(t *testing.T) {
 
-	dbMock := &db.MockZbotDatabase{
-		Level:        "666",
-		File:         "hola.db",
-		Term:         "hola",
-		Meaning:      "foo bar!",
-		Find_terms:   []string{"hola", "chao", "foo_bar"},
-		Rand_def:     db.DefinitionItem{Term: "hola", Meaning: "gatolinux"},
-		Search_terms: []string{"hola", "chao", "foobar"},
+	dbMock := &db.ZbotDatabaseMock{
+		Level:       "666",
+		File:        "hola.db",
+		Term:        "hola",
+		Meaning:     "foo bar!",
+		FindTerms:   []string{"hola", "chao", "foo_bar"},
+		RandDef:     []db.Definition{db.Definition{Term: "hola", Meaning: "gatolinux"}},
+		SearchTerms: []string{"hola", "chao", "foobar"},
 		User_ignored: []db.UserIgnore{
 			{Username: "ssalvato", Since: "1231", Until: "4564"},
 		},
@@ -166,6 +189,7 @@ func TestProcessingUserIgnoreList(t *testing.T) {
 	botMsg := tb.Message{
 		Text:   "!ignore list",
 		Sender: &tb.User{FirstName: "ssalvato", Username: "ssalvato"},
+		Chat:   &tb.Chat{Type: "private"},
 	}
 	result := cmdProcessing(dbMock, botMsg)
 	assert.Equal(t, "[ @ssalvato ] since [01-01-1970 00:20:31 UTC] until [01-01-1970 01:16:04 UTC]", result, "!ignore list")
@@ -173,20 +197,21 @@ func TestProcessingUserIgnoreList(t *testing.T) {
 
 func TestProcessingUserIgnoreInsert(t *testing.T) {
 
-	dbMock := &db.MockZbotDatabase{
+	dbMock := &db.ZbotDatabaseMock{
 		Level:        "666",
 		File:         "hola.db",
 		Term:         "hola",
 		Meaning:      "foo bar!",
-		Find_terms:   []string{"hola", "chao", "foo_bar"},
-		Rand_def:     db.DefinitionItem{Term: "hola", Meaning: "gatolinux"},
-		Search_terms: []string{"hola", "chao", "foobar"},
+		FindTerms:    []string{"hola", "chao", "foo_bar"},
+		RandDef:      []db.Definition{db.Definition{Term: "hola", Meaning: "gatolinux"}},
+		SearchTerms:  []string{"hola", "chao", "foobar"},
 		User_ignored: []db.UserIgnore{{Username: "ssalvatori", Since: "1231", Until: "4564"}},
 	}
 
 	botMsg := tb.Message{
 		Text:   "!ignore add rigo",
 		Sender: &tb.User{FirstName: "ssalvatori", Username: "ssalvatori"},
+		Chat:   &tb.Chat{Type: "private"},
 	}
 	result := cmdProcessing(dbMock, botMsg)
 	assert.Equal(t, "User [rigo] ignored for 10 minutes", result, "!ignore add OK")
@@ -194,6 +219,7 @@ func TestProcessingUserIgnoreInsert(t *testing.T) {
 	botMsg = tb.Message{
 		Text:   "!ignore add ssalvatori",
 		Sender: &tb.User{FirstName: "ssalvatori", Username: "ssalvatori"},
+		Chat:   &tb.Chat{Type: "private"},
 	}
 	result = cmdProcessing(dbMock, botMsg)
 	assert.Equal(t, "You can't ignore yourself", result, "!ignore add myself")
@@ -201,7 +227,7 @@ func TestProcessingUserIgnoreInsert(t *testing.T) {
 }
 
 func TestProcessingLearnReplyTo(t *testing.T) {
-	dbMock := &db.MockZbotDatabase{
+	dbMock := &db.ZbotDatabaseMock{
 		Level: "666",
 		File:  "hola.db",
 	}
@@ -217,6 +243,7 @@ func TestProcessingLearnReplyTo(t *testing.T) {
 				Username: "otheruser",
 			},
 		},
+		Chat: &tb.Chat{Type: "private"},
 	}
 	result := cmdProcessing(dbMock, botMsg)
 
@@ -224,7 +251,7 @@ func TestProcessingLearnReplyTo(t *testing.T) {
 }
 
 func TestMessageProcessing(t *testing.T) {
-	dbMock := &db.MockZbotDatabase{
+	dbMock := &db.ZbotDatabaseMock{
 		Level: "666",
 		File:  "hola.db",
 	}
@@ -242,6 +269,7 @@ func TestMessageProcessing(t *testing.T) {
 				Username: "otheruser",
 			},
 		},
+		Chat: &tb.Chat{Type: "private"},
 	}
 
 	result := messagesProcessing(dbMock, &botMsg)
@@ -250,7 +278,7 @@ func TestMessageProcessing(t *testing.T) {
 }
 
 func TestMessagesProcessingIgnoredUser(t *testing.T) {
-	dbMock := &db.MockZbotDatabase{
+	dbMock := &db.ZbotDatabaseMock{
 		Level:       "666",
 		File:        "hola.db",
 		Ignore_User: true,
@@ -269,6 +297,7 @@ func TestMessagesProcessingIgnoredUser(t *testing.T) {
 				Username: "otheruser",
 			},
 		},
+		Chat: &tb.Chat{Type: "private"},
 	}
 
 	result := messagesProcessing(dbMock, &botMsg)
@@ -283,7 +312,7 @@ func TestGetDisabledCommands(t *testing.T) {
 }
 
 func TestProcessingNotEnoughPermissions(t *testing.T) {
-	dbMock := &db.MockZbotDatabase{
+	dbMock := &db.ZbotDatabaseMock{
 		Level:       "666",
 		File:        "hola.db",
 		Ignore_User: true,
@@ -303,6 +332,7 @@ func TestProcessingNotEnoughPermissions(t *testing.T) {
 				Username: "otheruser",
 			},
 		},
+		Chat: &tb.Chat{Type: "private"},
 	}
 
 	result := messagesProcessing(dbMock, &botMsg)
@@ -311,7 +341,7 @@ func TestProcessingNotEnoughPermissions(t *testing.T) {
 
 /*
 func TestExecute(t *testing.T) {
-	dbMock := &db.MockZbotDatabase{
+	dbMock := &db.ZbotDatabaseMock{
 		Level:             "666",
 		File:              "hola.db",
 		IgnoreListCleaned: false,

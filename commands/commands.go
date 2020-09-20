@@ -1,6 +1,7 @@
 package command
 
 import (
+	"errors"
 	"reflect"
 	"regexp"
 	"strings"
@@ -37,7 +38,12 @@ type Levels struct {
 }
 
 var (
+	//DisabledCommands list with commands that have to be ignored
 	DisabledCommands []string
+	//ErrNextCommand the command couldn't perform any actions.
+	ErrNextCommand = errors.New("no action in command")
+	//ErrInternalError internal error
+	ErrInternalError = errors.New("internal zbot error")
 )
 
 // CommandsList list of commandElement
@@ -65,15 +71,17 @@ func (cmdList *CommandsList) Chain(cmdDefinition string, cmd interface{}, level 
 }
 
 // Run commands against a msg for a given user
-func (cmdList *CommandsList) Run(cmd string, msg string, user user.User) string {
+func (cmdList *CommandsList) Run(cmd string, msg string, user user.User, chat string) string {
 	var output string
 	var err error
 
 	for e := cmdList.List.Front(); e != nil; e = e.Next() {
-		output, err = e.Value.(*commandElement).command.(zbotCommand).ProcessText(msg, user)
+		output, err = e.Value.(*commandElement).command.(zbotCommand).ProcessText(msg, user, chat)
 		if err != nil {
-			output = err.Error()
-			continue
+			if errors.Is(err, ErrNextCommand) {
+				continue
+			}
+			return "Internal Error, check logs"
 		}
 		return output
 	}
@@ -83,11 +91,11 @@ func (cmdList *CommandsList) Run(cmd string, msg string, user user.User) string 
 
 // zbotCommand interface to be implemented by each command
 type zbotCommand interface {
-	ProcessText(text string, username user.User) (string, error)
+	ProcessText(text string, username user.User, chat string) (string, error)
 }
 
-//getTerms transform DefinitionItem array into an array of term
-func getTerms(items []db.DefinitionItem) []string {
+//getTerms transform Definition array into an array of term
+func getTerms(items []db.Definition) []string {
 	var terms []string
 	for _, item := range items {
 		if item.Term != "" {
@@ -125,6 +133,7 @@ func GetCommandInformation(text string) string {
 	return commandName
 }
 
+//CheckPermission validate if the user has enought permisison to use a command (each command has a requiredLevel)
 func CheckPermission(command string, user user.User, requiredLevel int) bool {
 	log.Debug("Checking permission for [", command, "] and user ", user.Username)
 

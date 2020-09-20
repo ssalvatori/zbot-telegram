@@ -1,7 +1,6 @@
 package command
 
 import (
-	"errors"
 	"fmt"
 	"regexp"
 
@@ -16,13 +15,13 @@ type LockCommand struct {
 }
 
 //ProcessText run command
-func (handler *LockCommand) ProcessText(text string, user user.User) (string, error) {
+func (handler *LockCommand) ProcessText(text string, user user.User, chat string) (string, error) {
 
 	commandPattern := regexp.MustCompile(`^!lock\s(\S*)$`)
 
 	if commandPattern.MatchString(text) {
 		term := commandPattern.FindStringSubmatch(text)
-		def := db.DefinitionItem{
+		def := db.Definition{
 			Author: user.Username,
 			Term:   term[1],
 		}
@@ -34,5 +33,5 @@ func (handler *LockCommand) ProcessText(text string, user user.User) (string, er
 		return fmt.Sprintf("[%s] locked", def.Term), nil
 	}
 
-	return "", errors.New("text doesn't match")
+	return "", ErrNextCommand
 }
