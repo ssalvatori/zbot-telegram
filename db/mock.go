@@ -13,7 +13,8 @@ type ZbotDatabaseMock struct {
 	Term              string
 	Meaning           string
 	Author            string
-	Date              string
+	CreateAt          int64
+	UpdateAt          int64
 	FindTerms         []string
 	SearchTerms       []string
 	NotFound          bool
@@ -108,7 +109,7 @@ func (d *ZbotDatabaseMock) Get(term string, chat string) (Definition, error) {
 	if d.Error {
 		return Definition{}, errors.New("mock")
 	}
-	return Definition{Term: d.Term, Meaning: d.Meaning, Author: d.Author, Date: d.Date}, nil
+	return Definition{Term: d.Term, Meaning: d.Meaning, Author: d.Author, UpdatedAt: d.UpdateAt}, nil
 }
 
 //_set mock

@@ -49,7 +49,7 @@ func (handler *WhoCommand) ProcessText(text string, user user.User, chat string)
 			// }
 		}
 
-		return fmt.Sprintf("[%s] by [%s] on [%s] hits [%d]", Item.Term, Item.Author, Item.UpdatedAt.Format("2006-01-02"), Item.Hits), nil
+		return fmt.Sprintf("[%s] by [%s] on [%s] hits [%d]", Item.Term, Item.Author, Item.UpdatedAt, Item.Hits), nil
 	}
 
 	return "", ErrNextCommand

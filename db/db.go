@@ -2,29 +2,28 @@ package db
 
 import (
 	"database/sql"
-	"time"
 
 	"gorm.io/gorm"
 )
 
 //Definition struct
 type Definition struct {
-	gorm.Model
+	// gorm.Model
 	ID      uint
-	Term    string
+	Term    string `gorm:"uniqueIndex"`
 	Meaning string
 	Author  string
-	Date    string
-	Chat    string
-	Hits    uint
-	Link    sql.NullInt32
+	// Date    string
+	Chat string
+	Hits uint
+	Link sql.NullInt32
 
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt sql.NullTime   `gorm:"default:null"`
-	Locked    sql.NullBool   `gorm:"default:false"`
-	LockedBy  sql.NullString `gorm:"default:null"`
-	DeletedBy sql.NullString `gorm:"default:null"`
+	CreatedAt int64 `gorm:"autoCreateTime"`
+	UpdatedAt int64 `gorm:"autoCreateTime;autoUpdateTime"`
+	DeletedAt gorm.DeletedAt
+	Locked    sql.NullBool `gorm:"default:false"`
+	LockedBy  sql.NullString
+	DeletedBy sql.NullString
 }
 
 //UserIgnore .

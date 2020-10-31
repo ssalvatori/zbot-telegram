@@ -26,3 +26,10 @@ func GetCurrentDirectory() string {
 	}
 	return ex
 }
+
+//ConvertToDate convert unix timestamp to dd-mm-YYYY hh:mm:ss
+// func ConvertToDate(unixtime int64, location string) string {
+// 	date
+
+// return date
+// }

@@ -47,6 +47,9 @@ func (d *ZbotDatabaseSqlite) Init() error {
 
 	db, err := gorm.Open(sqlite.Open(d.File), &gorm.Config{
 		Logger: newLogger,
+		NowFunc: func() time.Time {
+			return time.Now()
+		},
 	})
 
 	if err != nil {
@@ -217,7 +220,7 @@ func (d *ZbotDatabaseSqlite) Append(item Definition) error {
 
 	if !definition.Locked.Bool {
 		appenedMeaning := fmt.Sprintf("%s. %s", definition.Meaning, item.Meaning)
-		def := Definition{Meaning: appenedMeaning, Author: item.Author, Date: item.Date}
+		def := Definition{Meaning: appenedMeaning, Author: item.Author}
 		if err := d.DB.Debug().Model(&definition).Updates(def).Error; err != nil {
 			log.Error(err)
 			return err
