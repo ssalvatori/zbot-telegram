@@ -20,7 +20,7 @@ func TestWhoCommand(t *testing.T) {
 		CreateAt: 1604225446,
 	}
 	result, _ := whoCommand.ProcessText("!who foo", userTest, "testchat")
-	assert.Equal(t, "[foo] by [ssalvatori] on [2020-11-01 11:10:46 +0100 CET] hits [0]", result, "Who Command OK")
+	assert.Equal(t, "[foo] by [ssalvatori] on [2020-11-01 10:10:46 +0000 UTC] hits [0]", result, "Who Command OK")
 }
 
 func TestWhoCommandNotMatch(t *testing.T) {

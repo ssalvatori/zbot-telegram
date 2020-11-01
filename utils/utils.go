@@ -30,6 +30,7 @@ func GetCurrentDirectory() string {
 
 //ConvertToDateToUTC convert unix timestamp to dd-mm-YYYY hh:mm:ss
 func ConvertToDateToUTC(unixtime int64) string {
-	unixTimeUTC := time.Unix(unixtime, 0)
+	location, _ := time.LoadLocation("UTC")
+	unixTimeUTC := time.Unix(unixtime, 0).In(location)
 	return fmt.Sprint(unixTimeUTC)
 }
