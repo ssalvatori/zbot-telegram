@@ -1,4 +1,3 @@
-sudo: required
 language: go
 go:
   - 1.15.x
@@ -22,7 +21,7 @@ after_success:
   - $HOME/gopath/bin/gox -osarch="linux/amd64 linux/386" -cgo -ldflags "-X github.com/ssalvatori/zbot-telegram/zbot.version=`git describe --tags` -X github.com/ssalvatori/zbot-telegram/zbot.buildTime=`TZ=UTC date -u '+%Y-%m-%dT%H:%M:%SZ'` -X github.com/ssalvatori/zbot-telegram/zbot.gitHash=`git rev-parse --short HEAD`" -output "dist/{{.Dir}}-{{.OS}}-{{.Arch}}"
 deploy:
   provider: releases
-  skip_cleanup: true
+  cleanup: false
   file_glob: true
   file: dist/*
   api_key: "$GITHUB_API_SECURED"
