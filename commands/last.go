@@ -24,7 +24,7 @@ func (handler *LastCommand) ProcessText(text string, user user.User, chat string
 	commandPattern := regexp.MustCompile(`^!last$`)
 
 	if commandPattern.MatchString(text) {
-		lastItems, err := handler.Db.Last(10)
+		lastItems, err := handler.Db.Last(chat, 10)
 		if err != nil {
 			log.Error(err)
 			return "", err

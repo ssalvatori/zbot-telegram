@@ -38,17 +38,17 @@ type ZbotDatabase interface {
 	GetConnectionInfo() string
 	Init() error
 	Close()
-	Statistics() (string, error)
-	Last(int) ([]Definition, error)
-	Append(Definition) error
-	Top(int) ([]Definition, error)
-	Rand(int) ([]Definition, error)
+	Statistics(string) (string, error)
+	Last(string, int) ([]Definition, error)
+	Append(Definition, string) error
+	Top(string, int) ([]Definition, error)
+	Rand(string, int) ([]Definition, error)
 	Get(string, string) (Definition, error)
 	Set(Definition) (string, error)
 	_set(string, Definition) error
 	Find(string, string, int) ([]Definition, error)
 	Search(string, string, int) ([]Definition, error)
-	Forget(Definition) error
+	Forget(Definition, string) error
 	UserLevel(string) (string, error)
 	UserIgnoreInsert(string) error
 	//UserCheckIgnore return true if the user is on the ignore_list, false if it isn´t
@@ -56,6 +56,6 @@ type ZbotDatabase interface {
 	UserCleanupIgnorelist() error
 	UserIgnoreList() ([]UserIgnore, error)
 
-	Lock(Definition) error
+	Lock(Definition, string) error
 	IncreaseHits(uint) error
 }

@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"os"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -27,9 +28,8 @@ func GetCurrentDirectory() string {
 	return ex
 }
 
-//ConvertToDate convert unix timestamp to dd-mm-YYYY hh:mm:ss
-// func ConvertToDate(unixtime int64, location string) string {
-// 	date
-
-// return date
-// }
+//ConvertToDateToUTC convert unix timestamp to dd-mm-YYYY hh:mm:ss
+func ConvertToDateToUTC(unixtime int64) string {
+	unixTimeUTC := time.Unix(unixtime, 0)
+	return fmt.Sprint(unixTimeUTC)
+}

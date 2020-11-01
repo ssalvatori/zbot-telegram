@@ -20,7 +20,7 @@ func (handler *StatsCommand) ProcessText(text string, user user.User, chat strin
 	commandPattern := regexp.MustCompile(`^!stats$`)
 
 	if commandPattern.MatchString(text) {
-		statTotal, err := handler.Db.Statistics()
+		statTotal, err := handler.Db.Statistics(chat)
 		if err != nil {
 			log.Error(err)
 			return "", db.ErrInternalError

@@ -32,3 +32,9 @@ func TestGetCurrentDirectory(t *testing.T) {
 	assert.Equal(t, GetCurrentDirectory(), currentPath, "")
 
 }
+
+func TestConvertToDate(t *testing.T) {
+	date := ConvertToDateToUTC(1604225446)
+
+	assert.Equal(t, "2020-11-01 11:10:46 +0100 CET", date, "")
+}

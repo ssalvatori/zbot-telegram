@@ -69,10 +69,10 @@ func (d *ZbotDatabaseSqlite) Init() error {
 }
 
 //Statistics get total number of definitions
-func (d *ZbotDatabaseSqlite) Statistics() (string, error) {
+func (d *ZbotDatabaseSqlite) Statistics(chat string) (string, error) {
 
 	var count int64
-	if result := d.DB.Model(&Definition{}).Count(&count); result.Error != nil {
+	if result := d.DB.Model(&Definition{}).Where("chat = ? COLLATE NOCASE", chat).Count(&count); result.Error != nil {
 		log.Error(result.Error)
 		return "", result.Error
 	}
@@ -81,9 +81,9 @@ func (d *ZbotDatabaseSqlite) Statistics() (string, error) {
 }
 
 //Last get last X definitions
-func (d *ZbotDatabaseSqlite) Last(limit int) ([]Definition, error) {
+func (d *ZbotDatabaseSqlite) Last(chat string, limit int) ([]Definition, error) {
 	definitions := []Definition{}
-	if err := d.DB.Debug().Model(&Definition{}).Limit(limit).Order("ID desc").Find(&definitions).Error; err != nil {
+	if err := d.DB.Debug().Model(&Definition{}).Where("chat = ? COLLATE NOCASE", chat).Limit(limit).Order("ID desc").Find(&definitions).Error; err != nil {
 		log.Error(err)
 		return nil, err
 	}
@@ -91,9 +91,9 @@ func (d *ZbotDatabaseSqlite) Last(limit int) ([]Definition, error) {
 }
 
 //Top get definition with the most numbers of hits
-func (d *ZbotDatabaseSqlite) Top(limit int) ([]Definition, error) {
+func (d *ZbotDatabaseSqlite) Top(chat string, limit int) ([]Definition, error) {
 	definitions := []Definition{}
-	if result := d.DB.Debug().Model(&Definition{}).Limit(limit).Order("hits desc").Find(&definitions); result.Error != nil {
+	if result := d.DB.Debug().Model(&Definition{}).Where("chat = ? COLLATE NOCASE", chat).Limit(limit).Order("hits desc").Find(&definitions); result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return []Definition{}, ErrNotFound
 		}
@@ -103,9 +103,9 @@ func (d *ZbotDatabaseSqlite) Top(limit int) ([]Definition, error) {
 }
 
 //Rand get a random definition from the DB
-func (d *ZbotDatabaseSqlite) Rand(limit int) ([]Definition, error) {
+func (d *ZbotDatabaseSqlite) Rand(chat string, limit int) ([]Definition, error) {
 	definitions := []Definition{}
-	if result := d.DB.Debug().Model(&Definition{}).Limit(limit).Order("random()").Find(&definitions); result.Error != nil {
+	if result := d.DB.Debug().Model(&Definition{}).Where("chat = ? COLLATE NOCASE", chat).Limit(limit).Order("random()").Find(&definitions); result.Error != nil {
 		log.Error(result.Error)
 		return []Definition{}, result.Error
 	}
@@ -117,7 +117,7 @@ func (d *ZbotDatabaseSqlite) Rand(limit int) ([]Definition, error) {
 func (d *ZbotDatabaseSqlite) Get(term string, chat string) (Definition, error) {
 	var def Definition
 
-	if result := d.DB.Debug().Model(&Definition{}).Where("term = ? COLLATE NOCASE", term).First(&def); result.Error != nil {
+	if result := d.DB.Debug().Model(&Definition{}).Where("term = ? COLLATE NOCASE", term, chat).Where("chat = ? COLLATE NOCASE", chat).First(&def); result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return Definition{}, ErrNotFound
 		}
@@ -142,7 +142,7 @@ func (d *ZbotDatabaseSqlite) Find(criteria string, chat string, limit int) ([]De
 	definitions := []Definition{}
 	criteria = fmt.Sprintf("%%%s%%", criteria)
 
-	if result := d.DB.Debug().Model(&Definition{}).Where("meaning like ? COLLATE NOCASE", criteria).Limit(limit).Order("random()").Find(&definitions); result.Error != nil {
+	if result := d.DB.Debug().Model(&Definition{}).Where("meaning like ? COLLATE NOCASE", criteria).Where("chat = ? COLLATE NOCASE", chat).Limit(limit).Order("random()").Find(&definitions); result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return []Definition{}, ErrNotFound
 		}
@@ -159,7 +159,7 @@ func (d *ZbotDatabaseSqlite) Search(criteria string, chat string, limit int) ([]
 	definitions := []Definition{}
 	criteria = fmt.Sprintf("%%%s%%", criteria)
 
-	if result := d.DB.Debug().Model(&Definition{}).Where("term like ? COLLATE NOCASE", criteria).Limit(limit).Order("random()").Find(&definitions); result.Error != nil {
+	if result := d.DB.Debug().Model(&Definition{}).Where("term like ? COLLATE NOCASE", criteria).Where("chat = ? COLLATE NOCASE", chat).Limit(limit).Order("random()").Find(&definitions); result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return []Definition{}, ErrNotFound
 		}
@@ -208,7 +208,7 @@ func (d *ZbotDatabaseSqlite) _set(term string, definition Definition) error {
 }
 
 //Append append meaning to a given definition
-func (d *ZbotDatabaseSqlite) Append(item Definition) error {
+func (d *ZbotDatabaseSqlite) Append(item Definition, chat string) error {
 
 	definition, err := d.Get(item.Term, item.Chat)
 	if err != nil {
@@ -231,7 +231,7 @@ func (d *ZbotDatabaseSqlite) Append(item Definition) error {
 }
 
 //Lock a given definition (no more append or forget)
-func (d *ZbotDatabaseSqlite) Lock(item Definition) error {
+func (d *ZbotDatabaseSqlite) Lock(item Definition, chat string) error {
 	definition, err := d.Get(item.Term, item.Chat)
 	if err != nil {
 		log.Error(err)
@@ -240,7 +240,7 @@ func (d *ZbotDatabaseSqlite) Lock(item Definition) error {
 
 	if !definition.Locked.Bool {
 		def := Definition{Locked: sql.NullBool{Bool: true, Valid: true}, LockedBy: sql.NullString{String: item.Author}}
-		if err := d.DB.Debug().Model(&definition).Updates(def).Error; err != nil {
+		if err := d.DB.Debug().Model(&definition).Updates(def).Where("chat = ? COLLATE NOCASE", chat).Error; err != nil {
 			log.Error(err)
 			return err
 		}
@@ -250,10 +250,12 @@ func (d *ZbotDatabaseSqlite) Lock(item Definition) error {
 	return fmt.Errorf("Already locked by  %q", definition.LockedBy.String)
 }
 
-func (d *ZbotDatabaseSqlite) Forget(item Definition) error {
+//Forget No implemented yet
+func (d *ZbotDatabaseSqlite) Forget(item Definition, chat string) error {
 	return nil
 }
 
+//UserIgnoreList No Implemeted yet
 func (d *ZbotDatabaseSqlite) UserIgnoreList() ([]UserIgnore, error) {
 	return nil, nil
 }

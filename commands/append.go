@@ -28,7 +28,7 @@ func (handler *AppendCommand) ProcessText(text string, user user.User, chat stri
 			// Date:    time.Now().Format("2006-01-02"),
 			Chat: chat,
 		}
-		err := handler.Db.Append(def)
+		err := handler.Db.Append(def, chat)
 		if err != nil {
 			log.Error(err.Error())
 			return "", ErrInternalError

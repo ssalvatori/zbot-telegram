@@ -23,7 +23,7 @@ func (handler *ForgetCommand) ProcessText(text string, user user.User, chat stri
 		def := db.Definition{
 			Term: term[1],
 		}
-		err := handler.Db.Forget(def)
+		err := handler.Db.Forget(def, chat)
 		if err != nil {
 			return "", ErrInternalError
 		}

@@ -25,7 +25,7 @@ func (handler *LockCommand) ProcessText(text string, user user.User, chat string
 			Author: user.Username,
 			Term:   term[1],
 		}
-		err := handler.Db.Lock(def)
+		err := handler.Db.Lock(def, chat)
 		if err != nil {
 			log.Error(err)
 			return "", err

@@ -42,7 +42,7 @@ func (d *ZbotDatabaseMock) Close() {
 }
 
 //Statistics mock
-func (d *ZbotDatabaseMock) Statistics() (string, error) {
+func (d *ZbotDatabaseMock) Statistics(chat string) (string, error) {
 	if d.Error {
 		return "", errors.New("mock")
 	}
@@ -50,7 +50,7 @@ func (d *ZbotDatabaseMock) Statistics() (string, error) {
 }
 
 //Top mock
-func (d *ZbotDatabaseMock) Top(limit int) ([]Definition, error) {
+func (d *ZbotDatabaseMock) Top(chat string, limit int) ([]Definition, error) {
 	var items []Definition
 
 	if d.Error {
@@ -65,7 +65,7 @@ func (d *ZbotDatabaseMock) Top(limit int) ([]Definition, error) {
 }
 
 //Rand mock
-func (d *ZbotDatabaseMock) Rand(limit int) ([]Definition, error) {
+func (d *ZbotDatabaseMock) Rand(chat string, limit int) ([]Definition, error) {
 	if d.Error {
 		return []Definition{}, errors.New("mock")
 	}
@@ -73,7 +73,7 @@ func (d *ZbotDatabaseMock) Rand(limit int) ([]Definition, error) {
 }
 
 //Last mock
-func (d *ZbotDatabaseMock) Last(last int) ([]Definition, error) {
+func (d *ZbotDatabaseMock) Last(chat string, last int) ([]Definition, error) {
 
 	if d.Error {
 		return []Definition{}, errors.New("mock")
@@ -167,7 +167,7 @@ func (d *ZbotDatabaseMock) UserCleanupIgnorelist() error {
 }
 
 //Lock mock
-func (d *ZbotDatabaseMock) Lock(item Definition) error {
+func (d *ZbotDatabaseMock) Lock(item Definition, chat string) error {
 	if d.Error {
 		return errors.New("mock")
 	}
@@ -175,7 +175,7 @@ func (d *ZbotDatabaseMock) Lock(item Definition) error {
 }
 
 //Append mock
-func (d *ZbotDatabaseMock) Append(item Definition) error {
+func (d *ZbotDatabaseMock) Append(item Definition, chat string) error {
 	if d.Error {
 		return errors.New("mock")
 	}
@@ -183,7 +183,7 @@ func (d *ZbotDatabaseMock) Append(item Definition) error {
 }
 
 //Forget mock
-func (d *ZbotDatabaseMock) Forget(item Definition) error {
+func (d *ZbotDatabaseMock) Forget(item Definition, chat string) error {
 	if d.Error {
 		return errors.New("mock")
 	}

@@ -68,9 +68,23 @@ func Execute() {
 	log.Info("Configuration Flags Ignore: ", Flags.Ignore)
 	log.Info("Configuration Flags Level: ", Flags.Level)
 
+	poller := &tb.LongPoller{Timeout: 15 * time.Second}
+	spamProtected := tb.NewMiddlewarePoller(poller, func(upd *tb.Update) bool {
+		if upd.Message == nil {
+			return true
+		}
+
+		if strings.Contains(upd.Message.Text, "spam") {
+			return false
+		}
+
+		return true
+	})
+
 	bot, err := tb.NewBot(tb.Settings{
-		Token:  APIToken,
-		Poller: &tb.LongPoller{Timeout: 10 * time.Second},
+		Token: APIToken,
+		// Poller: &tb.LongPoller{Timeout: 10 * time.Second},
+		Poller: spamProtected,
 	})
 
 	if err != nil {
@@ -89,17 +103,24 @@ func Execute() {
 	}
 
 	bot.Handle(tb.OnText, func(m *tb.Message) {
-		var response = messagesProcessing(Db, m)
+		chatName := ""
+		if m.Chat.Type != "private" {
+			chatName = m.Chat.Title
+		}
+
+		var response = messagesProcessing(Db, m, chatName)
 		if response != "" {
 			bot.Send(m.Chat, response)
 		}
 	})
 
+	time.AfterFunc(100*time.Second, bot.Stop)
+
 	bot.Start()
 }
 
 //messagesProcessing
-func messagesProcessing(db db.ZbotDatabase, message *tb.Message) string {
+func messagesProcessing(db db.ZbotDatabase, message *tb.Message, chatName string) string {
 
 	/*
 		message.Chat.Title // Channel name
@@ -113,7 +134,7 @@ func messagesProcessing(db db.ZbotDatabase, message *tb.Message) string {
 	if !checkIgnoreList(db, username) {
 		if processingMsg.MatchString(message.Text) {
 			log.Debug(fmt.Sprintf("Received a message from %s with the text: %s", username, message.Text))
-			return cmdProcessing(db, *message)
+			return cmdProcessing(db, *message, chatName)
 		}
 	} else {
 		log.Debug(fmt.Sprintf("User [%s] ignored", username))
@@ -136,10 +157,10 @@ func checkIgnoreList(db db.ZbotDatabase, username string) bool {
 }
 
 //cmdProcessing process message using commands
-func cmdProcessing(db db.ZbotDatabase, msg tb.Message) string {
+func cmdProcessing(db db.ZbotDatabase, msg tb.Message, chatName string) string {
 
 	commandName := command.GetCommandInformation(msg.Text)
-	chatName := ""
+	// chatName := ""
 
 	if command.IsCommandDisabled(commandName) {
 		log.Debug("Command [", commandName, "] is disabled")
@@ -147,9 +168,6 @@ func cmdProcessing(db db.ZbotDatabase, msg tb.Message) string {
 	}
 
 	user := user.BuildUser(msg.Sender, db)
-	if msg.Chat.Type != "private" {
-		chatName = msg.Chat.Title
-	}
 
 	if Flags.Level {
 		requiredLevel := command.GetMinimumLevel(commandName, levelsConfig)

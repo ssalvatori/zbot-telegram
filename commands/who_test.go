@@ -12,14 +12,15 @@ var whoCommand = WhoCommand{}
 func TestWhoCommand(t *testing.T) {
 
 	whoCommand.Db = &db.ZbotDatabaseMock{
-		Term:    "foo",
-		Meaning: "bar",
-		Author:  "ssalvatori",
-		Date:    "2017-03-22",
-		Level:   "100",
+		Term:     "foo",
+		Meaning:  "bar",
+		Author:   "ssalvatori",
+		Level:    "100",
+		UpdateAt: 1604225446,
+		CreateAt: 1604225446,
 	}
 	result, _ := whoCommand.ProcessText("!who foo", userTest, "testchat")
-	assert.Equal(t, "[foo] by [ssalvatori] on [0001-01-01] hits [0]", result, "Who Command OK")
+	assert.Equal(t, "[foo] by [ssalvatori] on [2020-11-01 11:10:46 +0100 CET] hits [0]", result, "Who Command OK")
 }
 
 func TestWhoCommandNotMatch(t *testing.T) {

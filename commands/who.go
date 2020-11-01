@@ -8,6 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/ssalvatori/zbot-telegram/user"
+	"github.com/ssalvatori/zbot-telegram/utils"
 )
 
 // WhoCommand definition
@@ -49,7 +50,7 @@ func (handler *WhoCommand) ProcessText(text string, user user.User, chat string)
 			// }
 		}
 
-		return fmt.Sprintf("[%s] by [%s] on [%s] hits [%d]", Item.Term, Item.Author, Item.UpdatedAt, Item.Hits), nil
+		return fmt.Sprintf("[%s] by [%s] on [%v] hits [%d]", Item.Term, Item.Author, utils.ConvertToDateToUTC(Item.UpdatedAt), Item.Hits), nil
 	}
 
 	return "", ErrNextCommand

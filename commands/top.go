@@ -43,7 +43,7 @@ func (handler *TopCommand) ProcessText(text string, user user.User, chat string)
 			limit = 100
 		}
 
-		items, err := handler.Db.Top(limit)
+		items, err := handler.Db.Top(chat, limit)
 		if err != nil {
 			if errors.Is(err, db.ErrNotFound) {
 				return fmt.Sprintf("no results"), nil
