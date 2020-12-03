@@ -22,11 +22,18 @@ func (handler *WhoCommand) SetDb(db db.ZbotDatabase) {
 }
 
 //ProcessText run command
-func (handler *WhoCommand) ProcessText(text string, user user.User, chat string) (string, error) {
+func (handler *WhoCommand) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
+
+	if private {
+		return "", ErrNextCommand
+	}
 
 	commandPattern := regexp.MustCompile(`^!who\s(\S*)$`)
 
 	if commandPattern.MatchString(text) {
+		if checkLearnCommandOnChannel(chat) {
+			return "", ErrLearnDisabledChannel
+		}
 
 		term := commandPattern.FindStringSubmatch(text)
 		item := db.Definition{

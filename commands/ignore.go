@@ -10,6 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/ssalvatori/zbot-telegram/user"
+	"github.com/ssalvatori/zbot-telegram/utils"
 )
 
 //IgnoreCommand definition
@@ -20,7 +21,12 @@ type IgnoreCommand struct {
 const dateFormat string = "02-01-2006 15:04:05 MST" //dd-mm-yyyy hh:ii:ss TZ
 
 //ProcessText run command
-func (handler *IgnoreCommand) ProcessText(text string, user user.User, chat string) (string, error) {
+func (handler *IgnoreCommand) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
+
+	if private {
+		return "", ErrNextCommand
+	}
+
 	commandPattern := regexp.MustCompile(`^!ignore\s(\S*)(\s(\S*))?`)
 	result := ""
 
@@ -58,8 +64,8 @@ func getUserIgnored(users []db.UserIgnore) []string {
 	var usersIgnored []string
 	for _, userIgnore := range users {
 		if userIgnore.Username != "" {
-			since, until := convertDates(userIgnore.Since, userIgnore.Until)
-			userString := fmt.Sprintf("[ @%s ] since [%s] until [%s]", userIgnore.Username, since, until)
+			// since, until := convertDates(userIgnore.Since, userIgnore.Until)
+			userString := fmt.Sprintf("[ @%s ] since [%v] until [%v]", userIgnore.Username, utils.ConvertToDateToUTC(userIgnore.CreatedAt), utils.ConvertToDateToUTC(userIgnore.ValidUntil))
 			usersIgnored = append(usersIgnored, userString)
 		}
 	}

@@ -17,12 +17,19 @@ type GetCommand struct {
 }
 
 //ProcessText run command
-func (handler *GetCommand) ProcessText(text string, user user.User, chat string) (string, error) {
+func (handler *GetCommand) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
+
+	if private {
+		return "", ErrNextCommand
+	}
 
 	commandPattern := regexp.MustCompile(`^\?\s(\S*)`)
 	var result string
 
 	if commandPattern.MatchString(text) {
+		if checkLearnCommandOnChannel(chat) {
+			return "", ErrLearnDisabledChannel
+		}
 		term := commandPattern.FindStringSubmatch(text)
 		definition, err := handler.Db.Get(strings.ToLower(term[1]), chat)
 		if err != nil {

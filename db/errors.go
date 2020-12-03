@@ -9,4 +9,6 @@ var (
 	ErrLocked = errors.New("Definition locked")
 	//ErrInternalError internal error
 	ErrInternalError = errors.New("Internal error")
+	//ErrLearnDisabledChannel learn commands are disabled for a channel
+	ErrLearnDisabledChannel = errors.New("Learn commands disabled for this channel")
 )

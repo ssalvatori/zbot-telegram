@@ -16,7 +16,7 @@ func TestLevelCommandOK(t *testing.T) {
 	levelCommand.Db = &db.ZbotDatabaseMock{
 		Level: "1000",
 	}
-	result, _ := levelCommand.ProcessText("!level", userTest, "testchat")
+	result, _ := levelCommand.ProcessText("!level", userTest, "testchat", false)
 	assert.Equal(t, "ssalvatori level 1000", result, "Get Level from the same user")
 }
 
@@ -40,7 +40,7 @@ func TestProcessText(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got, _ := levelCommand.ProcessText(tt.cmd, tt.user, "testchat"); !reflect.DeepEqual(got, tt.want) {
+			if got, _ := levelCommand.ProcessText(tt.cmd, tt.user, "testchat", false); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("LevelCommand.ProcessText() = %v, want %v", got, tt.want)
 			}
 		})
@@ -79,7 +79,7 @@ func TestLevelCommandError(t *testing.T) {
 		Error:   true,
 	}
 
-	_, err := levelCommand.ProcessText("!level", userTest, "testchat")
+	_, err := levelCommand.ProcessText("!level", userTest, "testchat", false)
 	// assert.Equal(t, "Internal error", err.Error(), "Db error")
 	assert.Error(t, err, "Internal Error")
 }

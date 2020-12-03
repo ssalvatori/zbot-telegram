@@ -16,7 +16,7 @@ func TestGetCommandOK(t *testing.T) {
 		Meaning: "bar",
 	}
 
-	result, _ := getCommand.ProcessText("? foo", userTest, "testchat")
+	result, _ := getCommand.ProcessText("? foo", userTest, "testchat", false)
 	assert.Equal(t, "[foo] - [bar]", result, "Get Command")
 
 }
@@ -26,16 +26,16 @@ func TestGetCommandNoFound(t *testing.T) {
 		NotFound: true,
 	}
 
-	result, _ := getCommand.ProcessText("? foo2", userTest, "testchat")
+	result, _ := getCommand.ProcessText("? foo2", userTest, "testchat", false)
 	assert.Equal(t, "[foo2] Not found!", result, "Get no next command")
 }
 
 func TestGetCommandNotMatch(t *testing.T) {
 
-	result, _ := getCommand.ProcessText("?6", userTest, "testchat")
+	result, _ := getCommand.ProcessText("?6", userTest, "testchat", false)
 	assert.Equal(t, "", result, "Empty output doesn't match")
 
-	_, err := getCommand.ProcessText("?6", userTest, "testchat")
+	_, err := getCommand.ProcessText("?6", userTest, "testchat", false)
 	assert.Equal(t, "no action in command", err.Error(), "Error output doesn't match")
 }
 
@@ -45,6 +45,6 @@ func TestGetCommandError(t *testing.T) {
 		RandDef: []db.Definition{db.Definition{Term: "foo", Meaning: "bar"}},
 		Error:   true,
 	}
-	_, err := getCommand.ProcessText("? foo", userTest, "testchat")
+	_, err := getCommand.ProcessText("? foo", userTest, "testchat", false)
 	assert.Error(t, err, "DB error")
 }

@@ -28,9 +28,11 @@ type Definition struct {
 
 //UserIgnore .
 type UserIgnore struct {
-	Username string
-	Since    string
-	Until    string
+	Username   string
+	CreatedAt  int64 `gorm:"autoCreateTime"`
+	ValidUntil int64
+	CreatedBy  string
+	Chat       string
 }
 
 //ZbotDatabase DB interface for Zbot

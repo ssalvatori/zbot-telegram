@@ -18,11 +18,18 @@ type SearchCommand struct {
 var findSearch = 10
 
 //ProcessText Run module
-func (handler *SearchCommand) ProcessText(text string, user user.User, chat string) (string, error) {
+func (handler *SearchCommand) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
+
+	if private {
+		return "", ErrNextCommand
+	}
 
 	commandPattern := regexp.MustCompile(`^!search\s(\S*)`)
 
 	if commandPattern.MatchString(text) {
+		if checkLearnCommandOnChannel(chat) {
+			return "", ErrLearnDisabledChannel
+		}
 		term := commandPattern.FindStringSubmatch(text)
 		results, err := handler.Db.Search(term[1], chat, findSearch)
 		if err != nil {

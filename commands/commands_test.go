@@ -76,7 +76,7 @@ type FakeCommand2 struct {
 	cmd string
 }
 
-func (handler *FakeCommand2) ProcessText(text string, user user.User, chat string) (string, error) {
+func (handler *FakeCommand2) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
 	if text != "!fakecommand2" {
 		return "", ErrNextCommand
 	}
@@ -102,9 +102,9 @@ func TestChainAndRun(t *testing.T) {
 	cmdList.Chain("fakecommand3", fake3Command, 0)
 	assert.Equal(t, 3, cmdList.List.Len(), "Chain add elements in the list")
 
-	assert.Equal(t, "Fake 2", cmdList.Run("fakecommand2", "!fakecommand2", userTest, "test"))
-	assert.Equal(t, "", cmdList.Run("fakecommand1", "!fakecommand1", userTest, "test"))
-	assert.Equal(t, "", cmdList.Run("fakecommand2", "!fakecommand5", userTest, "test"))
+	assert.Equal(t, "Fake 2", cmdList.Run("fakecommand2", "!fakecommand2", userTest, "test", false))
+	assert.Equal(t, "", cmdList.Run("fakecommand1", "!fakecommand1", userTest, "test", false))
+	assert.Equal(t, "", cmdList.Run("fakecommand2", "!fakecommand5", userTest, "test", false))
 
 }
 

@@ -15,11 +15,18 @@ type StatsCommand struct {
 }
 
 // ProcessText run command
-func (handler *StatsCommand) ProcessText(text string, user user.User, chat string) (string, error) {
+func (handler *StatsCommand) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
+
+	if private {
+		return "", ErrNextCommand
+	}
 
 	commandPattern := regexp.MustCompile(`^!stats$`)
 
 	if commandPattern.MatchString(text) {
+		if checkLearnCommandOnChannel(chat) {
+			return "", ErrLearnDisabledChannel
+		}
 		statTotal, err := handler.Db.Statistics(chat)
 		if err != nil {
 			log.Error(err)

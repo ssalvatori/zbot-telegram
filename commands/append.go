@@ -15,11 +15,18 @@ type AppendCommand struct {
 }
 
 // ProcessText run command
-func (handler *AppendCommand) ProcessText(text string, user user.User, chat string) (string, error) {
+func (handler *AppendCommand) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
+
+	if private {
+		return "", ErrNextCommand
+	}
 
 	commandPattern := regexp.MustCompile(`(?s)^!append\s(\S*)\s(.*)`)
 
 	if commandPattern.MatchString(text) {
+		if checkLearnCommandOnChannel(chat) {
+			return "", ErrLearnDisabledChannel
+		}
 		term := commandPattern.FindStringSubmatch(text)
 		def := db.Definition{
 			Term:    term[1],

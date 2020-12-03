@@ -74,7 +74,12 @@ func (handler *LevelCommand) PaserCommand(cmd string, user string) map[string]st
 }
 
 //ProcessText run command
-func (handler *LevelCommand) ProcessText(text string, user user.User, chat string) (string, error) {
+func (handler *LevelCommand) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
+
+	if private {
+		return "", ErrNextCommand
+	}
+
 	commandPattern := regexp.MustCompile(`^!level(\s|$)(\S*)\s?(\S+)?\s?(\d+)?`)
 	var result string
 	var err error

@@ -31,3 +31,5 @@ coverage.sh
 zbot-telegram
 *.db
 /venv
+zbot_dev.conf
+plex.py

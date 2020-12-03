@@ -19,11 +19,18 @@ type LastCommand struct {
 func (handler *LastCommand) SetDb(db db.ZbotDatabase) {}
 
 // ProcessText run command
-func (handler *LastCommand) ProcessText(text string, user user.User, chat string) (string, error) {
+func (handler *LastCommand) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
+
+	if private {
+		return "", ErrNextCommand
+	}
 
 	commandPattern := regexp.MustCompile(`^!last$`)
 
 	if commandPattern.MatchString(text) {
+		if checkLearnCommandOnChannel(chat) {
+			return "", ErrLearnDisabledChannel
+		}
 		lastItems, err := handler.Db.Last(chat, 10)
 		if err != nil {
 			log.Error(err)

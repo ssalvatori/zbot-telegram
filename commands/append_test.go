@@ -16,17 +16,17 @@ func TestAppendCommandOK(t *testing.T) {
 		Meaning: "bar",
 	}
 
-	result, _ := appendCommand.ProcessText("!append foo bar", userTest, "testchat")
+	result, _ := appendCommand.ProcessText("!append foo bar", userTest, "testchat", false)
 	assert.Equal(t, "[foo] = [bar]", result, "Append Command")
 
 }
 
 func TestAppendCommandNotMatch(t *testing.T) {
 
-	result, _ := appendCommand.ProcessText("!append6 foor ala", userTest, "testchat")
+	result, _ := appendCommand.ProcessText("!append6 foor ala", userTest, "testchat", false)
 	assert.Equal(t, "", result, "Empty output doesn't match")
 
-	_, err := appendCommand.ProcessText("!append6 fo lala", userTest, "testchat")
+	_, err := appendCommand.ProcessText("!append6 fo lala", userTest, "testchat", false)
 	assert.Equal(t, "no action in command", err.Error(), "Error output doesn't match")
 }
 
@@ -38,13 +38,13 @@ func TestAppendCommandError(t *testing.T) {
 		},
 		Error: true,
 	}
-	_, err := appendCommand.ProcessText("!append foo lala", userTest, "testchat")
+	_, err := appendCommand.ProcessText("!append foo lala", userTest, "testchat", false)
 	assert.Error(t, err, "DB Error")
 
 	appendCommand.Db = &db.ZbotDatabaseMock{
 		Error: true,
 	}
 
-	_, err = appendCommand.ProcessText("!append foo bar2", userTest, "testchat")
+	_, err = appendCommand.ProcessText("!append foo bar2", userTest, "testchat", false)
 	assert.Error(t, err, "Append Error Get")
 }

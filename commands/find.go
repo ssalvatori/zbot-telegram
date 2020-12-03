@@ -18,11 +18,18 @@ type FindCommand struct {
 var findLimit = 10
 
 //ProcessText run command
-func (handler *FindCommand) ProcessText(text string, user user.User, chat string) (string, error) {
+func (handler *FindCommand) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
+
+	if private {
+		return "", ErrNextCommand
+	}
 
 	commandPattern := regexp.MustCompile(`^!find\s(\S*)`)
 
 	if commandPattern.MatchString(text) {
+		if checkLearnCommandOnChannel(chat) {
+			return "", ErrLearnDisabledChannel
+		}
 		term := commandPattern.FindStringSubmatch(text)
 		results, err := handler.Db.Find(term[1], chat, findLimit)
 		if err != nil {

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"reflect"
 	"regexp"
+	"sort"
 	"strings"
 
 	"container/list"
@@ -44,6 +45,26 @@ var (
 	ErrNextCommand = errors.New("no action in command")
 	//ErrInternalError internal error
 	ErrInternalError = errors.New("internal zbot error")
+	//ErrLearnDisabledChannel learn commands are disabled for a channel
+	ErrLearnDisabledChannel = errors.New("Learn commands disabled for this channel")
+	//DisableLearnChannels list of channels where learn modules won't be working
+	DisableLearnChannels []string
+	//LearnCommandList list of modules part of learn command
+	LearnCommandList = []string{
+		"learn",
+		"find",
+		"who",
+		"get",
+		"last",
+		"lock",
+		"rand",
+		"stats",
+		"top",
+		"forget",
+		"append",
+		"last",
+		"search",
+	}
 )
 
 // CommandsList list of commandElement
@@ -55,6 +76,11 @@ type commandElement struct {
 	requiredLevel int
 	command       zbotCommand
 	cmdString     string
+}
+
+//Setup initail setup
+func Setup() {
+	sort.Strings(LearnCommandList)
 }
 
 // Chain add a command and the required level to use it to the list of command
@@ -71,15 +97,18 @@ func (cmdList *CommandsList) Chain(cmdDefinition string, cmd interface{}, level 
 }
 
 // Run commands against a msg for a given user
-func (cmdList *CommandsList) Run(cmd string, msg string, user user.User, chat string) string {
+func (cmdList *CommandsList) Run(cmd string, msg string, user user.User, chat string, private bool) string {
 	var output string
 	var err error
 
 	for e := cmdList.List.Front(); e != nil; e = e.Next() {
-		output, err = e.Value.(*commandElement).command.(zbotCommand).ProcessText(msg, user, chat)
+		output, err = e.Value.(*commandElement).command.(zbotCommand).ProcessText(msg, user, chat, private)
 		if err != nil {
 			if errors.Is(err, ErrNextCommand) {
 				continue
+			}
+			if errors.Is(err, ErrLearnDisabledChannel) {
+				return "Learn modules are been disabled for this channel!"
 			}
 			return "Internal Error, check logs"
 		}
@@ -91,7 +120,7 @@ func (cmdList *CommandsList) Run(cmd string, msg string, user user.User, chat st
 
 // zbotCommand interface to be implemented by each command
 type zbotCommand interface {
-	ProcessText(text string, username user.User, chat string) (string, error)
+	ProcessText(text string, username user.User, chat string, private bool) (string, error)
 }
 
 //getTerms transform Definition array into an array of term
@@ -169,4 +198,16 @@ func GetMinimumLevel(commandName string, minimumLevels Levels) int {
 	f := reflect.Indirect(r).FieldByName(field.Name)
 
 	return int(f.Int())
+}
+
+//checkLearnCommandOnChannel check if channel is in list of channel where learn commands should be disabled
+func checkLearnCommandOnChannel(channel string) bool {
+	log.Debug("Checking if channel [", channel, "] is the list of ZBOT_CONFIG_DISABLE_LEARN_CHANNELS")
+
+	i := sort.SearchStrings(DisableLearnChannels, channel)
+	if i < len(DisableLearnChannels) && DisableLearnChannels[i] == channel {
+		return true
+	}
+
+	return false
 }

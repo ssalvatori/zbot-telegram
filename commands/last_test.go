@@ -14,15 +14,15 @@ func TestLastCommandOK(t *testing.T) {
 		Term:    "foo",
 		Meaning: "bar",
 	}
-	result, _ := lastCommand.ProcessText("!last", userTest, "testchat")
+	result, _ := lastCommand.ProcessText("!last", userTest, "testchat", false)
 	assert.Equal(t, "[ foo ]", result, "Last Command")
 }
 
 func TestLastCommandNotMatch(t *testing.T) {
-	result, _ := lastCommand.ProcessText("!last6", userTest, "testchat")
+	result, _ := lastCommand.ProcessText("!last6", userTest, "testchat", false)
 	assert.Equal(t, "", result, "Empty output doesn't match")
 
-	_, err := lastCommand.ProcessText("!last6", userTest, "testchat")
+	_, err := lastCommand.ProcessText("!last6", userTest, "testchat", false)
 	assert.Equal(t, "no action in command", err.Error(), "Error output doesn't match")
 }
 
@@ -32,7 +32,7 @@ func TestLastCommandError(t *testing.T) {
 		Meaning: "bar",
 		Error:   true,
 	}
-	_, err := lastCommand.ProcessText("!last", userTest, "testchat")
+	_, err := lastCommand.ProcessText("!last", userTest, "testchat", false)
 	// assert.Equal(t, "Internal error", err.Error(), "Db Error")
 	assert.Error(t, err, "Internal Error")
 }

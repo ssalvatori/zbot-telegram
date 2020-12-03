@@ -15,7 +15,7 @@ type VersionCommand struct {
 }
 
 //ProcessText run command
-func (handler *VersionCommand) ProcessText(text string, user user.User, chat string) (string, error) {
+func (handler *VersionCommand) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
 
 	commandPattern := regexp.MustCompile(`^!version$`)
 

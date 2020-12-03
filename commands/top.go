@@ -21,11 +21,18 @@ type TopCommand struct {
 func (handler *TopCommand) SetDb(db db.ZbotDatabase) {}
 
 // ProcessText run command
-func (handler *TopCommand) ProcessText(text string, user user.User, chat string) (string, error) {
+func (handler *TopCommand) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
+
+	if private {
+		return "", ErrNextCommand
+	}
 
 	commandPattern := regexp.MustCompile(`^!top(\s+(\d+))?$`)
 
 	if commandPattern.MatchString(text) {
+		if checkLearnCommandOnChannel(chat) {
+			return "", ErrLearnDisabledChannel
+		}
 		term := commandPattern.FindStringSubmatch(text)
 		var limit int = 10
 		var err error = nil

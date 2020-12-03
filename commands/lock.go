@@ -15,11 +15,18 @@ type LockCommand struct {
 }
 
 //ProcessText run command
-func (handler *LockCommand) ProcessText(text string, user user.User, chat string) (string, error) {
+func (handler *LockCommand) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
+
+	if private {
+		return "", ErrNextCommand
+	}
 
 	commandPattern := regexp.MustCompile(`^!lock\s(\S*)$`)
 
 	if commandPattern.MatchString(text) {
+		if checkLearnCommandOnChannel(chat) {
+			return "", ErrLearnDisabledChannel
+		}
 		term := commandPattern.FindStringSubmatch(text)
 		def := db.Definition{
 			Author: user.Username,

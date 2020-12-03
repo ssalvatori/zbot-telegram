@@ -16,17 +16,17 @@ func TestTopCommandOK(t *testing.T) {
 		RandDef:   []db.Definition{db.Definition{Term: "foo", Meaning: "bar"}},
 	}
 
-	result, _ := topCommand.ProcessText("!top", userTest, "testchat")
+	result, _ := topCommand.ProcessText("!top", userTest, "testchat", false)
 	assert.Equal(t, "foo bar", result, "Top Command")
 
 }
 
 func TestTopCommandNotMatch(t *testing.T) {
 
-	result, _ := topCommand.ProcessText("!top6", userTest, "testchat")
+	result, _ := topCommand.ProcessText("!top6", userTest, "testchat", false)
 	assert.Equal(t, "", result, "Empty output doesn't match")
 
-	_, err := topCommand.ProcessText("!top6", userTest, "testchat")
+	_, err := topCommand.ProcessText("!top6", userTest, "testchat", false)
 	assert.Equal(t, "no action in command", err.Error(), "Error output doesn't match")
 }
 
@@ -35,6 +35,6 @@ func TestTopCommandError(t *testing.T) {
 	topCommand.Db = &db.ZbotDatabaseMock{
 		Error: true,
 	}
-	_, err := topCommand.ProcessText("!top", userTest, "testchat")
+	_, err := topCommand.ProcessText("!top", userTest, "testchat", false)
 	assert.Equal(t, "Internal error, check logs", err.Error(), "Db error")
 }

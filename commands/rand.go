@@ -18,11 +18,18 @@ type RandCommand struct {
 }
 
 // ProcessText run command
-func (handler *RandCommand) ProcessText(text string, user user.User, chat string) (string, error) {
+func (handler *RandCommand) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
+
+	if private {
+		return "", ErrNextCommand
+	}
 
 	commandPattern := regexp.MustCompile(`^!rand(\s+(\d+))?$`)
 
 	if commandPattern.MatchString(text) {
+		if checkLearnCommandOnChannel(chat) {
+			return "", ErrLearnDisabledChannel
+		}
 		term := commandPattern.FindStringSubmatch(text)
 		var limit int = 1
 		var err error = nil

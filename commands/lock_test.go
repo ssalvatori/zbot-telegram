@@ -17,7 +17,7 @@ func TestTemplateCommandOK(t *testing.T) {
 		Level:   "100",
 	}
 
-	result, _ := lockCommand.ProcessText("!lock foo", userTest, "testchat")
+	result, _ := lockCommand.ProcessText("!lock foo", userTest, "testchat", false)
 	assert.Equal(t, "[foo] locked", result, "Template Command")
 }
 
@@ -27,6 +27,6 @@ func TestTemplateCommandErro(t *testing.T) {
 		Error: true,
 	}
 
-	_, err := lockCommand.ProcessText("!lock foo", userTest, "testchat")
+	_, err := lockCommand.ProcessText("!lock foo", userTest, "testchat", false)
 	assert.Error(t, err, "Internal error")
 }

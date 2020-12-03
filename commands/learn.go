@@ -15,12 +15,19 @@ type LearnCommand struct {
 }
 
 //ProcessText Run module
-func (handler *LearnCommand) ProcessText(text string, user user.User, chat string) (string, error) {
+func (handler *LearnCommand) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
+
+	if private {
+		return "", ErrNextCommand
+	}
 
 	commandPattern := regexp.MustCompile(`(?s)^!learn\s(\S*)\s(.*)`)
 
 	if commandPattern.MatchString(text) {
 		// nowDate := time.Now().Format("2006-01-02")
+		if checkLearnCommandOnChannel(chat) {
+			return "", ErrLearnDisabledChannel
+		}
 		term := commandPattern.FindStringSubmatch(text)
 		def := db.Definition{
 			Term:    term[1],

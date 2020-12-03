@@ -23,7 +23,7 @@ type ExternalCommand struct {
 }
 
 // ProcessText run command
-func (handler *ExternalCommand) ProcessText(text string, user user.User, chat string) (string, error) {
+func (handler *ExternalCommand) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
 
 	commandPattern := regexp.MustCompile(`^!([a-zA-Z0-9\_\-]+)([\s(\S*)]*)?`)
 

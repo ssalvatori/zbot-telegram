@@ -13,7 +13,7 @@ type PingCommand struct {
 }
 
 //ProcessText run command
-func (handler *PingCommand) ProcessText(text string, user user.User, chat string) (string, error) {
+func (handler *PingCommand) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
 
 	commandPattern := regexp.MustCompile(`^!ping$`)
 
