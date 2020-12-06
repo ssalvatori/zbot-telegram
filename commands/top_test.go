@@ -37,4 +37,8 @@ func TestTopCommandError(t *testing.T) {
 	}
 	_, err := topCommand.ProcessText("!top", userTest, "testchat", false)
 	assert.Equal(t, "Internal error, check logs", err.Error(), "Db error")
+
+	_, err = topCommand.ProcessText("!top", userTest, "testchat", false)
+	assert.Error(t, err, "Private mesage")
+
 }

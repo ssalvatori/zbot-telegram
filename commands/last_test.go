@@ -33,8 +33,10 @@ func TestLastCommandError(t *testing.T) {
 		Error:   true,
 	}
 	_, err := lastCommand.ProcessText("!last", userTest, "testchat", false)
-	// assert.Equal(t, "Internal error", err.Error(), "Db Error")
 	assert.Error(t, err, "Internal Error")
+
+	_, err = lastCommand.ProcessText("!last", userTest, "testchat", true)
+	assert.Error(t, err, "Private message")
 }
 
 func TestPrintTerms(t *testing.T) {

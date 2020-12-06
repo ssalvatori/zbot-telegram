@@ -69,4 +69,8 @@ func TestIgnoreError(t *testing.T) {
 
 	_, err := ignoreCommand.ProcessText("!ignore6", userTest, "testchat", false)
 	assert.Equal(t, "no action in command", err.Error(), "Db error")
+
+	_, err = ignoreCommand.ProcessText("!ignore6", userTest, "testchat", false)
+	assert.Error(t, err, "Private message")
+
 }

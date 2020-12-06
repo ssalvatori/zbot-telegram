@@ -34,4 +34,7 @@ func TestLearnCommandError(t *testing.T) {
 	}
 	_, err := learnCommand.ProcessText("!learn foo lala", userTest, "test", false)
 	assert.Error(t, err, "Internal error")
+
+	_, err = learnCommand.ProcessText("!learn foo lala", userTest, "test", true)
+	assert.Error(t, err, "Private message")
 }

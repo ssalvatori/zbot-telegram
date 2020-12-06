@@ -42,4 +42,7 @@ func TestSearchCommandError(t *testing.T) {
 	}
 	_, err := searchCommand.ProcessText("!search foo", userTest, "testchat", false)
 	assert.Error(t, err, "Internal Error")
+
+	_, err = searchCommand.ProcessText("!search foo", userTest, "testchat", true)
+	assert.Error(t, err, "Private message")
 }

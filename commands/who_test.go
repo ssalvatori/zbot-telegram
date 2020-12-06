@@ -39,6 +39,8 @@ func TestWhoCommandError(t *testing.T) {
 		Error:   true,
 	}
 	_, err := whoCommand.ProcessText("!who foo", userTest, "testchat", false)
-	// assert.Equal(t, "Internal error", err.Error(), "Db error")
 	assert.Error(t, err, "DB Error")
+
+	_, err = whoCommand.ProcessText("!who foo", userTest, "testchat", true)
+	assert.Error(t, err, "Private Message")
 }

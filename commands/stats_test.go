@@ -37,6 +37,8 @@ func TestStatsCommandError(t *testing.T) {
 		Error:   true,
 	}
 	_, err := statsCommand.ProcessText("!stats", userTest, "testchat", false)
-	// assert.Equal(t, "Internal error", err.Error(), "Db error")
 	assert.Error(t, err, "Internal error")
+
+	_, err = statsCommand.ProcessText("!sstats", userTest, "testchat", true)
+	assert.Error(t, err, "Private message")
 }

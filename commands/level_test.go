@@ -80,6 +80,8 @@ func TestLevelCommandError(t *testing.T) {
 	}
 
 	_, err := levelCommand.ProcessText("!level", userTest, "testchat", false)
-	// assert.Equal(t, "Internal error", err.Error(), "Db error")
 	assert.Error(t, err, "Internal Error")
+
+	_, err = levelCommand.ProcessText("!level", userTest, "testchat", true)
+	assert.Error(t, err, "Private message")
 }

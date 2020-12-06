@@ -9,6 +9,19 @@ import (
 
 var appendCommand = AppendCommand{}
 
+func TestAppendCommandPrivateMessage(t *testing.T) {
+
+	appendCommand.Db = &db.ZbotDatabaseMock{
+		Term:    "foo",
+		Meaning: "bar",
+	}
+
+	result, err := appendCommand.ProcessText("!append foo bar", userTest, "testchat", true)
+	assert.Equal(t, "", result, "Private message")
+	assert.Equal(t, ErrNextCommand, err, "Private message")
+
+}
+
 func TestAppendCommandOK(t *testing.T) {
 
 	appendCommand.Db = &db.ZbotDatabaseMock{

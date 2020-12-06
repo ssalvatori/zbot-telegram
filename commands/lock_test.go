@@ -29,4 +29,7 @@ func TestTemplateCommandErro(t *testing.T) {
 
 	_, err := lockCommand.ProcessText("!lock foo", userTest, "testchat", false)
 	assert.Error(t, err, "Internal error")
+
+	_, err = lockCommand.ProcessText("!lock foo", userTest, "testchat", true)
+	assert.Error(t, err, "Private message")
 }

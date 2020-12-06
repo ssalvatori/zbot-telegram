@@ -35,4 +35,7 @@ func TestRandCommandError(t *testing.T) {
 	}
 	_, err := randCommand.ProcessText("!rand", userTest, "testchat", false)
 	assert.Error(t, err, "Internal Error")
+
+	_, err = randCommand.ProcessText("!rand", userTest, "testchat", true)
+	assert.Error(t, err, "Private Message")
 }

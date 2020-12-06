@@ -9,12 +9,16 @@ import (
 
 var forgetCommand = ForgetCommand{}
 
-func TestForgetCommandOK(t *testing.T) {
-
+func TestForgetCommandPrivateMessage(t *testing.T) {
 	forgetCommand.Db = &db.ZbotDatabaseMock{}
+	result, err := forgetCommand.ProcessText("!forget foo", userTest, "testchat", true)
+	assert.Equal(t, "", result, "Private message")
+	assert.Error(t, err, "Private message")
+}
 
+func TestForgetCommandOK(t *testing.T) {
+	forgetCommand.Db = &db.ZbotDatabaseMock{}
 	result, _ := forgetCommand.ProcessText("!forget foo", userTest, "testchat", false)
-
 	assert.Equal(t, "[foo] deleted", result, "Forget Command OK")
 }
 

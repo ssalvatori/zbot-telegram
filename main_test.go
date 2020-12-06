@@ -55,26 +55,18 @@ var confTest = Configuration{
 	},
 }
 
-// func TestSetUp(t *testing.T) {
+func TestSetUp(t *testing.T) {
 
-// 	os.Setenv("ZBOT_TOKEN", "test:test")
-// 	os.Setenv("ZBOT_SQLITE_DATABASE", "new_database.sql")
+	os.Setenv("ZBOT_CONFIG_FILE", "./zbot.conf")
 
-// 	dir, _ := os.Getwd()
+	setup()
+	assert.Equal(t, "./modules/", zbot.ModulesPath, "Setting module path")
+	assert.Equal(t, "<TELEGRAM_TOKEN>", zbot.APIToken, "API TOKEN")
+	assert.Equal(t, 300, zbot.IgnoreDuration, "IgnoreDuration")
+	assert.Equal(t, true, zbot.Flags.Ignore, "Ignore Flags")
+	assert.Equal(t, false, zbot.Flags.Level, "Level Flags")
 
-// 	os.Setenv("ZBOT_MODULES_PATH", dir)
-
-// 	setup()
-// 	assert.Equal(t, dir+"/", zbot.ModulesPath, "Setting module path")
-
-// 	os.Setenv("ZBOT_MODULES_PATH", "/tmp")
-// 	setup()
-// 	assert.Equal(t, "/tmp/", zbot.ModulesPath, "Setting module path")
-
-// 	os.Setenv("ZBOT_DISABLED_COMMANDS", "cmd1, cmd2, cmd3, cmd4, cmd6")
-// 	setup()
-// 	assert.Equal(t, []string{"cmd1", "cmd2", "cmd3", "cmd4", "cmd6"}, zbot.GetDisabledCommands(), "Setting DisableCommands")
-// }
+}
 
 func TestSetupLog(t *testing.T) {
 

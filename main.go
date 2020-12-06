@@ -101,7 +101,7 @@ func setup() {
 	}
 
 	zbot.APIToken = configuration.Zbot.Token
-	zbot.ModulesPath = configuration.Modules.Path + "/"
+	zbot.ModulesPath = configuration.Modules.Path
 	zbot.IgnoreDuration = configuration.Zbot.IgnoreDuration
 	zbot.Flags.Ignore = configuration.Zbot.Ignore
 	zbot.Flags.Level = configuration.Zbot.Level

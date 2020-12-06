@@ -26,6 +26,10 @@ func TestFindCommandOK(t *testing.T) {
 	result, _ = findCommand.ProcessText("!find lalal", userTest, "testchat", false)
 	assert.Equal(t, "", result, "Last Command")
 
+	result, err := findCommand.ProcessText("!find lalal", userTest, "testchat", true)
+	assert.Equal(t, "", result, "Private Message")
+	assert.Equal(t, ErrNextCommand, err, "Private Message")
+
 }
 func TestFindCommandNotMatch(t *testing.T) {
 

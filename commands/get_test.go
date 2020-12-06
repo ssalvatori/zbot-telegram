@@ -47,4 +47,7 @@ func TestGetCommandError(t *testing.T) {
 	}
 	_, err := getCommand.ProcessText("? foo", userTest, "testchat", false)
 	assert.Error(t, err, "DB error")
+
+	_, err = getCommand.ProcessText("? foo", userTest, "testchat", true)
+	assert.Error(t, err, "DB error")
 }

@@ -21,10 +21,3 @@ func TestPingCommandNotMatch(t *testing.T) {
 	_, err := statsCommand.ProcessText("!ping6", userTest, "testchat", false)
 	assert.Equal(t, "no action in command", err.Error(), "Error output doesn't match")
 }
-
-/*
-func TestPingCommandNext(t *testing.T) {
-	pingCommand.Next = &FakeCommand{}
-	assert.Equal(t, "Fake OK", pingCommand.ProcessText("!ping6", userTest), "Ping  next command")
-}
-*/
