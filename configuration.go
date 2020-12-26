@@ -18,12 +18,7 @@ type Configuration struct {
 	} `yaml:"zbot"`
 	Db struct {
 		Engine   string `yaml:"engine"`
-		Name     string `yaml:"name"`
 		File     string `yaml:"file"`
-		Host     string `yaml:"host"`
-		Port     int    `yaml:"port"`
-		Username string `yaml:"username"`
-		Password string `yaml:"password"`
 	} `yaml:"db"`
 	Commands struct {
 		Learn struct {
@@ -67,13 +62,8 @@ type configurationZbot struct {
 }
 
 type configurationDb struct {
-	Engine   string `yaml:"engine"`
-	Name     string `yaml:"name"`
-	File     string `yaml:"file"`
-	Host     string `yaml:"host"`
-	Port     int    `yaml:"port"`
-	Username string `yaml:"username"`
-	Password string `yaml:"password"`
+	Engine string `yaml:"engine"`
+	File   string `yaml:"file"`
 }
 
 type configurationLearn struct {

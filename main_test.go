@@ -20,13 +20,8 @@ var confTest = Configuration{
 		Level:          false,
 	},
 	Db: configurationDb{
-		Engine:   "sqlite",
-		Name:     "",
-		File:     "",
-		Host:     "",
-		Port:     1234,
-		Username: "test",
-		Password: "paswsword",
+		Engine: "sqlite",
+		File:   "",
 	},
 	Commands: configurationCommands{
 		Learn: configurationLearn{

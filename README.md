@@ -10,8 +10,9 @@
 
 ## Setup
 
-You **must** set the **ZBOT_CONFIG_FILE** environment variable with the path to the configuration file
+You **must** set the environment variable **ZBOT_CONFIG_FILE** with the path to the configuration file
 * ZBOT_CONFIG_FILE : Path to the configuration file (default ./zbot.conf) 
+* ZBOT_LOG_LEVEL : Log verbosity (default info)
 
 ## Configuration File
 
@@ -23,12 +24,7 @@ zbot:
   level: false
 db:
   engine: sqlite
-  name: db_name
   file: path_to_sqlite_file.db
-  host: 127.0.0.1
-  port: 3306
-  username: db_username 
-  password: db_password
 commands:  
   learn:
     disabled:
