@@ -1,20 +1,24 @@
-FROM alpine:3.9
-LABEL maintainer="ssalvatori@gmail.com"
+FROM golang:1.15 AS build
 
-RUN apk add --update \
-    wget \
-    sqlite \
-    jq \
-    && rm -rf /var/cache/apk/*
+RUN apt-get install git libsqlite3-0
 
-RUN apk --no-cache add ca-certificates \
-    && wget -q -O /etc/apk/keys/sgerrand.rsa.pub https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub \
-    && wget https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.31-r0/glibc-2.31-r0.apk \
-    && apk add glibc-2.31-r0.apk \
-    && rm -rf /var/cache/apk/*
+ARG OS=linux
+ARG ARCH=amd64
+
+WORKDIR /go/src/app
+COPY . .
+RUN CGO_ENABLED=1 GOOS=${OS} GOARCH=${ARCH} go build -ldflags "-X github.com/ssalvatori/zbot-telegram/zbot.version=`git describe --tags` -X github.com/ssalvatori/zbot-telegram/zbot.buildTime=`TZ=UTC date -u '+%Y-%m-%dT%H:%M:%SZ'` -X github.com/ssalvatori/zbot-telegram/zbot.gitHash=`git rev-parse --short HEAD`" -o zbot-telegram-${OS}-${ARCH}
+
+FROM debian:buster-slim
+
+ARG OS=linux
+ARG ARCH=amd64
 
 WORKDIR /app
+RUN apt-get update -y && \
+    apt-get install ca-certificates -y
+RUN update-ca-certificates --verbose
 
-COPY zbot-telegram-linux-amd64 /app/zbot-telegram-linux-amd64
-RUN chmod +x /app/zbot-telegram-linux-amd64
-CMD ["/app/zbot-telegram-linux-amd64"]
+COPY --from=build /go/src/app/zbot-telegram-${OS}-${ARCH} /app/zbot-telegram
+
+CMD ["/app/zbot-telegram"]
