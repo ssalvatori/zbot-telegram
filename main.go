@@ -39,7 +39,6 @@ func setupDatabase(conf *Configuration) db.ZbotDatabase {
 	case "mysql":
 		log.Info("Setting up mysql connections")
 		log.Fatal("Not implemented")
-		//db = setupDatabaseMysql()
 		break
 	case "sqlite":
 		log.Info("Setting up sqlite connections")
@@ -59,29 +58,6 @@ func setupDatabaseSqlite(conf *Configuration) db.ZbotDatabase {
 	database.File = conf.Db.File
 	return database
 }
-
-// func setupDatabaseMysql() db.ZbotDatabase {
-// 	zbot.DatabaseType = "mysql"
-
-// 	type MysqlConnection struct {
-// 		Username     string `env:"ZBOT_MYSQL_USERNAME,required"`
-// 		Password     string `env:"ZBOT_MYSQL_PASSWORD,required"`
-// 		DatabaseName string `env:"ZBOT_MYSQL_DATABASE,required"`
-// 		HostName     string `env:"ZBOT_MYSQL_HOSTNAME,required"`
-// 		Protocol     string `env:"ZBOT_MYSQL_PROTOCOL" envDefault:"tcp"`
-// 		Port         int    `env:"ZBOT_MYSQL_PORT" envDefault:"3306"`
-// 	}
-
-// 	cfg := MysqlConnection{}
-// 	if err := env.Parse(&cfg); err != nil {
-// 		log.Fatal(fmt.Printf("%+v\n", err))
-// 	}
-
-// 	database := new(db.ZbotMysqlDatabase)
-// 	database.Connection = db.MysqlConnection(cfg)
-
-// 	return database
-// }
 
 func setup() {
 

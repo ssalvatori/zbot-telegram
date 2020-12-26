@@ -4,8 +4,6 @@ go:
 env:
   - BOT_TOKEN=1234:334
 before_install:
-  # - sudo apt-get install gcc-multilib
-  # - go get -u -v github.com/mattn/go-sqlite3
   - go get github.com/mattn/goveralls
   - go get github.com/mitchellh/gox
   - go get github.com/modocache/gover
@@ -16,7 +14,7 @@ script:
   - go test -v github.com/ssalvatori/zbot-telegram/db -coverprofile=db.coverprofile
   - go test -v github.com/ssalvatori/zbot-telegram/commands -coverprofile=db.coverprofile
   - $HOME/gopath/bin/gover
-  - $HOME/gopath/bin/goveralls -coverprofile gover.coverprofile -service travis-ci --ignore=db/mock.go,db/db.go,db/mysql.go,db/sqlite.go
+  - $HOME/gopath/bin/goveralls -coverprofile gover.coverprofile -service travis-ci --ignore=db/mock.go,db/db.go,db/sqlite.go
 after_success:
   - $HOME/gopath/bin/gox -osarch="linux/amd64 linux/386" -cgo -ldflags "-X github.com/ssalvatori/zbot-telegram/zbot.version=`git describe --tags` -X github.com/ssalvatori/zbot-telegram/zbot.buildTime=`TZ=UTC date -u '+%Y-%m-%d %H:%M:%SZ'` -X github.com/ssalvatori/zbot-telegram/zbot.gitHash=`git rev-parse --short HEAD`" -output "dist/{{.Dir}}-{{.OS}}-{{.Arch}}"
 deploy:
