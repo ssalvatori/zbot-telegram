@@ -3,19 +3,42 @@ package command
 import (
 	"testing"
 
-	"github.com/ssalvatori/zbot-telegram-go/db"
+	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/stretchr/testify/assert"
 )
 
 var statsCommand = StatsCommand{}
 
 func TestStatsCommandOK(t *testing.T) {
-	statsCommand.Db = &db.MockZbotDatabase{
-		Level:    "7",
-		Rand_def: db.DefinitionItem{Term: "foo", Meaning: "bar"},
+	statsCommand.Db = &db.ZbotDatabaseMock{
+		Level:   "7",
+		RandDef: []db.Definition{db.Definition{Term: "foo", Meaning: "bar"}},
 	}
-	assert.Equal(t, "Count: 7", statsCommand.ProcessText("!stats", userTest), "Stats Command")
-	assert.Equal(t, "", statsCommand.ProcessText("!stats6", userTest), "Stats no next command")
-	statsCommand.Next = &FakeCommand{}
-	assert.Equal(t, "Fake OK", statsCommand.ProcessText("!stats6", userTest), "Stats next command")
+
+	result, _ := statsCommand.ProcessText("!stats", userTest, "testchat", false)
+	assert.Equal(t, "Number of definitions: 7", result, "Stats Command")
+
+}
+
+func TestStatsCommandNotMatch(t *testing.T) {
+
+	result, _ := statsCommand.ProcessText("!stats6", userTest, "testchat", false)
+	assert.Equal(t, "", result, "Empty output doesn't match")
+
+	_, err := statsCommand.ProcessText("!stats6", userTest, "testchat", false)
+	assert.Equal(t, "no action in command", err.Error(), "Error output doesn't match")
+}
+
+func TestStatsCommandError(t *testing.T) {
+
+	statsCommand.Db = &db.ZbotDatabaseMock{
+		Level:   "7",
+		RandDef: []db.Definition{db.Definition{Term: "foo", Meaning: "bar"}},
+		Error:   true,
+	}
+	_, err := statsCommand.ProcessText("!stats", userTest, "testchat", false)
+	assert.Error(t, err, "Internal error")
+
+	_, err = statsCommand.ProcessText("!sstats", userTest, "testchat", true)
+	assert.Error(t, err, "Private message")
 }

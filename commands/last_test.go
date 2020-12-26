@@ -3,27 +3,48 @@ package command
 import (
 	"testing"
 
-	"github.com/ssalvatori/zbot-telegram-go/db"
+	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/stretchr/testify/assert"
 )
 
 var lastCommand = LastCommand{}
 
 func TestLastCommandOK(t *testing.T) {
-	lastCommand.Db = &db.MockZbotDatabase{
+	lastCommand.Db = &db.ZbotDatabaseMock{
 		Term:    "foo",
 		Meaning: "bar",
 	}
-	assert.Equal(t, "[foo] - [bar]", lastCommand.ProcessText("!last", userTest), "Last Command")
+	result, _ := lastCommand.ProcessText("!last", userTest, "testchat", false)
+	assert.Equal(t, "[ foo ]", result, "Last Command")
+}
 
-	lastCommand.Db = &db.MockZbotDatabase{
-		Error: true,
+func TestLastCommandNotMatch(t *testing.T) {
+	result, _ := lastCommand.ProcessText("!last6", userTest, "testchat", false)
+	assert.Equal(t, "", result, "Empty output doesn't match")
+
+	_, err := lastCommand.ProcessText("!last6", userTest, "testchat", false)
+	assert.Equal(t, "no action in command", err.Error(), "Error output doesn't match")
+}
+
+func TestLastCommandError(t *testing.T) {
+	lastCommand.Db = &db.ZbotDatabaseMock{
+		Term:    "foo",
+		Meaning: "bar",
+		Error:   true,
+	}
+	_, err := lastCommand.ProcessText("!last", userTest, "testchat", false)
+	assert.Error(t, err, "Internal Error")
+
+	_, err = lastCommand.ProcessText("!last", userTest, "testchat", true)
+	assert.Error(t, err, "Private message")
+}
+
+func TestPrintTerms(t *testing.T) {
+	var items = []db.Definition{
+		{Term: "term1", Meaning: "meaning 1"},
+		{Term: "term2", Meaning: "meaning 2"},
 	}
 
-	assert.Equal(t, "", lastCommand.ProcessText("!last", userTest), "Error database")
-
-
-	assert.Equal(t, "", lastCommand.ProcessText("!last6", userTest), "Last no next command")
-	lastCommand.Next = &FakeCommand{}
-	assert.Equal(t, "Fake OK", lastCommand.ProcessText("!last6", userTest), "Last next command")
+	result := PrintTerms(items)
+	assert.Equal(t, "[ term1 term2 ]", result, "Last Command")
 }

@@ -1,10 +1,9 @@
 package command
 
 import (
-	"fmt"
 	"testing"
 
-	"github.com/ssalvatori/zbot-telegram-go/db"
+	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -12,36 +11,25 @@ var lockCommand = LockCommand{}
 
 func TestTemplateCommandOK(t *testing.T) {
 
-	lockCommand.Db = &db.MockZbotDatabase{
+	lockCommand.Db = &db.ZbotDatabaseMock{
 		Term:    "foo",
 		Meaning: "bar",
 		Level:   "100",
 	}
-	lockCommand.Levels = Levels{
-		Ignore: 10,
-		Append: 10,
-		Learn:  10,
-		Lock:   1,
-	}
 
-	assert.Equal(t, "[foo] locked", lockCommand.ProcessText("!lock foo", userTest), "Template Command")
+	result, _ := lockCommand.ProcessText("!lock foo", userTest, "testchat", false)
+	assert.Equal(t, "[foo] locked", result, "Template Command")
 }
 
-func TestTemplateCommandNoLevel(t *testing.T) {
+func TestTemplateCommandErro(t *testing.T) {
 
-	lockCommand.Db = &db.MockZbotDatabase{
-		Term:    "foo",
-		Meaning: "bar",
-		Level:   "5",
-	}
-	lockCommand.Levels = Levels{
-		Ignore: 10,
-		Append: 10,
-		Learn:  10,
-		Lock:   100,
+	lockCommand.Db = &db.ZbotDatabaseMock{
+		Error: true,
 	}
 
-	userTest.Level = 5
+	_, err := lockCommand.ProcessText("!lock foo", userTest, "testchat", false)
+	assert.Error(t, err, "Internal error")
 
-	assert.Equal(t, fmt.Sprintf("Your level is not enough < %d", lockCommand.Levels.Lock), lockCommand.ProcessText("!lock foo", userTest), "Lock Command No Level")
+	_, err = lockCommand.ProcessText("!lock foo", userTest, "testchat", true)
+	assert.Error(t, err, "Private message")
 }

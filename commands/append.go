@@ -3,48 +3,51 @@ package command
 import (
 	"fmt"
 	"regexp"
-	"time"
 
-	log "github.com/Sirupsen/logrus"
-	"github.com/ssalvatori/zbot-telegram-go/db"
-	"github.com/ssalvatori/zbot-telegram-go/user"
+	log "github.com/sirupsen/logrus"
+	"github.com/ssalvatori/zbot-telegram/db"
+	"github.com/ssalvatori/zbot-telegram/user"
 )
 
+// AppendCommand definition
 type AppendCommand struct {
-	Next   HandlerCommand
-	Db     db.ZbotDatabase
-	Levels Levels
+	Db db.ZbotDatabase
 }
 
-func (handler *AppendCommand) ProcessText(text string, user user.User) string {
+// ProcessText run command
+func (handler *AppendCommand) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
+
+	if private {
+		return "", ErrNextCommand
+	}
 
 	commandPattern := regexp.MustCompile(`(?s)^!append\s(\S*)\s(.*)`)
-	result := ""
 
 	if commandPattern.MatchString(text) {
+		if checkLearnCommandOnChannel(chat) {
+			return "", ErrLearnDisabledChannel
+		}
 		term := commandPattern.FindStringSubmatch(text)
-		def := db.DefinitionItem{
+		def := db.Definition{
 			Term:    term[1],
 			Meaning: term[2],
 			Author:  fmt.Sprintf("%s!%s@telegram.bot", user.Username, user.Ident),
-			Date:    time.Now().Format("2006-01-02"),
+			// Date:    time.Now().Format("2006-01-02"),
+			Chat: chat,
 		}
-		err := handler.Db.Append(def)
+		err := handler.Db.Append(def, chat)
 		if err != nil {
-			log.Error(fmt.Errorf("Error append %v", err))
-			return ""
+			log.Error(err.Error())
+			return "", ErrInternalError
 		}
-		def, err = handler.Db.Get(def.Term)
+
+		def, err = handler.Db.Get(def.Term, chat)
 		if err != nil {
-			log.Error(fmt.Errorf("Error append %v", err))
-			return ""
+			log.Error(err.Error())
+			return "", ErrInternalError
 		}
-		result = fmt.Sprintf("[%s] = [%s]", def.Term, def.Meaning)
-	} else {
-		if handler.Next != nil {
-			result = handler.Next.ProcessText(text, user)
-		}
+		return fmt.Sprintf("[%s] = [%s]", def.Term, def.Meaning), nil
 	}
 
-	return result
+	return "", ErrNextCommand
 }

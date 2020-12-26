@@ -1,38 +1,44 @@
 package command
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
 
-	log "github.com/Sirupsen/logrus"
-	"github.com/ssalvatori/zbot-telegram-go/db"
-	"github.com/ssalvatori/zbot-telegram-go/user"
+	"github.com/ssalvatori/zbot-telegram/db"
+	"github.com/ssalvatori/zbot-telegram/user"
 )
 
+//FindCommand defintion
 type FindCommand struct {
-	Next   HandlerCommand
-	Db     db.ZbotDatabase
-	Levels Levels
+	Db db.ZbotDatabase
 }
 
-func (handler *FindCommand) ProcessText(text string, user user.User) string {
+var findLimit = 10
+
+//ProcessText run command
+func (handler *FindCommand) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
+
+	if private {
+		return "", ErrNextCommand
+	}
 
 	commandPattern := regexp.MustCompile(`^!find\s(\S*)`)
-	result := ""
 
 	if commandPattern.MatchString(text) {
+		if checkLearnCommandOnChannel(chat) {
+			return "", ErrLearnDisabledChannel
+		}
 		term := commandPattern.FindStringSubmatch(text)
-		results, err := handler.Db.Find(term[1])
+		results, err := handler.Db.Find(term[1], chat, findLimit)
 		if err != nil {
-			log.Error(fmt.Errorf("Error learn %v", err))
-			return ""
+			if errors.Is(err, db.ErrNotFound) {
+				return fmt.Sprintf("[%s] wasn't found in the content of any definition", term[1]), nil
+			}
+			return "", ErrInternalError
 		}
-		result = fmt.Sprintf("%s", strings.Join(getTerms(results), " "))
-	} else {
-		if handler.Next != nil {
-			result = handler.Next.ProcessText(text, user)
-		}
+		return fmt.Sprintf("%s", strings.Join(getTerms(results), " ")), nil
 	}
-	return result
+	return "", ErrNextCommand
 }

@@ -1,41 +1,66 @@
 package command
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 
-	log "github.com/Sirupsen/logrus"
-	"github.com/ssalvatori/zbot-telegram-go/db"
-	"github.com/ssalvatori/zbot-telegram-go/user"
+	log "github.com/sirupsen/logrus"
+	"github.com/ssalvatori/zbot-telegram/db"
+	"github.com/ssalvatori/zbot-telegram/user"
 )
 
+// TopCommand definition
 type TopCommand struct {
-	Next   HandlerCommand
-	Db     db.ZbotDatabase
-	Levels Levels
+	Db db.ZbotDatabase
 }
 
-func (handler *TopCommand) ProcessText(text string, user user.User) string {
+//SetDb set db connection if the module need it
+func (handler *TopCommand) SetDb(db db.ZbotDatabase) {}
 
-	commandPattern := regexp.MustCompile(`^!top$`)
-	result := ""
+// ProcessText run command
+func (handler *TopCommand) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
+
+	if private {
+		return "", ErrNextCommand
+	}
+
+	commandPattern := regexp.MustCompile(`^!top(\s+(\d+))?$`)
 
 	if commandPattern.MatchString(text) {
-		if user.IsAllow(handler.Levels.Top) {
-			items, err := handler.Db.Top()
+		if checkLearnCommandOnChannel(chat) {
+			return "", ErrLearnDisabledChannel
+		}
+		term := commandPattern.FindStringSubmatch(text)
+		var limit int = 10
+		var err error = nil
+
+		if len(term) == 3 && term[2] != "" {
+			limit, err = strconv.Atoi(term[2])
+
 			if err != nil {
-				log.Error(err)
-				return ""
+				log.Error(fmt.Printf("Problem converting %s", term[2]))
+				limit = 10
 			}
-			result = fmt.Sprintf(strings.Join(getTerms(items), " "))
-		} else {
-			result = fmt.Sprintf("Your level is not enough < %d", handler.Levels.Top)
 		}
-	} else {
-		if handler.Next != nil {
-			result = handler.Next.ProcessText(text, user)
+
+		if limit > 100 {
+			limit = 100
 		}
+
+		items, err := handler.Db.Top(chat, limit)
+		if err != nil {
+			if errors.Is(err, db.ErrNotFound) {
+				return fmt.Sprintf("no results"), nil
+			}
+			log.Error(err)
+			return "", fmt.Errorf("Internal error, check logs")
+		}
+		return fmt.Sprintf(strings.Join(getTerms(items), " ")), nil
 	}
-	return result
+
+	return "", ErrNextCommand
+
 }

@@ -4,43 +4,41 @@ import (
 	"fmt"
 	"regexp"
 
-	log "github.com/Sirupsen/logrus"
-	"github.com/ssalvatori/zbot-telegram-go/db"
-	"github.com/ssalvatori/zbot-telegram-go/user"
+	log "github.com/sirupsen/logrus"
+	"github.com/ssalvatori/zbot-telegram/db"
+	"github.com/ssalvatori/zbot-telegram/user"
 )
 
+//LockCommand definition
 type LockCommand struct {
-	Next   HandlerCommand
-	Db     db.ZbotDatabase
-	Levels Levels
+	Db db.ZbotDatabase
 }
 
-func (handler *LockCommand) ProcessText(text string, user user.User) string {
+//ProcessText run command
+func (handler *LockCommand) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
 
-	commandPattern := regexp.MustCompile(`^!lock\s(\S*)$`)
-	result := ""
-
-	if commandPattern.MatchString(text) {
-		if user.IsAllow(handler.Levels.Lock) {
-			term := commandPattern.FindStringSubmatch(text)
-			def := db.DefinitionItem{
-				Author: user.Username,
-				Term:   term[1],
-			}
-			err := handler.Db.Lock(def)
-			if err != nil {
-				log.Error(err)
-			}
-			result = fmt.Sprintf("[%s] locked", def.Term)
-
-		} else {
-			result = fmt.Sprintf("Your level is not enough < %d", handler.Levels.Lock)
-		}
-	} else {
-		if handler.Next != nil {
-			result = handler.Next.ProcessText(text, user)
-		}
+	if private {
+		return "", ErrNextCommand
 	}
 
-	return result
+	commandPattern := regexp.MustCompile(`^!lock\s(\S*)$`)
+
+	if commandPattern.MatchString(text) {
+		if checkLearnCommandOnChannel(chat) {
+			return "", ErrLearnDisabledChannel
+		}
+		term := commandPattern.FindStringSubmatch(text)
+		def := db.Definition{
+			Author: user.Username,
+			Term:   term[1],
+		}
+		err := handler.Db.Lock(def, chat)
+		if err != nil {
+			log.Error(err)
+			return "", err
+		}
+		return fmt.Sprintf("[%s] locked", def.Term), nil
+	}
+
+	return "", ErrNextCommand
 }

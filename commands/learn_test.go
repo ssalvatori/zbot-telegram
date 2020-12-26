@@ -3,20 +3,38 @@ package command
 import (
 	"testing"
 
-	"github.com/ssalvatori/zbot-telegram-go/db"
+	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/stretchr/testify/assert"
 )
 
 var learnCommand = LearnCommand{}
 
 func TestLearnCommandOK(t *testing.T) {
-	learnCommand.Db = &db.MockZbotDatabase{}
-	assert.Equal(t, "[foo] - [bar]", learnCommand.ProcessText("!learn foo bar", userTest), "Lean Command")
-	assert.Equal(t, "", learnCommand.ProcessText("!learn6", userTest), "Learn no next command")
+	var result string
+	learnCommand.Db = &db.ZbotDatabaseMock{}
 
-	learnCommand.Db = &db.MockZbotDatabase{Error: true}
-	assert.Equal(t, "", learnCommand.ProcessText("!learn foo bar2", userTest), "Learn Error")
+	result, _ = learnCommand.ProcessText("!learn foo bar", userTest, "test", false)
+	assert.Equal(t, "[foo] - [bar]", result, "Lean Command")
 
-	learnCommand.Next = &FakeCommand{}
-	assert.Equal(t, "Fake OK", learnCommand.ProcessText("??", userTest), "Learn next command")
+}
+
+func TestLearnCommandNotMatch(t *testing.T) {
+
+	result, err := learnCommand.ProcessText("!learn6 foor ala", userTest, "test", false)
+	assert.Equal(t, "", result, "Empty output")
+	assert.Error(t, err, "Command doesn't match")
+
+}
+
+func TestLearnCommandError(t *testing.T) {
+
+	learnCommand.Db = &db.ZbotDatabaseMock{
+		RandDef: []db.Definition{db.Definition{Term: "foo", Meaning: "bar"}},
+		Error:   true,
+	}
+	_, err := learnCommand.ProcessText("!learn foo lala", userTest, "test", false)
+	assert.Error(t, err, "Internal error")
+
+	_, err = learnCommand.ProcessText("!learn foo lala", userTest, "test", true)
+	assert.Error(t, err, "Private message")
 }

@@ -1,60 +1,19 @@
 package main
 
 import (
-	"io/ioutil"
 	"os"
 
 	"fmt"
 
-	log "github.com/Sirupsen/logrus"
-	"github.com/caarlos0/env"
-	"github.com/ssalvatori/zbot-telegram-go/db"
-	"github.com/ssalvatori/zbot-telegram-go/zbot"
+	env "github.com/caarlos0/env/v6"
+	log "github.com/sirupsen/logrus"
+	"github.com/ssalvatori/zbot-telegram/db"
+	"github.com/ssalvatori/zbot-telegram/zbot"
 )
 
-// setUp
-func setUp() {
-
-	type EnvironmentVariables struct {
-		Token            string `env:"ZBOT_TOKEN,required"`
-		ModulesPath      string `env:"ZBOT_MODULES_PATH" envDefault:"."`
-		DisabledCommands string `env:"ZBOT_DISABLED_COMMANDS" `
-	}
-
-	cfg := EnvironmentVariables{}
-	err := env.Parse(&cfg)
-	if err != nil {
-		log.Fatal(fmt.Sprintf("%+v\n", err))
-	}
-
-	log.Debug(fmt.Sprintf("%+v\n", cfg))
-
-	zbot.APIToken = cfg.Token
-	zbot.ModulesPath = cfg.ModulesPath + "/"
-
-	if os.Getenv("ZBOT_DISABLED_COMMANDS") != "" {
-		log.Info("Disabled modules configuration = ", os.Getenv("ZBOT_DISABLED_COMMANDS"))
-		setDisabledCommands(os.Getenv("ZBOT_DISABLED_COMMANDS"))
-	}
-
-}
-
-func setDisabledCommands(file string) error {
-
-	log.Debug("Reading file ", file)
-	raw, err := ioutil.ReadFile(file)
-
-	if err != nil {
-		log.Error(fmt.Sprintf("ccould not file: %v", err))
-		return fmt.Errorf("could not file: %v", err)
-	}
-
-	zbot.SetDisabledCommands(raw)
-	return nil
-}
-
 // setUpLog setup log level using environment variables
-func setUpLog() {
+func setupLog() {
+	log.SetOutput(os.Stdout)
 
 	switch os.Getenv("ZBOT_LOG_LEVEL") {
 	case "debug":
@@ -63,106 +22,78 @@ func setUpLog() {
 	case "info":
 		log.SetLevel(log.InfoLevel)
 		break
-	case "warn":
-		log.SetLevel(log.WarnLevel)
-		break
 	case "error":
 		log.SetLevel(log.ErrorLevel)
-		break
-	case "fatal":
-		log.SetLevel(log.FatalLevel)
-		break
-	case "panic":
-		log.SetLevel(log.PanicLevel)
 		break
 	default:
 		log.SetLevel(log.InfoLevel)
 		break
 	}
-
 }
 
-// setupDatabase this function will get the data
-func setupDatabase() {
+func setupDatabase(conf *Configuration) db.ZbotDatabase {
 
-	switch os.Getenv("ZBOT_DATABASE_TYPE") {
+	var db db.ZbotDatabase
+
+	switch conf.Db.Engine {
 	case "mysql":
 		log.Info("Setting up mysql connections")
-		zbot.Db = setupDatabaseMysql()
+		log.Fatal("Not implemented")
 		break
 	case "sqlite":
 		log.Info("Setting up sqlite connections")
-		zbot.Db = setupDatabaseSqlite()
+		db = setupDatabaseSqlite(conf)
 		break
 	default:
-		log.Error("Select a database type (mysql o sqlite)")
+		log.Fatal("Select a database type (mysql o sqlite)")
 		break
 	}
+	return db
 
 }
 
-func setupDatabaseSqlite() db.ZbotDatabase {
+func setupDatabaseSqlite(conf *Configuration) db.ZbotDatabase {
 	zbot.DatabaseType = "sqlite"
-
-	type SqliteEnvironmentConfig struct {
-		File string `env:"ZBOT_SQLITE_DATABASE"`
-	}
-
-	cfg := SqliteEnvironmentConfig{}
-	err := env.Parse(&cfg)
-	if err != nil {
-		log.Fatal(fmt.Printf("%+v\n", err))
-	}
-
-	database := new(db.ZbotSqliteDatabase)
-	database.File = cfg.File
+	database := new(db.ZbotDatabaseSqlite)
+	database.File = conf.Db.File
 	return database
 }
 
-func setupDatabaseMysql() db.ZbotDatabase {
-	zbot.DatabaseType = "mysql"
+func setup() {
 
-	type MysqlConnection struct {
-		Username     string `env:"ZBOT_MYSQL_USERNAME,required"`
-		Password     string `env:"ZBOT_MYSQL_PASSWORD,required"`
-		DatabaseName string `env:"ZBOT_MYSQL_DATABASE,required"`
-		HostName     string `env:"ZBOT_MYSQL_HOSTNAME,required"`
-		Port         int    `env:"ZBOT_MYSQL_PORT" envDefault:"3306"`
+	type EnvironmentVariables struct {
+		ConfigurationFile string `env:"ZBOT_CONFIG_FILE" envDefault:"./zbot.conf"`
 	}
 
-	cfg := MysqlConnection{}
-	err := env.Parse(&cfg)
+	cfg := EnvironmentVariables{}
+	if err := env.Parse(&cfg); err != nil {
+		log.Fatal(fmt.Sprintf("%+v\n", err))
+	}
+
+	log.Debug(fmt.Sprintf("%+v\n", cfg))
+
+	configuration, err := readConfiguration(cfg.ConfigurationFile)
 	if err != nil {
-		log.Fatal(fmt.Printf("%+v\n", err))
+		log.Fatal(err)
 	}
 
-	database := new(db.ZbotMysqlDatabase)
-	database.Connection = db.MysqlConnection(cfg)
+	zbot.APIToken = configuration.Zbot.Token
+	zbot.ModulesPath = configuration.Modules.Path
+	zbot.IgnoreDuration = configuration.Zbot.IgnoreDuration
+	zbot.Flags.Ignore = configuration.Zbot.Ignore
+	zbot.Flags.Level = configuration.Zbot.Level
 
-	return database
+	zbot.SetDisabledLearnChannels(configuration.Commands.Learn.Disabled)
+
+	zbot.Db = setupDatabase(configuration)
+	zbot.ExternalModules = zbot.ExternalModulesList(configuration.Modules.List)
 }
 
-//setupFlags Set flags configurations
-func setupFlags() {
-
-	var ok bool
-	_, ok = os.LookupEnv("ZBOT_FLAG_IGNORE")
-
-	if ok {
-		zbot.Flags.Ignore = true
-	}
-
-	_, ok = os.LookupEnv("ZBOT_FLAG_LEVEL")
-	if ok {
-		zbot.Flags.Level = true
-	}
+func init() {
+	setupLog()
 }
 
 func main() {
-	setUpLog()
-	setUp()
-	setupDatabase()
-	setupFlags()
-
+	setup()
 	zbot.Execute()
 }

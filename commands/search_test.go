@@ -3,7 +3,7 @@ package command
 import (
 	"testing"
 
-	"github.com/ssalvatori/zbot-telegram-go/db"
+	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -11,18 +11,38 @@ var searchCommand = SearchCommand{}
 
 func TestSearchCommandOK(t *testing.T) {
 
-	searchCommand.Db = &db.MockZbotDatabase{
-		Search_terms: []string{"foo", "bar"},
-	}
-	assert.Equal(t, "foo bar", searchCommand.ProcessText("!search foo", userTest), "Search Command")
-	searchCommand.Db = &db.MockZbotDatabase{
-		Search_terms: []string{},
-	}
-	assert.Equal(t, "", searchCommand.ProcessText("!search", userTest), "Search no next command")
+	var result string
 
-	searchCommand.Db = &db.MockZbotDatabase{Error: true}
-	assert.Equal(t, "", searchCommand.ProcessText("!search foo ", userTest), "Search error")
+	searchCommand.Db = &db.ZbotDatabaseMock{
+		SearchTerms: []string{"foo", "bar"},
+	}
 
-	searchCommand.Next = &FakeCommand{}
-	assert.Equal(t, "Fake OK", searchCommand.ProcessText("?? ", userTest), "Search next command")
+	result, _ = searchCommand.ProcessText("!search foo", userTest, "testchat", false)
+	assert.Equal(t, "foo bar", result, "Search Command")
+
+	searchCommand.Db = &db.ZbotDatabaseMock{
+		SearchTerms: []string{},
+	}
+
+	result, _ = searchCommand.ProcessText("!search", userTest, "testchat", false)
+	assert.Equal(t, "", result, "Search empty")
+}
+func TestSearchCommandNotMatch(t *testing.T) {
+
+	result, err := searchCommand.ProcessText("!search6", userTest, "testchat", false)
+	assert.Equal(t, "", result, "Empty output doesn't match")
+	assert.Equal(t, err, ErrNextCommand, "Error output doesn't match")
+}
+
+func TestSearchCommandError(t *testing.T) {
+
+	searchCommand.Db = &db.ZbotDatabaseMock{
+		RandDef: []db.Definition{db.Definition{Term: "foo", Meaning: "bar"}},
+		Error:   true,
+	}
+	_, err := searchCommand.ProcessText("!search foo", userTest, "testchat", false)
+	assert.Error(t, err, "Internal Error")
+
+	_, err = searchCommand.ProcessText("!search foo", userTest, "testchat", true)
+	assert.Error(t, err, "Private message")
 }

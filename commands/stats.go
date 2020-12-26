@@ -4,38 +4,37 @@ import (
 	"fmt"
 	"regexp"
 
-	log "github.com/Sirupsen/logrus"
-	"github.com/ssalvatori/zbot-telegram-go/db"
-	"github.com/ssalvatori/zbot-telegram-go/user"
+	log "github.com/sirupsen/logrus"
+	"github.com/ssalvatori/zbot-telegram/db"
+	"github.com/ssalvatori/zbot-telegram/user"
 )
 
+// StatsCommand definition
 type StatsCommand struct {
-	Db     db.ZbotDatabase
-	Next   HandlerCommand
-	Levels Levels
+	Db db.ZbotDatabase
 }
 
-func (handler *StatsCommand) ProcessText(text string, user user.User) string {
+// ProcessText run command
+func (handler *StatsCommand) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
+
+	if private {
+		return "", ErrNextCommand
+	}
 
 	commandPattern := regexp.MustCompile(`^!stats$`)
-	result := ""
 
 	if commandPattern.MatchString(text) {
-		if user.IsAllow(handler.Levels.Stats) {
-			statTotal, err := handler.Db.Statistics()
-			if err != nil {
-				log.Error(err)
-				return ""
-			}
-			result = fmt.Sprintf("Count: %s", statTotal)
-		} else {
-			result = fmt.Sprintf("Your level is not enough < %d", handler.Levels.Stats)
+		if checkLearnCommandOnChannel(chat) {
+			return "", ErrLearnDisabledChannel
 		}
+		statTotal, err := handler.Db.Statistics(chat)
+		if err != nil {
+			log.Error(err)
+			return "", db.ErrInternalError
+		}
+		return fmt.Sprintf("Number of definitions: %s", statTotal), nil
 
-	} else {
-		if handler.Next != nil {
-			result = handler.Next.ProcessText(text, user)
-		}
 	}
-	return result
+	//	return "", result
+	return "", ErrNextCommand
 }

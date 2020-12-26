@@ -3,34 +3,49 @@ package command
 import (
 	"fmt"
 	"regexp"
+	"strings"
 
-	log "github.com/Sirupsen/logrus"
-	"github.com/ssalvatori/zbot-telegram-go/db"
-	"github.com/ssalvatori/zbot-telegram-go/user"
+	log "github.com/sirupsen/logrus"
+	"github.com/ssalvatori/zbot-telegram/db"
+	"github.com/ssalvatori/zbot-telegram/user"
 )
 
+// LastCommand definition
 type LastCommand struct {
-	Next   HandlerCommand
-	Db     db.ZbotDatabase
-	Levels Levels
+	Db db.ZbotDatabase
 }
 
-func (handler *LastCommand) ProcessText(text string, user user.User) string {
+//SetDb set db connection if the module need it
+func (handler *LastCommand) SetDb(db db.ZbotDatabase) {}
+
+// ProcessText run command
+func (handler *LastCommand) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
+
+	if private {
+		return "", ErrNextCommand
+	}
 
 	commandPattern := regexp.MustCompile(`^!last$`)
-	result := ""
 
 	if commandPattern.MatchString(text) {
-		lastItem, err := handler.Db.Last()
+		if checkLearnCommandOnChannel(chat) {
+			return "", ErrLearnDisabledChannel
+		}
+		lastItems, err := handler.Db.Last(chat, 10)
 		if err != nil {
 			log.Error(err)
-			return ""
+			return "", err
 		}
-		result = fmt.Sprintf("[%s] - [%s]", lastItem.Term, lastItem.Meaning)
-	} else {
-		if handler.Next != nil {
-			result = handler.Next.ProcessText(text, user)
-		}
+		return PrintTerms(lastItems), nil
 	}
-	return result
+	return "", ErrNextCommand
+}
+
+//PrintTerms .
+func PrintTerms(items []db.Definition) string {
+	keys := make([]string, 0, len(items))
+	for item := range items {
+		keys = append(keys, items[item].Term)
+	}
+	return fmt.Sprintf("[ %s ]", strings.Join(keys, " "))
 }

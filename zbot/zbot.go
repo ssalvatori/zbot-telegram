@@ -1,24 +1,35 @@
 package zbot
 
 import (
-	"encoding/json"
 	"fmt"
 	"regexp"
-	"sort"
+	"strconv"
 	"strings"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
-	"github.com/ssalvatori/zbot-telegram-go/commands"
-	"github.com/ssalvatori/zbot-telegram-go/db"
-	"github.com/ssalvatori/zbot-telegram-go/user"
-	"github.com/ssalvatori/zbot-telegram-go/utils"
+	"container/list"
+
+	log "github.com/sirupsen/logrus"
+	command "github.com/ssalvatori/zbot-telegram/commands"
+	"github.com/ssalvatori/zbot-telegram/db"
+	"github.com/ssalvatori/zbot-telegram/user"
+	"github.com/ssalvatori/zbot-telegram/utils"
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
+//ExternalModulesList List of external modules available
+type ExternalModulesList []struct {
+	Key         string
+	File        string
+	Description string
+}
+
+// //externalModule definition of an external module
+// type externalModule
+
 var (
 	version   = "dev-master"
-	buildTime = time.Now().String()
+	buildTime = time.Now().Format("2006-01-02 15:04:05")
 	gitHash   = "undefined"
 	//DatabaseType database backend to be use (mysql or sqlite)
 	DatabaseType = ""
@@ -28,7 +39,14 @@ var (
 	ModulesPath = utils.GetCurrentDirectory() + "/../modules/"
 	//Flags zbot configurations
 	Flags = ConfigurationFlags{Ignore: false, Level: false}
+	//IgnoreDuration Ignore a user for this amount of seconds
+	IgnoreDuration = 300
+	//DisableLearnChannels List of channels were Learn modules should be disabled (use comma as separator)
+	DisableLearnChannels = ""
 )
+
+//ExternalModules List of extra modules
+var ExternalModules ExternalModulesList
 
 //ConfigurationFlags configurations false means the feature is disabled
 type ConfigurationFlags struct {
@@ -40,14 +58,23 @@ type ConfigurationFlags struct {
 var Db db.ZbotDatabase
 
 var levelsConfig = command.Levels{
-	Ignore: 100,
-	Lock:   1000,
-	Learn:  0,
-	Append: 0,
-	Forget: 1000,
-	Who:    0,
-	Top:    0,
-	Stats:  0,
+	Ignore:   100,
+	Lock:     1000,
+	Learn:    0,
+	Append:   0,
+	Forget:   1000,
+	Who:      0,
+	Top:      0,
+	Stats:    0,
+	Version:  0,
+	Ping:     0,
+	Last:     0,
+	Rand:     0,
+	Find:     0,
+	Get:      0,
+	Search:   0,
+	External: 0,
+	Level:    0,
 }
 
 //Execute run Zbot
@@ -59,9 +86,26 @@ func Execute() {
 	log.Info("Configuration Flags Ignore: ", Flags.Ignore)
 	log.Info("Configuration Flags Level: ", Flags.Level)
 
+	command.Setup()
+
+	poller := &tb.LongPoller{Timeout: 10 * time.Second}
+
+	middleware := tb.NewMiddlewarePoller(poller, func(msg *tb.Update) bool {
+		if msg.Message == nil {
+			return true
+		}
+
+		if strings.Contains(msg.Message.Text, "spam") {
+			return false
+		}
+
+		return true
+	})
+
 	bot, err := tb.NewBot(tb.Settings{
-		Token:  APIToken,
-		Poller: &tb.LongPoller{Timeout: 10 * time.Second},
+		Token:       APIToken,
+		Poller:      middleware,
+		Synchronous: false,
 	})
 
 	if err != nil {
@@ -76,21 +120,90 @@ func Execute() {
 	}
 
 	if Flags.Ignore {
-		go Db.UserCleanIgnore()
+		go Db.UserCleanupIgnorelist()
+	}
+
+	log.Debug(fmt.Sprintf("Modules to load %+v", ExternalModules))
+	botCommands := []tb.Command{}
+
+	//Register extra modules
+	for _, module := range ExternalModules {
+		var cmdString = fmt.Sprintf("/%s", module.Key)
+		log.Debug(fmt.Sprintf("Loading module %s from path %s%s", module.Key, ModulesPath, module.File))
+
+		_, err := command.LookPathCommand(ModulesPath + module.File)
+
+		if err != nil {
+			log.Error(fmt.Sprintf("File %s for module [%s] can't be loaded %s", module.File, module.Key, ModulesPath))
+			log.Error(err)
+			continue
+		}
+
+		bot.Handle(cmdString, func(m *tb.Message) {
+			response := runExternalModule(Db, m, ExternalModules)
+			bot.Send(m.Chat, response)
+		})
+		botCommands = append(botCommands, tb.Command{Text: "/" + module.Key, Description: module.Description})
+	}
+
+	log.Debug(fmt.Sprintf("Seting bot commands: %+v", botCommands))
+	err = bot.SetCommands(botCommands)
+	if err != nil {
+		log.Error("Error trying to set commands")
+		log.Error(err)
 	}
 
 	bot.Handle(tb.OnText, func(m *tb.Message) {
-		var response = messagesProcessing(Db, m)
+		chatName := ""
+		if m.Chat.Type != "private" {
+			chatName = m.Chat.Title
+		}
+
+		var response = messagesProcessing(Db, m, chatName)
 		if response != "" {
 			bot.Send(m.Chat, response)
 		}
 	})
 
+	// time.AfterFunc(100*time.Second, bot.Stop)
+
 	bot.Start()
 }
 
+func runExternalModule(db db.ZbotDatabase, message *tb.Message, modules ExternalModulesList) string {
+
+	cmd, err := utils.ParseCommand(message.Text)
+	if err != nil {
+		log.Error(err)
+		return ""
+	}
+
+	cmdFile, err := utils.GetCommandFile(cmd, modules)
+	if err != nil {
+		log.Error(err)
+		return ""
+	}
+
+	fullPathToBinary, _ := command.LookPathCommand(ModulesPath + cmdFile)
+
+	chatName := ""
+	if message.Chat.Type != "private" {
+		chatName = message.Chat.Title
+	}
+
+	user := user.BuildUser(message.Sender, db)
+	log.Debug(fmt.Sprintf("Running module %s ", fullPathToBinary))
+	response := utils.RunExternalCommand(fullPathToBinary, user.Username, strconv.Itoa(user.Level), chatName, strings.TrimSpace(message.Payload))
+	return response
+}
+
 //messagesProcessing
-func messagesProcessing(db db.ZbotDatabase, message *tb.Message) string {
+func messagesProcessing(db db.ZbotDatabase, message *tb.Message, chatName string) string {
+
+	private := false
+	if message.Chat.Type == "private" && chatName == "" {
+		private = true
+	}
 
 	//we're going to process only the message starting with ! or ?
 	processingMsg := regexp.MustCompilePOSIX(`^[!|?].*`)
@@ -99,7 +212,7 @@ func messagesProcessing(db db.ZbotDatabase, message *tb.Message) string {
 	if !checkIgnoreList(db, username) {
 		if processingMsg.MatchString(message.Text) {
 			log.Debug(fmt.Sprintf("Received a message from %s with the text: %s", username, message.Text))
-			return processing(db, *message)
+			return cmdProcessing(db, *message, chatName, private)
 		}
 	} else {
 		log.Debug(fmt.Sprintf("User [%s] ignored", username))
@@ -121,8 +234,8 @@ func checkIgnoreList(db db.ZbotDatabase, username string) bool {
 	return false
 }
 
-//processing process message using commands
-func processing(db db.ZbotDatabase, msg tb.Message) string {
+//cmdProcessing process message using commands
+func cmdProcessing(db db.ZbotDatabase, msg tb.Message, chatName string, private bool) string {
 
 	commandName := command.GetCommandInformation(msg.Text)
 
@@ -140,50 +253,31 @@ func processing(db db.ZbotDatabase, msg tb.Message) string {
 		}
 	}
 
-	// TODO: how to clean this code
-	commands := &command.PingCommand{}
-	versionCommand := &command.VersionCommand{Version: version, BuildTime: buildTime, GitHash: gitHash}
-	statsCommand := &command.StatsCommand{Db: db, Levels: levelsConfig}
-	randCommand := &command.RandCommand{Db: db, Levels: levelsConfig}
-	topCommand := &command.TopCommand{Db: db, Levels: levelsConfig}
-	lastCommand := &command.LastCommand{Db: db, Levels: levelsConfig}
-	getCommand := &command.GetCommand{Db: db, Levels: levelsConfig}
-	findCommand := &command.FindCommand{Db: db, Levels: levelsConfig}
-	searchCommand := &command.SearchCommand{Db: db, Levels: levelsConfig}
-	learnCommand := &command.LearnCommand{Db: db, Levels: levelsConfig}
-	levelCommand := &command.LevelCommand{Db: db, Levels: levelsConfig}
-	ignoreCommand := &command.IgnoreCommand{Db: db, Levels: levelsConfig}
-	lockCommand := &command.LockCommand{Db: db, Levels: levelsConfig}
-	appendCommand := &command.AppendCommand{Db: db, Levels: levelsConfig}
-	whoCommand := &command.WhoCommand{Db: db, Levels: levelsConfig}
-	forgetCommand := &command.ForgetCommand{Db: db, Levels: levelsConfig}
-
-	/*
-		TODO: check error handler
-		!level add <username>
-		!level del <username>
-	*/
-
-	externalCommand := &command.ExternalCommand{
-		PathModules: ModulesPath,
+	commandsList := &command.CommandsList{
+		List: list.New(),
 	}
 
-	commands.Next = versionCommand
-	versionCommand.Next = statsCommand
-	statsCommand.Next = randCommand
-	randCommand.Next = topCommand
-	topCommand.Next = lastCommand
-	lastCommand.Next = getCommand
-	getCommand.Next = findCommand
-	findCommand.Next = searchCommand
-	searchCommand.Next = learnCommand
-	learnCommand.Next = levelCommand
-	levelCommand.Next = lockCommand
-	lockCommand.Next = appendCommand
-	appendCommand.Next = whoCommand
-	whoCommand.Next = forgetCommand
-	forgetCommand.Next = ignoreCommand
-	ignoreCommand.Next = externalCommand
+	commandsList.Chain("ping", &command.PingCommand{Db: db}, levelsConfig.Ping)
+	commandsList.Chain("version", &command.VersionCommand{
+		GitHash:   gitHash,
+		Version:   version,
+		BuildTime: buildTime,
+	}, levelsConfig.Version)
+	commandsList.Chain("top", &command.TopCommand{Db: db}, levelsConfig.Top)
+	commandsList.Chain("stats", &command.StatsCommand{Db: db}, levelsConfig.Stats)
+	commandsList.Chain("last", &command.LastCommand{Db: db}, levelsConfig.Last)
+	commandsList.Chain("rand", &command.RandCommand{Db: db}, levelsConfig.Rand)
+	commandsList.Chain("who", &command.WhoCommand{Db: db}, levelsConfig.Who)
+	commandsList.Chain("find", &command.FindCommand{Db: db}, levelsConfig.Find)
+	commandsList.Chain("get", &command.GetCommand{Db: db}, levelsConfig.Get)
+	commandsList.Chain("search", &command.SearchCommand{Db: db}, levelsConfig.Search)
+	commandsList.Chain("learn", &command.LearnCommand{Db: db}, levelsConfig.Learn)
+	commandsList.Chain("append", &command.AppendCommand{Db: db}, levelsConfig.Append)
+	commandsList.Chain("forget", &command.ForgetCommand{Db: db}, levelsConfig.Forget)
+	commandsList.Chain("level", &command.LevelCommand{Db: db}, levelsConfig.Level)
+	commandsList.Chain("lock", &command.LockCommand{Db: db}, levelsConfig.Lock)
+	commandsList.Chain("ignore", &command.IgnoreCommand{Db: db}, levelsConfig.Ignore)
+	// commandsList.Chain("external", &command.ExternalCommand{PathModules: ModulesPath}, levelsConfig.External)
 
 	var messageString = msg.Text
 
@@ -191,26 +285,24 @@ func processing(db db.ZbotDatabase, msg tb.Message) string {
 		messageString = fmt.Sprintf("%s %s %s", messageString, msg.ReplyTo.Sender.Username, msg.ReplyTo.Text)
 	}
 
-	outputMsg := commands.ProcessText(messageString, user)
+	outputMsg := commandsList.Run(commandName, messageString, user, chatName, private)
+
+	//	outputMsg := commands.ProcessText(messageString, user)
 
 	return outputMsg
 }
 
 //SetDisabledCommands setup disabled commands
-func SetDisabledCommands(dataBinaryContent []byte) {
-	var c []string
-	err := json.Unmarshal(dataBinaryContent, &c)
-
-	if err != nil {
-		log.Debug("No disabled commands")
-		command.DisabledCommands = []string{}
-	}
-
-	command.DisabledCommands = c
-	sort.Strings(command.DisabledCommands)
+func SetDisabledCommands(cmdList []string) {
+	command.DisabledCommands = cmdList
 }
 
 //GetDisabledCommands get disabled zbot commands
 func GetDisabledCommands() []string {
 	return command.DisabledCommands
+}
+
+//SetDisabledLearnChannels set list of channels where learns commands wont be used
+func SetDisabledLearnChannels(channelsList []string) {
+	command.DisableLearnChannels = channelsList
 }

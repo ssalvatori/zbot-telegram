@@ -3,7 +3,7 @@ package command
 import (
 	"testing"
 
-	"github.com/ssalvatori/zbot-telegram-go/db"
+	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -11,38 +11,36 @@ var whoCommand = WhoCommand{}
 
 func TestWhoCommand(t *testing.T) {
 
-	whoCommand.Db = &db.MockZbotDatabase{
-		Term:    "foo",
-		Meaning: "bar",
-		Author:  "ssalvatori",
-		Date:    "2017-03-22",
-		Level:   "100",
+	whoCommand.Db = &db.ZbotDatabaseMock{
+		Term:     "foo",
+		Meaning:  "bar",
+		Author:   "ssalvatori",
+		Level:    "100",
+		UpdateAt: 1604225446,
+		CreateAt: 1604225446,
 	}
-	whoCommand.Levels = Levels{
-		Who: 1,
-	}
+	result, _ := whoCommand.ProcessText("!who foo", userTest, "testchat", false)
+	assert.Equal(t, "[foo] by [ssalvatori] on [2020-11-01 10:10:46 +0000 UTC] hits [0]", result, "Who Command OK")
+}
 
-	assert.Equal(t, "[foo] by [ssalvatori] on [2017-03-22]", whoCommand.ProcessText("!who foo", userTest), "Who Command OK")
+func TestWhoCommandNotMatch(t *testing.T) {
 
-	whoCommand.Db = &db.MockZbotDatabase{
-		Term:    "foo",
-		Meaning: "bar",
-		Level:   "5",
-	}
-	whoCommand.Levels = Levels{
-		Who: 10,
-	}
+	result, _ := whoCommand.ProcessText("!who6", userTest, "testchat", false)
+	assert.Equal(t, "", result, "Empty output doesn't match")
 
-	assert.Equal(t, "", whoCommand.ProcessText("!who foo", userTest), "Who Command No Level")
+	_, err := whoCommand.ProcessText("!who6", userTest, "testchat", false)
+	assert.Equal(t, "no action in command", err.Error(), "Error output doesn't match")
+}
 
-	whoCommand.Db = &db.MockZbotDatabase{
-		Error: true,
-	}
-	whoCommand.Levels = Levels{
-		Who: 1,
-	}
-	assert.Equal(t, "", whoCommand.ProcessText("!who foo", userTest), "Who with internal error")
+func TestWhoCommandError(t *testing.T) {
 
-	whoCommand.Next = &FakeCommand{}
-	assert.Equal(t, "Fake OK", whoCommand.ProcessText("!who2 foo", userTest), "Who next command")
+	whoCommand.Db = &db.ZbotDatabaseMock{
+		RandDef: []db.Definition{db.Definition{Term: "foo", Meaning: "bar"}},
+		Error:   true,
+	}
+	_, err := whoCommand.ProcessText("!who foo", userTest, "testchat", false)
+	assert.Error(t, err, "DB Error")
+
+	_, err = whoCommand.ProcessText("!who foo", userTest, "testchat", true)
+	assert.Error(t, err, "Private Message")
 }

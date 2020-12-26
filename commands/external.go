@@ -1,25 +1,31 @@
 package command
 
 import (
-	"bytes"
+	"fmt"
 	"os/exec"
 	"regexp"
 	"strconv"
+	"strings"
 
-	log "github.com/Sirupsen/logrus"
-	"github.com/ssalvatori/zbot-telegram-go/user"
+	log "github.com/sirupsen/logrus"
+	"github.com/ssalvatori/zbot-telegram/user"
 )
 
+//ExecCommand handler to exec.Command
+var ExecCommand = exec.Command
+
+//LookPathCommand handler to exec.LookPath
+var LookPathCommand = exec.LookPath
+
+//ExternalCommand definition
 type ExternalCommand struct {
 	PathModules string
-	Next        HandlerCommand
-	Levels      Levels
 }
 
-func (handler *ExternalCommand) ProcessText(text string, user user.User) string {
+// ProcessText run command
+func (handler *ExternalCommand) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
 
 	commandPattern := regexp.MustCompile(`^!([a-zA-Z0-9\_\-]+)([\s(\S*)]*)?`)
-	result := ""
 
 	if commandPattern.MatchString(text) {
 		args := commandPattern.FindStringSubmatch(text)
@@ -27,26 +33,27 @@ func (handler *ExternalCommand) ProcessText(text string, user user.User) string 
 
 		log.Debug("Looking for module: " + handler.PathModules + externalModule)
 
-		binary, err := exec.LookPath(handler.PathModules + externalModule)
+		fullPathToBinary, err := LookPathCommand(handler.PathModules + externalModule)
 
 		if err != nil {
 			log.Error(err)
-			return ""
+			// return "", fmt.Errorf("Internal error with command [%s]", externalModule)
+			return "", nil
 		}
 
-		cmd := exec.Command(binary, user.Username, strconv.Itoa(user.Level), args[2])
-		var out bytes.Buffer
-		cmd.Stdout = &out
-		err = cmd.Run()
-		if err != nil {
-			log.Error(err)
-			return ""
-		}
-		result = out.String()
-	} else {
-		if handler.Next != nil {
-			result = handler.Next.ProcessText(text, user)
-		}
+		return handler.RunCommand(fullPathToBinary, user.Username, strconv.Itoa(user.Level), chat, strings.TrimSpace(args[2])), nil
+
 	}
-	return result
+	return "", nil
+}
+
+//RunCommand run external command, the bot is providing the following arguments <username> <level> <chat> <command_arguments>
+func (handler *ExternalCommand) RunCommand(command string, args ...string) string {
+	output, err := ExecCommand(command, args...).CombinedOutput()
+	if err != nil {
+		log.Error(fmt.Sprintf("%s", output))
+		log.Error(err)
+		return ""
+	}
+	return fmt.Sprintf("%s", output)
 }

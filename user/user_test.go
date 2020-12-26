@@ -3,7 +3,7 @@ package user
 import (
 	"testing"
 
-	"github.com/ssalvatori/zbot-telegram-go/db"
+	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/stretchr/testify/assert"
 	tb "gopkg.in/tucnak/telebot.v2"
 )
@@ -12,7 +12,7 @@ func TestBuildUser(t *testing.T) {
 	sender := tb.User{}
 	newUser := User{}
 
-	mockDatabase := &db.MockZbotDatabase{
+	mockDatabase := &db.ZbotDatabaseMock{
 		Level: "10",
 	}
 
@@ -46,13 +46,13 @@ func TestBuildUser(t *testing.T) {
 func TestGetUserLevel(t *testing.T) {
 	userTest := User{Username: "ssalvatori"}
 
-	mockDatabase := &db.MockZbotDatabase{
+	mockDatabase := &db.ZbotDatabaseMock{
 		Level: "10",
 	}
 
 	assert.Equal(t, 10, GetUserLevel(mockDatabase, userTest.Username), "Getting user level")
 
-	mockDatabase = &db.MockZbotDatabase{
+	mockDatabase = &db.ZbotDatabaseMock{
 		Level: "10",
 		Error: true,
 	}

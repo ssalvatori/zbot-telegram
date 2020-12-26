@@ -28,4 +28,8 @@ _testmain.go
 coverage.sh
 *.coverprofile
 
-zbot-telegram-go
+zbot-telegram
+*.db
+/venv
+zbot_dev.conf
+plex.py

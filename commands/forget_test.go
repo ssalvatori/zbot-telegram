@@ -3,48 +3,39 @@ package command
 import (
 	"testing"
 
-	"github.com/ssalvatori/zbot-telegram-go/db"
+	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/stretchr/testify/assert"
 )
 
 var forgetCommand = ForgetCommand{}
 
-func TestForgetCommandOK(t *testing.T) {
-
-	forgetCommand.Db = &db.MockZbotDatabase{
-		Term:    "foo",
-		Meaning: "bar",
-		Level:   "100",
-	}
-	forgetCommand.Levels = Levels{
-		Ignore: 10,
-		Append: 10,
-		Learn:  10,
-		Lock:   10,
-		Forget: 10,
-	}
-
-	userTest.Level = 100
-
-	assert.Equal(t, "[foo] deleted", forgetCommand.ProcessText("!forget foo", userTest), "Forget Command OK")
+func TestForgetCommandPrivateMessage(t *testing.T) {
+	forgetCommand.Db = &db.ZbotDatabaseMock{}
+	result, err := forgetCommand.ProcessText("!forget foo", userTest, "testchat", true)
+	assert.Equal(t, "", result, "Private message")
+	assert.Error(t, err, "Private message")
 }
 
-func TestForgetCommandNoLevel(t *testing.T) {
+func TestForgetCommandOK(t *testing.T) {
+	forgetCommand.Db = &db.ZbotDatabaseMock{}
+	result, _ := forgetCommand.ProcessText("!forget foo", userTest, "testchat", false)
+	assert.Equal(t, "[foo] deleted", result, "Forget Command OK")
+}
 
-	forgetCommand.Db = &db.MockZbotDatabase{
-		Term:    "foo",
-		Meaning: "bar",
-		Level:   "5",
+func TestForgetCommandNotMatch(t *testing.T) {
+
+	result, _ := forgetCommand.ProcessText("!forget6", userTest, "testchat", false)
+	assert.Equal(t, "", result, "Empty output doesn't match")
+
+	_, err := forgetCommand.ProcessText("!forget6", userTest, "testchat", false)
+	assert.Equal(t, "no action in command", err.Error(), "Error output doesn't match")
+}
+
+func TestForgetCommandError(t *testing.T) {
+
+	forgetCommand.Db = &db.ZbotDatabaseMock{
+		Error: true,
 	}
-	forgetCommand.Levels = Levels{
-		Ignore: 10,
-		Append: 10,
-		Learn:  10,
-		Lock:   10,
-		Forget: 1000,
-	}
-
-	userTest.Level = 5
-
-	assert.Equal(t, "", forgetCommand.ProcessText("!forget foo", userTest), "Forget Command No Level")
+	_, err := forgetCommand.ProcessText("!forget lal", userTest, "testchat", false)
+	assert.Error(t, err, "DB error")
 }

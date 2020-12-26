@@ -1,14 +1,15 @@
 package command
 
 import (
+	"container/list"
 	"testing"
 
-	"github.com/ssalvatori/zbot-telegram-go/db"
-	"github.com/ssalvatori/zbot-telegram-go/user"
+	"github.com/ssalvatori/zbot-telegram/db"
+	"github.com/ssalvatori/zbot-telegram/user"
 	"github.com/stretchr/testify/assert"
 )
 
-// This userTest variable will be shared between all the test
+// userTest variable will be shared between all the test
 var userTest = user.User{
 	Username: "ssalvatori",
 	Ident:    "stefano",
@@ -27,23 +28,15 @@ var minimumLevels = Levels{
 	Stats:  0,
 }
 
-type FakeCommand struct {
-	Next HandlerCommand
-}
-
-func (handler *FakeCommand) ProcessText(text string, user user.User) string {
-	return "Fake OK"
-}
-
 func TestGetTerms(t *testing.T) {
-	items := []db.DefinitionItem{
+	items := []db.Definition{
 		{Term: "foo", Meaning: "bar"},
 		{Term: "foo2", Meaning: "bar2"},
 		{Term: "foo3", Meaning: "bar3"},
 	}
 	assert.Equal(t, []string{"foo", "foo2", "foo3"}, getTerms(items))
 	var terms []string
-	assert.Equal(t, terms, getTerms([]db.DefinitionItem{}))
+	assert.Equal(t, terms, getTerms([]db.Definition{}))
 }
 
 func TestIsCommandDisable(t *testing.T) {
@@ -77,6 +70,42 @@ func TestGetMinimumLevel(t *testing.T) {
 	assert.Equal(t, minimumLevels.Lock, GetMinimumLevel("lock", minimumLevels), "checking lock")
 
 	assert.Equal(t, 0, GetMinimumLevel("hola", minimumLevels), "checking level not defined")
+}
+
+type FakeCommand2 struct {
+	cmd string
+}
+
+func (handler *FakeCommand2) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
+	if text != "!fakecommand2" {
+		return "", ErrNextCommand
+	}
+	return "Fake 2", nil
+}
+
+func (handler *FakeCommand2) SetDB(db db.ZbotDatabase) {
+
+}
+
+var fake1Command = &FakeCommand2{cmd: "fakecommand1"}
+var fake2Command = &FakeCommand2{cmd: "fakecommand2"}
+var fake3Command = &FakeCommand2{cmd: "fakecommand3"}
+
+var cmdList = &CommandsList{
+	List: list.New(),
+}
+
+func TestChainAndRun(t *testing.T) {
+
+	cmdList.Chain("fakecommand1", fake1Command, 0)
+	cmdList.Chain("fakecommand2", fake2Command, 0)
+	cmdList.Chain("fakecommand3", fake3Command, 0)
+	assert.Equal(t, 3, cmdList.List.Len(), "Chain add elements in the list")
+
+	assert.Equal(t, "Fake 2", cmdList.Run("fakecommand2", "!fakecommand2", userTest, "test", false))
+	assert.Equal(t, "", cmdList.Run("fakecommand1", "!fakecommand1", userTest, "test", false))
+	assert.Equal(t, "", cmdList.Run("fakecommand2", "!fakecommand5", userTest, "test", false))
+
 }
 
 /*

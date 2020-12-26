@@ -3,7 +3,7 @@ package command
 import (
 	"testing"
 
-	"github.com/ssalvatori/zbot-telegram-go/db"
+	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -11,23 +11,41 @@ var findCommand = FindCommand{}
 
 func TestFindCommandOK(t *testing.T) {
 
-	findCommand.Db = &db.MockZbotDatabase{
+	findCommand.Db = &db.ZbotDatabaseMock{
 		Term:    "bar",
 		Meaning: "bar",
 	}
 
-	assert.Equal(t, "bar", findCommand.ProcessText("!find foo", userTest), "Last Command")
-	findCommand.Db = &db.MockZbotDatabase{
-		Not_found: true,
-	}
-	assert.Equal(t, "", findCommand.ProcessText("!find lalal", userTest), "Last Command")
+	var result string
 
-	findCommand.Db = &db.MockZbotDatabase{
-		Error: true,
+	result, _ = findCommand.ProcessText("!find foo", userTest, "testchat", false)
+	assert.Equal(t, "bar", result, "Last Command")
+	findCommand.Db = &db.ZbotDatabaseMock{
+		NotFound: true,
 	}
-	assert.Equal(t, "", findCommand.ProcessText("!find lala", userTest), "Error DB")
+	result, _ = findCommand.ProcessText("!find lalal", userTest, "testchat", false)
+	assert.Equal(t, "", result, "Last Command")
 
-	assert.Equal(t, "", findCommand.ProcessText("!find", userTest), "Last no next command")
-	findCommand.Next = &FakeCommand{}
-	assert.Equal(t, "Fake OK", findCommand.ProcessText("?? ", userTest), "Last next command")
+	result, err := findCommand.ProcessText("!find lalal", userTest, "testchat", true)
+	assert.Equal(t, "", result, "Private Message")
+	assert.Equal(t, ErrNextCommand, err, "Private Message")
+
+}
+func TestFindCommandNotMatch(t *testing.T) {
+
+	result, _ := findCommand.ProcessText("!find6", userTest, "testchat", false)
+	assert.Equal(t, "", result, "Empty output doesn't match")
+
+	_, err := findCommand.ProcessText("!find6", userTest, "testchat", false)
+	assert.Equal(t, "no action in command", err.Error(), "Error output doesn't match")
+}
+
+func TestFindCommandError(t *testing.T) {
+
+	findCommand.Db = &db.ZbotDatabaseMock{
+		RandDef: []db.Definition{db.Definition{Term: "foo", Meaning: "bar"}},
+		Error:   true,
+	}
+	_, err := findCommand.ProcessText("!find lala", userTest, "testchat", false)
+	assert.Error(t, err, "DB Error")
 }

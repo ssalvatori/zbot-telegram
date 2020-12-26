@@ -2,40 +2,39 @@ package command
 
 import (
 	"fmt"
-	log "github.com/Sirupsen/logrus"
-	"github.com/ssalvatori/zbot-telegram-go/db"
-	"github.com/ssalvatori/zbot-telegram-go/user"
 	"regexp"
+
+	"github.com/ssalvatori/zbot-telegram/db"
+	"github.com/ssalvatori/zbot-telegram/user"
 )
 
+// ForgetCommand definition
 type ForgetCommand struct {
-	Next   HandlerCommand
-	Db     db.ZbotDatabase
-	Levels Levels
+	Db db.ZbotDatabase
 }
 
-func (handler *ForgetCommand) ProcessText(text string, user user.User) string {
+// ProcessText run command
+func (handler *ForgetCommand) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
 
-	commandPattern := regexp.MustCompile(`^!forget\s(\S*)$`)
-	result := ""
-
-	if commandPattern.MatchString(text) {
-		if user.IsAllow(handler.Levels.Forget) {
-			term := commandPattern.FindStringSubmatch(text)
-			def := db.DefinitionItem{
-				Term: term[1],
-			}
-			err := handler.Db.Forget(def)
-			if err != nil {
-				log.Error(err)
-			}
-			return fmt.Sprintf("[%s] deleted", def.Term)
-		}
-	} else {
-		if handler.Next != nil {
-			result = handler.Next.ProcessText(text, user)
-		}
+	if private {
+		return "", ErrNextCommand
 	}
 
-	return result
+	commandPattern := regexp.MustCompile(`^!forget\s(\S*)$`)
+
+	if commandPattern.MatchString(text) {
+		if checkLearnCommandOnChannel(chat) {
+			return "", ErrLearnDisabledChannel
+		}
+		term := commandPattern.FindStringSubmatch(text)
+		def := db.Definition{
+			Term: term[1],
+		}
+		err := handler.Db.Forget(def, chat)
+		if err != nil {
+			return "", ErrInternalError
+		}
+		return fmt.Sprintf("[%s] deleted", def.Term), nil
+	}
+	return "", ErrNextCommand
 }

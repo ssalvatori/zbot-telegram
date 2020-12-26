@@ -3,60 +3,103 @@ package command
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 
-	log "github.com/Sirupsen/logrus"
-	"github.com/ssalvatori/zbot-telegram-go/db"
+	log "github.com/sirupsen/logrus"
+	"github.com/ssalvatori/zbot-telegram/db"
 
-	"github.com/ssalvatori/zbot-telegram-go/user"
 	"strings"
+
+	"github.com/ssalvatori/zbot-telegram/user"
 )
 
+//LevelCommand definition
 type LevelCommand struct {
-	Db     db.ZbotDatabase
-	Next   HandlerCommand
-	Levels Levels
+	Db db.ZbotDatabase
 }
 
-func (handler *LevelCommand) AddUser(userToCheck string, user string) string {
-	return "not ready"
+//AddUser add level for a given user
+func (handler *LevelCommand) AddUser(targetUser string, level int, responsibleUser string) (string, error) {
+	return "not ready", nil
 }
 
-func (handler *LevelCommand) DelUser(userToCheck string, user string) string {
-	return "not ready"
+//DelUser delete level for a given user
+func (handler *LevelCommand) DelUser(userToCheck string, user string) (string, error) {
+	return "not ready", nil
 }
 
-func (handler *LevelCommand) GetLevel(userToCheck string, user user.User) string {
-	result := ""
-	if user.IsAllow(0) {
-		level, err := handler.Db.UserLevel(user.Username)
-		if err != nil {
-			log.Error(err)
-		}
-		result = fmt.Sprintf("%s level %s", user.Username, level)
+//GetLevel return level for a given user
+func (handler *LevelCommand) GetLevel(user string) (string, error) {
+	level, err := handler.Db.UserLevel(user)
+	if err != nil {
+		log.Error(err)
+		return "", err
 	}
-	return result
+	return fmt.Sprintf("%s level %s", user, level), nil
 }
 
-func (handler *LevelCommand) ProcessText(text string, user user.User) string {
+//PaserCommand identify user to check levels
+func (handler *LevelCommand) PaserCommand(cmd string, user string) map[string]string {
+
+	res := make(map[string]string)
+	parsed := strings.Fields(cmd)
+
+	res["user"] = user
+	res["subcommand"] = "get"
+	res["level"] = "0"
+
+	if len(parsed) == 4 {
+		switch parsed[1] {
+		case "add":
+			res["subcommand"] = "add"
+			res["user"] = parsed[2]
+			res["level"] = parsed[3]
+		default:
+
+		}
+	}
+
+	if len(parsed) == 3 {
+		switch parsed[1] {
+		case "del":
+			res["subcommand"] = "del"
+			res["user"] = parsed[2]
+			res["level"] = "0"
+		default:
+
+		}
+	}
+
+	return res
+}
+
+//ProcessText run command
+func (handler *LevelCommand) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
+
+	if private {
+		return "", ErrNextCommand
+	}
+
 	commandPattern := regexp.MustCompile(`^!level(\s|$)(\S*)\s?(\S+)?\s?(\d+)?`)
-	result := ""
+	var result string
+	var err error
 
 	if commandPattern.MatchString(text) {
-		subcommand := commandPattern.FindStringSubmatch(text)
-		log.Debug("level subcommand: ", subcommand[2])
-		log.Debug(strings.Join(subcommand, "-"))
-		switch subcommand[2] {
+		parsedCmd := handler.PaserCommand(text, user.Username)
+		switch parsedCmd["subcommand"] {
 		case "add":
-			result = handler.AddUser(subcommand[2], user.Username)
+			level, _ := strconv.Atoi(parsedCmd["level"])
+			result, err = handler.AddUser(parsedCmd["user"], level, user.Username)
 		case "del":
-			result = handler.DelUser(subcommand[2], user.Username)
+			result, err = handler.DelUser(parsedCmd["user"], user.Username)
 		default:
-			result = handler.GetLevel(subcommand[2], user)
+			result, err = handler.GetLevel(parsedCmd["user"])
 		}
-	} else {
-		if handler.Next != nil {
-			result = handler.Next.ProcessText(text, user)
+		if err != nil {
+			return "", err
 		}
+
+		return result, nil
 	}
-	return result
+	return "", ErrNextCommand
 }

@@ -3,46 +3,48 @@ package command
 import (
 	"testing"
 
-	"github.com/ssalvatori/zbot-telegram-go/db"
+	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/stretchr/testify/assert"
 )
 
-var ignoreCommand = IgnoreCommand{
-	Levels: Levels{Ignore: 1000},
-}
+var ignoreCommand = IgnoreCommand{}
 
 func TestIgnoreCommandHelp(t *testing.T) {
-	result := "*!ignore* Options available: \n list (show all user ignored) \n add <username> (ignore a user for 10 minutes)"
-	assert.Equal(t, result, ignoreCommand.ProcessText("!ignore help", userTest), "Ignore help")
+	want := "*!ignore* Options available: \n list (show all user ignored) \n add <username> (ignore a user for 10 minutes)"
+	res, _ := ignoreCommand.ProcessText("!ignore help", userTest, "testchat", false)
+	assert.Equal(t, want, res, "Ignore help")
 }
 
 func TestIgnoreCommandList(t *testing.T) {
-	ignoreCommand.Db = &db.MockZbotDatabase{
-		User_ignored: []db.UserIgnore{
-			{Username: "rigo", Since: "12", Until: "22"},
-			{Username: "jav", Since: "32", Until: "42"},
+	ignoreCommand.Db = &db.ZbotDatabaseMock{
+		UserIgnored: []db.UserIgnore{
+			{Username: "rigo", CreatedAt: 12, ValidUntil: 20, CreatedBy: "admin", Chat: "test_dev"},
+			{Username: "jav", CreatedAt: 12, ValidUntil: 20, CreatedBy: "admin", Chat: "test_dev"},
 		},
 	}
-	expected := "[ @rigo ] since [01-01-1970 00:00:12 UTC] until [01-01-1970 00:00:22 UTC]/n[ @jav ] since [01-01-1970 00:00:32 UTC] until [01-01-1970 00:00:42 UTC]"
-	assert.Equal(t, expected, ignoreCommand.ProcessText("!ignore list", userTest), "Last Command")
+	expected := "[ @rigo ] since [1970-01-01 00:00:12 +0000 UTC] until [1970-01-01 00:00:20 +0000 UTC]/n[ @jav ] since [1970-01-01 00:00:12 +0000 UTC] until [1970-01-01 00:00:20 +0000 UTC]"
+	res, _ := ignoreCommand.ProcessText("!ignore list", userTest, "testchat", false)
+	assert.Equal(t, expected, res, "Last Command")
 }
 
 func TestIgnoreCommandAdd(t *testing.T) {
-	ignoreCommand.Db = &db.MockZbotDatabase{
+	ignoreCommand.Db = &db.ZbotDatabaseMock{
 		Level: "1000",
-		User_ignored: []db.UserIgnore{
-			{Username: "rigo", Since: "12", Until: "12"},
-			{Username: "jav", Since: "32", Until: "32"},
+		UserIgnored: []db.UserIgnore{
+			{Username: "rigo", CreatedAt: 12, ValidUntil: 20, CreatedBy: "admin", Chat: "test_dev"},
+			{Username: "jav", CreatedAt: 12, ValidUntil: 20, CreatedBy: "admin", Chat: "test_dev"},
 		},
 	}
 
 	userTest.Level = 1000
 	expected := "User [rigo] ignored for 10 minutes"
-	assert.Equal(t, expected, ignoreCommand.ProcessText("!ignore add rigo", userTest), "Ignore add Command")
+	res, _ := ignoreCommand.ProcessText("!ignore add rigo", userTest, "testchat", false)
+	assert.Equal(t, expected, res, "Ignore add Command")
 
-	assert.Equal(t, "You can't ignore yourself", ignoreCommand.ProcessText("!ignore add ssalvatori", userTest), "Ignore add myself")
+	res, _ = ignoreCommand.ProcessText("!ignore add ssalvatori", userTest, "testchat", false)
+	assert.Equal(t, "You can't ignore yourself", res, "Ignore add myself")
 
-	ignoreCommand.Db = &db.MockZbotDatabase{
+	ignoreCommand.Db = &db.ZbotDatabaseMock{
 		Level: "10",
 	}
 
@@ -57,4 +59,18 @@ func TestConvertDates(t *testing.T) {
 
 	assert.Equal(t, "04-03-2017 16:21:20 UTC", sinceFormated, "format ok")
 	assert.Equal(t, "04-03-2017 16:31:20 UTC", untilFormated, "format ok")
+}
+
+func TestIgnoreError(t *testing.T) {
+
+	ignoreCommand.Db = &db.ZbotDatabaseMock{
+		Error: true,
+	}
+
+	_, err := ignoreCommand.ProcessText("!ignore6", userTest, "testchat", false)
+	assert.Equal(t, "no action in command", err.Error(), "Db error")
+
+	_, err = ignoreCommand.ProcessText("!ignore6", userTest, "testchat", false)
+	assert.Error(t, err, "Private message")
+
 }

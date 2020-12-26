@@ -2,7 +2,7 @@ package command
 
 import (
 	"testing"
-	"github.com/ssalvatori/zbot-telegram-go/db"
+	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -10,7 +10,7 @@ var templateCommand = TemplateCommand{}
 
 func TestTemplateCommandOK(t *testing.T) {
 
-	templateCommand.Db = &db.MockZbotDatabase{
+	templateCommand.Db = &db.ZbotDatabaseMock{
 		Term:    "foo",
 		Meaning: "bar",
 		Level: "100",
@@ -27,7 +27,7 @@ func TestTemplateCommandOK(t *testing.T) {
 
 func TestTemplateCommandNoLevel(t *testing.T) {
 
-	templateCommand.Db = &db.MockZbotDatabase{
+	templateCommand.Db = &db.ZbotDatabaseMock{
 		Term:    "foo",
 		Meaning: "bar",
 		Level: "5",

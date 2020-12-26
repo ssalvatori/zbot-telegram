@@ -1,36 +1,67 @@
 package command
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
+	"strconv"
+	"strings"
 
-	log "github.com/Sirupsen/logrus"
-	"github.com/ssalvatori/zbot-telegram-go/db"
-	"github.com/ssalvatori/zbot-telegram-go/user"
+	log "github.com/sirupsen/logrus"
+	"github.com/ssalvatori/zbot-telegram/db"
+	"github.com/ssalvatori/zbot-telegram/user"
 )
 
+//RandCommand definition
 type RandCommand struct {
-	Next   HandlerCommand
-	Db     db.ZbotDatabase
-	Levels Levels
+	Db db.ZbotDatabase
 }
-// ProcessText
-func (handler *RandCommand) ProcessText(text string, user user.User) string {
 
-	commandPattern := regexp.MustCompile(`^!rand$`)
-	result := ""
+// ProcessText run command
+func (handler *RandCommand) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
+
+	if private {
+		return "", ErrNextCommand
+	}
+
+	commandPattern := regexp.MustCompile(`^!rand(\s+(\d+))?$`)
 
 	if commandPattern.MatchString(text) {
-		randItem, err := handler.Db.Rand()
+		if checkLearnCommandOnChannel(chat) {
+			return "", ErrLearnDisabledChannel
+		}
+		term := commandPattern.FindStringSubmatch(text)
+		var limit int = 1
+		var err error = nil
+
+		if len(term) == 3 && term[2] != "" {
+			limit, err = strconv.Atoi(term[2])
+
+			if err != nil {
+				log.Error(fmt.Printf("Problem converting %s", term[2]))
+				limit = 1
+			}
+		}
+
+		if limit > 100 {
+			limit = 100
+		}
+
+		items, err := handler.Db.Rand(chat, limit)
 		if err != nil {
+			if errors.Is(err, db.ErrNotFound) {
+				return fmt.Sprintf("no results"), nil
+			}
 			log.Error(err)
-			return ""
+			return "", fmt.Errorf("Internal error, check logs")
 		}
-		result = fmt.Sprintf("[%s] - [%s]", randItem.Term, randItem.Meaning)
-	} else {
-		if handler.Next != nil {
-			result = handler.Next.ProcessText(text, user)
+		var output []string
+		for _, item := range items {
+			output = append(output, fmt.Sprintf("[%s] - [%s]", item.Term, item.Meaning))
+
 		}
+
+		return strings.Join(output, "\n\n\n"), nil
 	}
-	return result
+	return "", ErrNextCommand
 }
