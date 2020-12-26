@@ -17,7 +17,7 @@ func TestIgnoreCommandHelp(t *testing.T) {
 
 func TestIgnoreCommandList(t *testing.T) {
 	ignoreCommand.Db = &db.ZbotDatabaseMock{
-		User_ignored: []db.UserIgnore{
+		UserIgnored: []db.UserIgnore{
 			{Username: "rigo", CreatedAt: 12, ValidUntil: 20, CreatedBy: "admin", Chat: "test_dev"},
 			{Username: "jav", CreatedAt: 12, ValidUntil: 20, CreatedBy: "admin", Chat: "test_dev"},
 		},
@@ -30,7 +30,7 @@ func TestIgnoreCommandList(t *testing.T) {
 func TestIgnoreCommandAdd(t *testing.T) {
 	ignoreCommand.Db = &db.ZbotDatabaseMock{
 		Level: "1000",
-		User_ignored: []db.UserIgnore{
+		UserIgnored: []db.UserIgnore{
 			{Username: "rigo", CreatedAt: 12, ValidUntil: 20, CreatedBy: "admin", Chat: "test_dev"},
 			{Username: "jav", CreatedAt: 12, ValidUntil: 20, CreatedBy: "admin", Chat: "test_dev"},
 		},

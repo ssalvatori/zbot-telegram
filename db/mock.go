@@ -20,9 +20,9 @@ type ZbotDatabaseMock struct {
 	NotFound          bool
 	RandDef           []Definition
 	User              telebot.User
-	Ignore_list       []string
-	User_ignored      []UserIgnore
-	Ignore_User       bool
+	IgnoreList        []string
+	UserIgnored       []UserIgnore
+	IgnoreUser        bool
 	Error             bool
 	IgnoreListCleaned bool
 }
@@ -145,14 +145,14 @@ func (d *ZbotDatabaseMock) UserLevel(str string) (string, error) {
 	return d.Level, nil
 }
 
-//UserCheckIgnore Mock, it will return false if error is set otherwise it will return Ignore_User value
+//UserCheckIgnore Mock, it will return false if error is set otherwise it will return IgnoreUser value
 func (d *ZbotDatabaseMock) UserCheckIgnore(str string) bool {
 
 	if d.Error {
 		return false
 	}
 
-	return d.Ignore_User
+	return d.IgnoreUser
 }
 
 //UserIgnoreInsert mock
@@ -195,7 +195,7 @@ func (d *ZbotDatabaseMock) UserIgnoreList() ([]UserIgnore, error) {
 	if d.Error {
 		return nil, errors.New("mock")
 	}
-	return d.User_ignored, nil
+	return d.UserIgnored, nil
 }
 
 //IncreaseHits mock

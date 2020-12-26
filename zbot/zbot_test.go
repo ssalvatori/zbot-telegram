@@ -96,7 +96,7 @@ func TestProcessingPing(t *testing.T) {
 func TestProcessingRand(t *testing.T) {
 
 	dbMock := &db.ZbotDatabaseMock{
-		RandDef: []db.Definition{db.Definition{Term: "hola", Meaning: "gatolinux"}},
+		RandDef: []db.Definition{{Term: "hola", Meaning: "gatolinux"}},
 	}
 
 	botMsg := tb.Message{Text: "!rand", Sender: &tb.User{Username: "zbot_test"}, Chat: &tb.Chat{Type: "private"}}
@@ -141,7 +141,7 @@ func TestProcessingSearch(t *testing.T) {
 		Term:        "hola",
 		Meaning:     "foo bar!",
 		FindTerms:   []string{"hola", "chao", "foo_bar"},
-		RandDef:     []db.Definition{db.Definition{Term: "hola", Meaning: "gatolinux"}},
+		RandDef:     []db.Definition{{Term: "hola", Meaning: "gatolinux"}},
 		SearchTerms: []string{"hola", "chao", "foobar"},
 	}
 
@@ -158,7 +158,7 @@ func TestProcessingUserLevel(t *testing.T) {
 		Term:        "hola",
 		Meaning:     "foo bar!",
 		FindTerms:   []string{"hola", "chao", "foo_bar"},
-		RandDef:     []db.Definition{db.Definition{Term: "hola", Meaning: "gatolinux"}},
+		RandDef:     []db.Definition{{Term: "hola", Meaning: "gatolinux"}},
 		SearchTerms: []string{"hola", "chao", "foobar"},
 	}
 
@@ -179,9 +179,9 @@ func TestProcessingUserIgnoreList(t *testing.T) {
 		Term:        "hola",
 		Meaning:     "foo bar!",
 		FindTerms:   []string{"hola", "chao", "foo_bar"},
-		RandDef:     []db.Definition{db.Definition{Term: "hola", Meaning: "gatolinux"}},
+		RandDef:     []db.Definition{{Term: "hola", Meaning: "gatolinux"}},
 		SearchTerms: []string{"hola", "chao", "foobar"},
-		User_ignored: []db.UserIgnore{
+		UserIgnored: []db.UserIgnore{
 			{Username: "ssalvato", CreatedAt: 1231, ValidUntil: 4564},
 		},
 	}
@@ -198,14 +198,14 @@ func TestProcessingUserIgnoreList(t *testing.T) {
 func TestProcessingUserIgnoreInsert(t *testing.T) {
 
 	dbMock := &db.ZbotDatabaseMock{
-		Level:        "666",
-		File:         "hola.db",
-		Term:         "hola",
-		Meaning:      "foo bar!",
-		FindTerms:    []string{"hola", "chao", "foo_bar"},
-		RandDef:      []db.Definition{db.Definition{Term: "hola", Meaning: "gatolinux"}},
-		SearchTerms:  []string{"hola", "chao", "foobar"},
-		User_ignored: []db.UserIgnore{{Username: "ssalvatori", CreatedAt: 1231, ValidUntil: 4564}},
+		Level:       "666",
+		File:        "hola.db",
+		Term:        "hola",
+		Meaning:     "foo bar!",
+		FindTerms:   []string{"hola", "chao", "foo_bar"},
+		RandDef:     []db.Definition{{Term: "hola", Meaning: "gatolinux"}},
+		SearchTerms: []string{"hola", "chao", "foobar"},
+		UserIgnored: []db.UserIgnore{{Username: "ssalvatori", CreatedAt: 1231, ValidUntil: 4564}},
 	}
 
 	botMsg := tb.Message{
@@ -279,9 +279,9 @@ func TestMessageProcessing(t *testing.T) {
 
 func TestMessagesProcessingIgnoredUser(t *testing.T) {
 	dbMock := &db.ZbotDatabaseMock{
-		Level:       "666",
-		File:        "hola.db",
-		Ignore_User: true,
+		Level:      "666",
+		File:       "hola.db",
+		IgnoreUser: true,
 	}
 
 	Flags.Ignore = true
@@ -313,9 +313,9 @@ func TestGetDisabledCommands(t *testing.T) {
 
 func TestProcessingNotEnoughPermissions(t *testing.T) {
 	dbMock := &db.ZbotDatabaseMock{
-		Level:       "666",
-		File:        "hola.db",
-		Ignore_User: true,
+		Level:      "666",
+		File:       "hola.db",
+		IgnoreUser: true,
 	}
 
 	Flags.Level = true

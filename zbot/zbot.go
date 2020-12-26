@@ -29,7 +29,7 @@ type ExternalModulesList []struct {
 
 var (
 	version   = "dev-master"
-	buildTime = time.Now().String()
+	buildTime = time.Now().Format("2006-01-02 15:04:05")
 	gitHash   = "undefined"
 	//DatabaseType database backend to be use (mysql or sqlite)
 	DatabaseType = ""
@@ -41,7 +41,7 @@ var (
 	Flags = ConfigurationFlags{Ignore: false, Level: false}
 	//IgnoreDuration Ignore a user for this amount of seconds
 	IgnoreDuration = 300
-
+	//DisableLearnChannels List of channels were Learn modules should be disabled (use comma as separator)
 	DisableLearnChannels = ""
 )
 
@@ -88,13 +88,14 @@ func Execute() {
 
 	command.Setup()
 
-	poller := &tb.LongPoller{Timeout: 15 * time.Second}
-	spamProtected := tb.NewMiddlewarePoller(poller, func(upd *tb.Update) bool {
-		if upd.Message == nil {
+	poller := &tb.LongPoller{Timeout: 10 * time.Second}
+
+	middleware := tb.NewMiddlewarePoller(poller, func(msg *tb.Update) bool {
+		if msg.Message == nil {
 			return true
 		}
 
-		if strings.Contains(upd.Message.Text, "spam") {
+		if strings.Contains(msg.Message.Text, "spam") {
 			return false
 		}
 
@@ -102,9 +103,8 @@ func Execute() {
 	})
 
 	bot, err := tb.NewBot(tb.Settings{
-		Token: APIToken,
-		// Poller: &tb.LongPoller{Timeout: 10 * time.Second},
-		Poller:      spamProtected,
+		Token:       APIToken,
+		Poller:      middleware,
 		Synchronous: false,
 	})
 
@@ -125,6 +125,7 @@ func Execute() {
 
 	log.Debug(fmt.Sprintf("Modules to load %+v", ExternalModules))
 	botCommands := []tb.Command{}
+
 	//Register extra modules
 	for _, module := range ExternalModules {
 		var cmdString = fmt.Sprintf("/%s", module.Key)
@@ -164,7 +165,7 @@ func Execute() {
 		}
 	})
 
-	time.AfterFunc(100*time.Second, bot.Stop)
+	// time.AfterFunc(100*time.Second, bot.Stop)
 
 	bot.Start()
 }

@@ -10,6 +10,7 @@ import (
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
+//User zbot user definition
 type User struct {
 	Username string
 	Ident    string

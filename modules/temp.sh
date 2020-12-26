@@ -16,6 +16,7 @@ get_weather () {
     DESC=$(echo ${DATA} | jq '.weather[0].description')
     echo "City: ${CITY} Current: ${CURRENT} ºC min: ${MIN} ºC max: ${MAX} ºC hum: ${HUM}% Des: ${DESC}"
 }
+
 case $4 in
   tll|TLL)
     ORIGIN="Tallinn,EE"
@@ -40,7 +41,7 @@ case $4 in
   ;;
   *)
     echo "Options: mad, bru, tll, scl, ccp, str, soc"
-    exit 1
+    exit 0
   ;;
 esac
 get_weather $ORIGIN

@@ -38,6 +38,7 @@ func setupDatabase(conf *Configuration) db.ZbotDatabase {
 	switch conf.Db.Engine {
 	case "mysql":
 		log.Info("Setting up mysql connections")
+		log.Fatal("Not implemented")
 		//db = setupDatabaseMysql()
 		break
 	case "sqlite":

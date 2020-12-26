@@ -265,11 +265,12 @@ func (d *ZbotDatabaseSqlite) UserLevel(str string) (string, error) {
 	return "bnil", nil
 }
 
-//UserCheckIgnore Mock, it will return false if error is set otherwise it will return Ignore_User value
+//UserCheckIgnore Mock, it will return false if error is set otherwise it will return IgnoreUser value
 func (d *ZbotDatabaseSqlite) UserCheckIgnore(str string) bool {
 	return true
 }
 
+//UserIgnoreInsert Add a user to ignore list
 func (d *ZbotDatabaseSqlite) UserIgnoreInsert(username string) error {
 	return nil
 }
