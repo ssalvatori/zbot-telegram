@@ -1,11 +1,8 @@
 # zbot-telegram
 
 [![Build Status](https://travis-ci.org/ssalvatori/zbot-telegram.svg?branch=master)](https://travis-ci.org/ssalvatori/zbot-telegram)
-[![Coverage Status](https://coveralls.io/repos/github/ssalvatori/zbot-telegram/badge.svg?branch=dev)](https://coveralls.io/github/ssalvatori/zbot-telegram?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/ssalvatori/zbot-telegram/badge.svg?branch=master)](https://coveralls.io/github/ssalvatori/zbot-telegram?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/ssalvatori/zbot-telegram)](https://goreportcard.com/report/github.com/ssalvatori/zbot-telegram)
-[![Build status](https://ci.appveyor.com/api/projects/status/sml2sck29885bh4g?svg=true)](https://ci.appveyor.com/project/ssalvatori/zbot-telegram)
-[![Build Status](https://cloud.drone.io/api/badges/ssalvatori/zbot-telegram/status.svg)](https://cloud.drone.io/ssalvatori/zbot-telegram)
-
 
 ## Requirements
 
@@ -59,7 +56,7 @@ modules:
 
 ## Database Schemas
 
-[GORM](https://gorm.io/index.html), will creat all the schemas and migrations
+[GORM](https://gorm.io/index.html), will creat the necessary schemas and migrations
 
 ## Development
 
