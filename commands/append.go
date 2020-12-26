@@ -32,8 +32,7 @@ func (handler *AppendCommand) ProcessText(text string, user user.User, chat stri
 			Term:    term[1],
 			Meaning: term[2],
 			Author:  fmt.Sprintf("%s!%s@telegram.bot", user.Username, user.Ident),
-			// Date:    time.Now().Format("2006-01-02"),
-			Chat: chat,
+			Chat:    chat,
 		}
 		err := handler.Db.Append(def, chat)
 		if err != nil {
