@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 
 	log "github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 /*
@@ -17,9 +17,17 @@ type Configuration struct {
 		Level          bool   `yaml:"level"`
 	} `yaml:"zbot"`
 	Db struct {
-		Engine   string `yaml:"engine"`
-		File     string `yaml:"file"`
+		Engine string `yaml:"engine"`
+		File   string `yaml:"file"`
 	} `yaml:"db"`
+	Webhook struct {
+		Port int `yaml:"port"`
+		Auth []struct {
+			Channel string `yaml:"channel"`
+			ID int64 `yaml:"id,omitempty"`
+			Token   string `yaml:"token,omitempty"`
+		} `yaml:"auth"`
+	} `yaml:"webhook"`
 	Commands struct {
 		Learn struct {
 			Disabled []string `yaml:"disabled"`
@@ -42,8 +50,21 @@ type Configuration struct {
 type Configuration struct {
 	Zbot     configurationZbot     `yaml:"zbot"`
 	Db       configurationDb       `yaml:"db"`
+	Webhook  configurationWebhook  `yaml:"webhook"`
 	Commands configurationCommands `yaml:"commands"`
 	Modules  configurationModules  `yaml:"modules"`
+}
+
+type configurationWebhook struct {
+	Disable bool      `yaml:"disable,omitempty"`
+	Port    int       `yaml:"port"`
+	Auth    []channel `yaml:"auth"`
+}
+
+type channel struct {
+	Channel string `yaml:"channel"`
+	ID      int64  `yaml:"id,omitempty"`
+	Token   string `yaml:"token,omitempty"`
 }
 
 type configurationCommands struct {
@@ -62,8 +83,13 @@ type configurationZbot struct {
 }
 
 type configurationDb struct {
-	Engine string `yaml:"engine"`
-	File   string `yaml:"file"`
+	Engine   string `yaml:"engine"`
+	Name     string `yaml:"name"`
+	File     string `yaml:"file"`
+	Host     string `yaml:"host"`
+	Port     int    `yaml:"port"`
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
 }
 
 type configurationLearn struct {

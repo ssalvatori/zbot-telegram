@@ -33,3 +33,4 @@ zbot-telegram
 /venv
 zbot_dev.conf
 plex.py
+vendor/**

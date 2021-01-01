@@ -12,6 +12,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	command "github.com/ssalvatori/zbot-telegram/commands"
 	"github.com/ssalvatori/zbot-telegram/db"
+	"github.com/ssalvatori/zbot-telegram/server"
 	"github.com/ssalvatori/zbot-telegram/user"
 	"github.com/ssalvatori/zbot-telegram/utils"
 	tb "gopkg.in/tucnak/telebot.v2"
@@ -24,8 +25,24 @@ type ExternalModulesList []struct {
 	Description string
 }
 
-// //externalModule definition of an external module
-// type externalModule
+//Channel definition
+type Channel struct {
+	ID        int64
+	Title     string
+	AuthToken string
+}
+
+//ConfigurationFlags configurations false means the feature is disabled
+type ConfigurationFlags struct {
+	Ignore bool
+	Level  bool
+}
+
+//ConfigurationWebhook configuration
+type ConfigurationWebhook struct {
+	Enable bool
+	Port   int
+}
 
 var (
 	version   = "dev-master"
@@ -43,39 +60,39 @@ var (
 	IgnoreDuration = 300
 	//DisableLearnChannels List of channels were Learn modules should be disabled (use comma as separator)
 	DisableLearnChannels = ""
+
+	//Webhook configuration
+	Webhook = ConfigurationWebhook{Enable: false, Port: 11337}
+
+	//Channels List of Channels where the bot is present (this list is growing with new messages)
+	Channels []Channel
+
+	//ExternalModules List of extra modules
+	ExternalModules ExternalModulesList
+
+	//Db interface to the database
+	Db db.ZbotDatabase
+
+	levelsConfig = command.Levels{
+		Ignore:   100,
+		Lock:     1000,
+		Learn:    0,
+		Append:   0,
+		Forget:   1000,
+		Who:      0,
+		Top:      0,
+		Stats:    0,
+		Version:  0,
+		Ping:     0,
+		Last:     0,
+		Rand:     0,
+		Find:     0,
+		Get:      0,
+		Search:   0,
+		External: 0,
+		Level:    0,
+	}
 )
-
-//ExternalModules List of extra modules
-var ExternalModules ExternalModulesList
-
-//ConfigurationFlags configurations false means the feature is disabled
-type ConfigurationFlags struct {
-	Ignore bool
-	Level  bool
-}
-
-//Db interface to the database
-var Db db.ZbotDatabase
-
-var levelsConfig = command.Levels{
-	Ignore:   100,
-	Lock:     1000,
-	Learn:    0,
-	Append:   0,
-	Forget:   1000,
-	Who:      0,
-	Top:      0,
-	Stats:    0,
-	Version:  0,
-	Ping:     0,
-	Last:     0,
-	Rand:     0,
-	Find:     0,
-	Get:      0,
-	Search:   0,
-	External: 0,
-	Level:    0,
-}
 
 //Execute run Zbot
 func Execute() {
@@ -90,17 +107,7 @@ func Execute() {
 
 	poller := &tb.LongPoller{Timeout: 10 * time.Second}
 
-	middleware := tb.NewMiddlewarePoller(poller, func(msg *tb.Update) bool {
-		if msg.Message == nil {
-			return true
-		}
-
-		if strings.Contains(msg.Message.Text, "spam") {
-			return false
-		}
-
-		return true
-	})
+	middleware := tb.NewMiddlewarePoller(poller, middleware)
 
 	bot, err := tb.NewBot(tb.Settings{
 		Token:       APIToken,
@@ -165,9 +172,11 @@ func Execute() {
 		}
 	})
 
-	// time.AfterFunc(100*time.Second, bot.Stop)
-
-	bot.Start()
+	go bot.Start()
+	if Webhook.Enable {
+		go server.Start(Webhook.Port, bot, Channels)
+	}
+	select {} // keep running
 }
 
 func runExternalModule(db db.ZbotDatabase, message *tb.Message, modules ExternalModulesList) string {
@@ -305,4 +314,36 @@ func GetDisabledCommands() []string {
 //SetDisabledLearnChannels set list of channels where learns commands wont be used
 func SetDisabledLearnChannels(channelsList []string) {
 	command.DisableLearnChannels = channelsList
+}
+
+func appendChannel(channels []Channel, chat tb.Chat) []Channel {
+
+	for i := range channels {
+		if channels[i].ID == chat.ID {
+			channels[i].Title = chat.Title
+			return channels
+		} else if channels[i].ID == 0 && chat.Title == channels[i].Title {
+			channels[i].ID = chat.ID
+			return channels
+		}
+	}
+
+	channels = append(channels, Channel{ID: chat.ID, Title: chat.Title})
+	return channels
+}
+
+func middleware(msg *tb.Update) bool {
+	if msg.Message == nil {
+		return true
+	}
+
+	if strings.Contains(msg.Message.Text, "spam") {
+		return false
+	}
+
+	if msg.Message.Chat.Type == "group" || msg.Message.Chat.Type == "supergroup" {
+		Channels = appendChannel(Channels, *msg.Message.Chat)
+	}
+
+	return true
 }

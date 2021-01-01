@@ -13,7 +13,8 @@ script:
   - go test -v github.com/ssalvatori/zbot-telegram/utils -coverprofile=utils.coverprofile
   - go test -v github.com/ssalvatori/zbot-telegram/user -coverprofile=user.coverprofile
   - go test -v github.com/ssalvatori/zbot-telegram/db -coverprofile=db.coverprofile
-  - go test -v github.com/ssalvatori/zbot-telegram/commands -coverprofile=db.coverprofile
+  - go test -v github.com/ssalvatori/zbot-telegram/commands -coverprofile=commands.coverprofile
+  - go test -v github.com/ssalvatori/zbot-telegram/server -coverprofile=server.coverprofile
   - $HOME/gopath/bin/gover
   - $HOME/gopath/bin/goveralls -coverprofile gover.coverprofile -service travis-ci --ignore=db/mock.go,db/db.go,db/sqlite.go
 after_success:

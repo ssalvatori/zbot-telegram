@@ -7,7 +7,7 @@ ARG ARCH=amd64
 
 WORKDIR /go/src/app
 COPY . .
-RUN CGO_ENABLED=1 GOOS=${OS} GOARCH=${ARCH} go build -ldflags "-X github.com/ssalvatori/zbot-telegram/zbot.version=`git describe --tags` -X github.com/ssalvatori/zbot-telegram/zbot.buildTime=`TZ=UTC date -u '+%Y-%m-%d %H:%M:%SZ'` -X github.com/ssalvatori/zbot-telegram/zbot.gitHash=`git rev-parse --short HEAD`" -o zbot-telegram-${OS}-${ARCH}
+RUN CGO_ENABLED=1 GOOS=${OS} GOARCH=${ARCH} go build -ldflags "-X github.com/ssalvatori/zbot-telegram/zbot.version=`git describe --tags` -X github.com/ssalvatori/zbot-telegram/zbot.buildTime=`TZ=UTC date -u '+%Y-%m-%dT%H:%M:%SZ'` -X github.com/ssalvatori/zbot-telegram/zbot.gitHash=`git rev-parse --short HEAD`" -o zbot-telegram-${OS}-${ARCH}
 
 FROM debian:buster-slim
 

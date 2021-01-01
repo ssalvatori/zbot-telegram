@@ -339,6 +339,42 @@ func TestProcessingNotEnoughPermissions(t *testing.T) {
 	assert.Equal(t, "Your level is not enough < 1000", result, "Not enough permissions to use a command")
 }
 
+func TestAppendChannel(t *testing.T) {
+	chat := &tb.Chat{
+		Type:  "group",
+		ID:    -1234,
+		Title: "test 1",
+	}
+
+	channels := []Channel{}
+	assert.Equal(t, []Channel{{ID: -1234, Title: "test 1"}}, appendChannel(channels, *chat), "Add Channel")
+
+	channels = []Channel{{ID: -66, Title: "test 1"}}
+	assert.Equal(t, []Channel{{ID: -66, Title: "test 1"}, {ID: -1234, Title: "test 1"}}, appendChannel(channels, *chat), "Add Channel")
+
+	channels = []Channel{{ID: -1234, Title: "test already"}}
+	assert.Equal(t, []Channel{{ID: -1234, Title: "test 1"}}, appendChannel(channels, *chat), "Channel already present (updating title)")
+
+	channels = []Channel{{ID: -12345, Title: "test already"}, {ID: 0, Title: "test 1"}}
+	assert.Equal(t, []Channel{{ID: -12345, Title: "test already"}, {ID: -1234, Title: "test 1"}}, appendChannel(channels, *chat), "Channel's ID is copied from message")
+}
+
+func TestMiddleware(t *testing.T) {
+
+	msg := tb.Update{}
+	assert.True(t, middleware(&msg), "No Message")
+
+	msg = tb.Update{Message: &tb.Message{Text: "test spam"}}
+	assert.False(t, middleware(&msg), "No Message")
+
+	msg = tb.Update{Message: &tb.Message{Text: "test", Chat: &tb.Chat{Type: "private"}}}
+	assert.True(t, middleware(&msg), "Private message")
+
+	msg = tb.Update{Message: &tb.Message{Text: "test", Chat: &tb.Chat{Type: "group"}}}
+	assert.True(t, middleware(&msg), "Group message")
+
+}
+
 /*
 func TestExecute(t *testing.T) {
 	dbMock := &db.ZbotDatabaseMock{

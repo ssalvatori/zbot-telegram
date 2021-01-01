@@ -4,15 +4,22 @@
 [![Coverage Status](https://coveralls.io/repos/github/ssalvatori/zbot-telegram/badge.svg?branch=master)](https://coveralls.io/github/ssalvatori/zbot-telegram?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/ssalvatori/zbot-telegram)](https://goreportcard.com/report/github.com/ssalvatori/zbot-telegram)
 
+
+
+## Features
+
+  * Core Learn module [doc/learn](doc/learn.md)
+  * Run external modules
+  * Webhook [doc/webhook](doc/webhook.md)
+
 ## Requirements
 
 * You need to get an API TOKEN from [BotFather@Telegram](https://core.telegram.org/bots)
 
 ## Setup
 
-You **must** set the environment variable **ZBOT_CONFIG_FILE** with the path to the configuration file
+You **must** set the **ZBOT_CONFIG_FILE** environment variable with the path to the configuration file
 * ZBOT_CONFIG_FILE : Path to the configuration file (default ./zbot.conf) 
-* ZBOT_LOG_LEVEL : Log verbosity (default info)
 
 ## Configuration File
 
@@ -24,7 +31,21 @@ zbot:
   level: false
 db:
   engine: sqlite
+  name: db_name
   file: path_to_sqlite_file.db
+  host: 127.0.0.1
+  port: 3306
+  username: db_username 
+  password: db_password
+webhook:
+  disable: true
+  port: 13371
+  auth:
+    - channel: channel1
+      id: 1234
+      token: <YOUR_SECURE_TOKEN>
+    - channel: channel2
+      token: <YOUR_SECURE_TOKEN>s  
 commands:  
   learn:
     disabled:
@@ -52,7 +73,7 @@ modules:
 
 ## Database Schemas
 
-[GORM](https://gorm.io/index.html), will creat the necessary schemas and migrations
+[GORM](https://gorm.io/index.html), will creat all the schemas and migrations
 
 ## Development
 

@@ -87,6 +87,40 @@ func setup() {
 
 	zbot.Db = setupDatabase(configuration)
 	zbot.ExternalModules = zbot.ExternalModulesList(configuration.Modules.List)
+	zbot.Channels = setupChannels(configuration.Webhook.Auth)
+
+	if configuration.Webhook.Disable {
+		log.Info(fmt.Sprintf("WebServer: disable"))
+		zbot.Webhook.Enable = false
+	} else {
+		zbot.Webhook.Enable = true
+		log.Info(fmt.Sprintf("WebServer: enable"))
+
+		if len(configuration.Webhook.Auth) == 0 {
+			log.Fatal("No Webhook.Auth present, exiting now!!")
+		}
+
+		if configuration.Webhook.Port != 0 {
+			zbot.Webhook.Port = configuration.Webhook.Port
+		}
+		log.Info(fmt.Sprintf("WebServer Port: %d", zbot.Webhook.Port))
+
+	}
+
+}
+
+func setupChannels(configuration []channel) []zbot.Channel {
+	var channels = []zbot.Channel{}
+
+	for i := range configuration {
+		channels = append(channels, zbot.Channel{
+			ID:        configuration[i].ID,
+			Title:     configuration[i].Channel,
+			AuthToken: configuration[i].Token,
+		})
+	}
+
+	return channels
 }
 
 func init() {
