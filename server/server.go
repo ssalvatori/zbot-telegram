@@ -20,11 +20,14 @@ type Channel struct {
 func Start(serverPort int, bot *tb.Bot, c interface{}) {
 	log.Info(fmt.Sprintf("Starting http server at port: %d", serverPort))
 	channels := []Channel{}
-	mapstructure.Decode(c, &channels)
+	err := mapstructure.Decode(c, &channels)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	http.HandleFunc("/messages", apiMessages(bot, channels))
 	// http.HandleFunc("/modules", apiModules(bot, channels))
-	err := http.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", serverPort), nil)
+	err = http.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", serverPort), nil)
 
 	if err != nil {
 		log.Fatal("ListenAndServe: " + err.Error())
@@ -45,14 +48,25 @@ func apiMessages(bot *tb.Bot, channels []Channel) func(http.ResponseWriter, *htt
 			if data != "" {
 				var to = tb.Chat{}
 				to.ID = chatID
-				bot.Send(&to, data)
-				w.Write([]byte(fmt.Sprintf("OK")))
+				_, err := bot.Send(&to, data)
+				if err != nil {
+					log.Error("Could not set the message")
+					log.Error(err)
+				}
+				_, err = w.Write([]byte("OK"))
+				if err != nil {
+					log.Error(err)
+				}
 			}
 
 		}
 
 		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte(fmt.Sprintf("Forbidden")))
+		_, err := w.Write([]byte("Forbidden"))
+
+		if err != nil {
+			log.Error(err)
+		}
 	}
 }
 

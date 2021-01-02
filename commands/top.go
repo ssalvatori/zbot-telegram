@@ -35,7 +35,7 @@ func (handler *TopCommand) ProcessText(text string, user user.User, chat string,
 		}
 		term := commandPattern.FindStringSubmatch(text)
 		var limit int = 10
-		var err error = nil
+		var err error
 
 		if len(term) == 3 && term[2] != "" {
 			limit, err = strconv.Atoi(term[2])
@@ -53,12 +53,12 @@ func (handler *TopCommand) ProcessText(text string, user user.User, chat string,
 		items, err := handler.Db.Top(chat, limit)
 		if err != nil {
 			if errors.Is(err, db.ErrNotFound) {
-				return fmt.Sprintf("no results"), nil
+				return "no results", nil
 			}
 			log.Error(err)
 			return "", fmt.Errorf("Internal error, check logs")
 		}
-		return fmt.Sprintf(strings.Join(getTerms(items), " ")), nil
+		return strings.Join(getTerms(items), " "), nil
 	}
 
 	return "", ErrNextCommand

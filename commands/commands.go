@@ -166,22 +166,14 @@ func GetCommandInformation(text string) string {
 func CheckPermission(command string, user user.User, requiredLevel int) bool {
 	log.Debug("Checking permission for [", command, "] and user ", user.Username)
 
-	if user.Level >= requiredLevel {
-		return true
-	}
-
-	return false
-
+	return user.Level >= requiredLevel
 }
 
 // IsCommandDisabled check if a command is in the disable list
 func IsCommandDisabled(commandName string) bool {
 	log.Debug("Checking if [", commandName, "] is disabled")
 	//TODO BUG check DisabledCommands before check the array
-	if utils.InArray(commandName, DisabledCommands) {
-		return true
-	}
-	return false
+	return utils.InArray(commandName, DisabledCommands)
 }
 
 // GetMinimumLevel get the minimum level required for a git command, if it is not defined return 0

@@ -42,9 +42,9 @@ func (handler *IgnoreCommand) ProcessText(text string, user user.User, chat stri
 				log.Error(err)
 				return "", err
 			}
-			result = fmt.Sprintf(strings.Join(getUserIgnored(ignoredUsers), "/n"))
+			result = strings.Join(getUserIgnored(ignoredUsers), "/n")
 		case "add":
-			if strings.ToLower(args[3]) != strings.ToLower(user.Username) {
+			if !strings.EqualFold(strings.ToLower(args[3]), strings.ToLower(user.Username)) {
 				err := handler.Db.UserIgnoreInsert(args[3])
 				if err != nil {
 					log.Error(err)
@@ -73,9 +73,14 @@ func getUserIgnored(users []db.UserIgnore) []string {
 }
 
 func convertDates(since string, until string) (string, string) {
-	time.LoadLocation("UTC")
+	_, err := time.LoadLocation("UTC")
 
-	i, err := strconv.ParseInt(since, 10, 64)
+	if err != nil {
+		log.Error(err)
+	}
+
+	var i int64
+	i, err = strconv.ParseInt(since, 10, 64)
 	sinceFormated := time.Unix(100, 0)
 	untilFormated := time.Unix(600, 0)
 	if err != nil {

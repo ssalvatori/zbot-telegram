@@ -28,8 +28,7 @@ func (d *ZbotDatabaseSqlite) GetConnectionInfo() string {
 
 //Close close connecttion to DB
 func (d *ZbotDatabaseSqlite) Close() {
-	log.Debug("Closing connection")
-	d.Close()
+	log.Debug("Closing DB connection")
 }
 
 //Init connect to sqlite db
@@ -61,7 +60,11 @@ func (d *ZbotDatabaseSqlite) Init() error {
 		return errors.New("Error connecting")
 	}
 
-	db.Debug().AutoMigrate(&Definition{}, &UserIgnore{})
+	err = db.Debug().AutoMigrate(&Definition{}, &UserIgnore{})
+	if err != nil {
+		log.Error(err)
+		return errors.New("Error during migration")
+	}
 
 	d.DB = db
 

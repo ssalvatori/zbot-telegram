@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mitchellh/mapstructure"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -82,11 +83,21 @@ func ParseCommand(text string) (string, error) {
 }
 
 //GetCommandFile Find file using command key
-func GetCommandFile(cmd string, modules []struct {
-	Key         string
-	File        string
-	Description string
-}) (string, error) {
+func GetCommandFile(cmd string, m interface{}) (string, error) {
+
+	type ExternalModule struct {
+		Key         string
+		File        string
+		Description string
+	}
+
+	modules := []ExternalModule{}
+	err := mapstructure.Decode(m, &modules)
+	if err != nil {
+		log.Error(err)
+		return "", fmt.Errorf("Command %s not found in list of commands", cmd)
+	}
+
 	for i := range modules {
 		if modules[i].Key == cmd {
 			return modules[i].File, nil

@@ -40,7 +40,7 @@ func (handler *SearchCommand) ProcessText(text string, user user.User, chat stri
 				return "", fmt.Errorf("Internal error, check logs")
 			}
 		}
-		return fmt.Sprintf("%s", strings.Join(getTerms(results), " ")), nil
+		return strings.Join(getTerms(results), " "), nil
 	}
 	return "", ErrNextCommand
 }

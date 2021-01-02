@@ -10,7 +10,7 @@ import (
 
 func TestBuildUser(t *testing.T) {
 	sender := tb.User{}
-	newUser := User{}
+	var newUser User
 
 	mockDatabase := &db.ZbotDatabaseMock{
 		Level: "10",

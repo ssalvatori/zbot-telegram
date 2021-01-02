@@ -18,8 +18,8 @@ import (
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
-//ExternalModulesList List of external modules available
-type ExternalModulesList []struct {
+//ExternalModule definition
+type ExternalModule struct {
 	Key         string
 	File        string
 	Description string
@@ -68,7 +68,7 @@ var (
 	Channels []Channel
 
 	//ExternalModules List of extra modules
-	ExternalModules ExternalModulesList
+	ExternalModules []ExternalModule
 
 	//Db interface to the database
 	Db db.ZbotDatabase
@@ -126,9 +126,10 @@ func Execute() {
 		log.Fatal(err)
 	}
 
-	if Flags.Ignore {
-		go Db.UserCleanupIgnorelist()
-	}
+	//TODO: Not implemented
+	// if Flags.Ignore {
+	// 	//go Db.UserCleanupIgnorelist()
+	// }
 
 	log.Debug(fmt.Sprintf("Modules to load %+v", ExternalModules))
 	botCommands := []tb.Command{}
@@ -148,7 +149,11 @@ func Execute() {
 
 		bot.Handle(cmdString, func(m *tb.Message) {
 			response := runExternalModule(Db, m, ExternalModules)
-			bot.Send(m.Chat, response)
+			_, err = bot.Send(m.Chat, response)
+			if err != nil {
+				log.Error(err)
+				log.Error("Could not send the message")
+			}
 		})
 		botCommands = append(botCommands, tb.Command{Text: "/" + module.Key, Description: module.Description})
 	}
@@ -168,7 +173,11 @@ func Execute() {
 
 		var response = messagesProcessing(Db, m, chatName)
 		if response != "" {
-			bot.Send(m.Chat, response)
+			_, err = bot.Send(m.Chat, response)
+			if err != nil {
+				log.Error("Could not send the message")
+				log.Error(err)
+			}
 		}
 	})
 
@@ -179,7 +188,7 @@ func Execute() {
 	select {} // keep running
 }
 
-func runExternalModule(db db.ZbotDatabase, message *tb.Message, modules ExternalModulesList) string {
+func runExternalModule(db db.ZbotDatabase, message *tb.Message, modules []ExternalModule) string {
 
 	cmd, err := utils.ParseCommand(message.Text)
 	if err != nil {

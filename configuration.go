@@ -8,44 +8,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-/*
-type Configuration struct {
-	Zbot struct {
-		Token          string `yaml:"token"`
-		IgnoreDuration int    `yaml:"ignore_duration"`
-		Ignore         bool   `yaml:"ignore"`
-		Level          bool   `yaml:"level"`
-	} `yaml:"zbot"`
-	Db struct {
-		Engine string `yaml:"engine"`
-		File   string `yaml:"file"`
-	} `yaml:"db"`
-	Webhook struct {
-		Port int `yaml:"port"`
-		Auth []struct {
-			Channel string `yaml:"channel"`
-			ID int64 `yaml:"id,omitempty"`
-			Token   string `yaml:"token,omitempty"`
-		} `yaml:"auth"`
-	} `yaml:"webhook"`
-	Commands struct {
-		Learn struct {
-			Disabled []string `yaml:"disabled"`
-		} `yaml:"learn"`
-		Disabled []string `yaml:"disabled"`
-	} `yaml:"commands"`
-	Modules struct {
-		Path string `yaml:"path"`
-		List []struct {
-			Key         string `yaml:"key"`
-			File        string `yaml:"file"`
-			Description string `yaml:"description"`
-		} `yaml:"list"`
-	} `yaml:"modules"`
-}
-
-*/
-
 //Configuration bot configuration
 type Configuration struct {
 	Zbot     configurationZbot     `yaml:"zbot"`
@@ -71,9 +33,6 @@ type configurationCommands struct {
 	Learn    configurationLearn `yaml:"learn"`
 	Disabled []string           `yaml:"disabled"`
 }
-type configurationDisabledList struct {
-	List []string `yaml:"disabled"`
-}
 
 type configurationZbot struct {
 	Token          string `yaml:"token"`
@@ -97,12 +56,8 @@ type configurationLearn struct {
 }
 
 type configurationModules struct {
-	Path string `yaml:"path"`
-	List []struct {
-		Key         string `yaml:"key"`
-		File        string `yaml:"file"`
-		Description string `yaml:"description"`
-	} `yaml:"list"`
+	Path string                `yaml:"path"`
+	List []configurationModule `yaml:"list"`
 }
 
 type configurationModule struct {

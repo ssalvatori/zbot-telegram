@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	env "github.com/caarlos0/env/v6"
+	"github.com/mitchellh/mapstructure"
 	log "github.com/sirupsen/logrus"
 	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/ssalvatori/zbot-telegram/zbot"
@@ -18,16 +19,12 @@ func setupLog() {
 	switch os.Getenv("ZBOT_LOG_LEVEL") {
 	case "debug":
 		log.SetLevel(log.DebugLevel)
-		break
 	case "info":
 		log.SetLevel(log.InfoLevel)
-		break
 	case "error":
 		log.SetLevel(log.ErrorLevel)
-		break
 	default:
 		log.SetLevel(log.InfoLevel)
-		break
 	}
 }
 
@@ -39,14 +36,11 @@ func setupDatabase(conf *Configuration) db.ZbotDatabase {
 	case "mysql":
 		log.Info("Setting up mysql connections")
 		log.Fatal("Not implemented")
-		break
 	case "sqlite":
 		log.Info("Setting up sqlite connections")
 		db = setupDatabaseSqlite(conf)
-		break
 	default:
 		log.Fatal("Select a database type (mysql o sqlite)")
-		break
 	}
 	return db
 
@@ -86,15 +80,22 @@ func setup() {
 	zbot.SetDisabledLearnChannels(configuration.Commands.Learn.Disabled)
 
 	zbot.Db = setupDatabase(configuration)
-	zbot.ExternalModules = zbot.ExternalModulesList(configuration.Modules.List)
+
+	zbot.ExternalModules = []zbot.ExternalModule{}
+	err = mapstructure.Decode(configuration.Modules.List, &zbot.ExternalModules)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// zbot.ExternalModules = []zbot.ExternalModule(configuration.Modules.List)
 	zbot.Channels = setupChannels(configuration.Webhook.Auth)
 
 	if configuration.Webhook.Disable {
-		log.Info(fmt.Sprintf("WebServer: disable"))
+		log.Info("WebServer: disable")
 		zbot.Webhook.Enable = false
 	} else {
 		zbot.Webhook.Enable = true
-		log.Info(fmt.Sprintf("WebServer: enable"))
+		log.Info("WebServer: enable")
 
 		if len(configuration.Webhook.Auth) == 0 {
 			log.Fatal("No Webhook.Auth present, exiting now!!")

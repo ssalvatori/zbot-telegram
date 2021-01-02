@@ -38,7 +38,7 @@ func (handler *FindCommand) ProcessText(text string, user user.User, chat string
 			}
 			return "", ErrInternalError
 		}
-		return fmt.Sprintf("%s", strings.Join(getTerms(results), " ")), nil
+		return strings.Join(getTerms(results), " "), nil
 	}
 	return "", ErrNextCommand
 }

@@ -32,7 +32,7 @@ func (handler *RandCommand) ProcessText(text string, user user.User, chat string
 		}
 		term := commandPattern.FindStringSubmatch(text)
 		var limit int = 1
-		var err error = nil
+		var err error
 
 		if len(term) == 3 && term[2] != "" {
 			limit, err = strconv.Atoi(term[2])
@@ -50,7 +50,7 @@ func (handler *RandCommand) ProcessText(text string, user user.User, chat string
 		items, err := handler.Db.Rand(chat, limit)
 		if err != nil {
 			if errors.Is(err, db.ErrNotFound) {
-				return fmt.Sprintf("no results"), nil
+				return "no results", nil
 			}
 			log.Error(err)
 			return "", fmt.Errorf("Internal error, check logs")

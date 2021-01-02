@@ -31,11 +31,7 @@ var confTest = Configuration{
 	},
 	Modules: configurationModules{
 		Path: "./module",
-		List: []struct {
-			Key         string `yaml:"key"`
-			File        string `yaml:"file"`
-			Description string `yaml:"description"`
-		}{
+		List: []configurationModule{
 			{
 				Key:         "cmd1",
 				File:        "cmdFile1",
