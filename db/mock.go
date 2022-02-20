@@ -3,7 +3,7 @@ package db
 import (
 	"errors"
 
-	"gopkg.in/tucnak/telebot.v2"
+	"gopkg.in/telebot.v3"
 )
 
 //ZbotDatabaseMock mock object

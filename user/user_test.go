@@ -5,18 +5,20 @@ import (
 
 	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/stretchr/testify/assert"
-	tb "gopkg.in/tucnak/telebot.v2"
+
+	// tele "gopkg.in/tucnak/telebot.v3"
+	tele "gopkg.in/telebot.v3"
 )
 
 func TestBuildUser(t *testing.T) {
-	sender := tb.User{}
+	sender := tele.User{}
 	var newUser User
 
 	mockDatabase := &db.ZbotDatabaseMock{
 		Level: "10",
 	}
 
-	sender = tb.User{
+	sender = tele.User{
 		FirstName: "stefano",
 		Username:  "ssalvatori",
 	}
@@ -29,7 +31,7 @@ func TestBuildUser(t *testing.T) {
 
 	assert.Equal(t, newUser, BuildUser(&sender, mockDatabase), "creating with username")
 
-	sender = tb.User{
+	sender = tele.User{
 		FirstName: "stefano",
 		Username:  "",
 	}

@@ -1,13 +1,14 @@
 package user
 
 import (
+	"strings"
+
 	"github.com/ssalvatori/zbot-telegram/db"
 
 	"strconv"
-	"strings"
 
 	log "github.com/sirupsen/logrus"
-	tb "gopkg.in/tucnak/telebot.v2"
+	tele "gopkg.in/telebot.v3"
 )
 
 //User zbot user definition
@@ -19,7 +20,7 @@ type User struct {
 }
 
 //BuildUser Create a user using telegram information
-func BuildUser(sender *tb.User, db db.ZbotDatabase) User {
+func BuildUser(sender *tele.User, db db.ZbotDatabase) User {
 	user := User{}
 	user.Ident = strings.ToLower(sender.FirstName)
 

@@ -6,7 +6,7 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 	log "github.com/sirupsen/logrus"
-	tb "gopkg.in/tucnak/telebot.v2"
+	tele "gopkg.in/telebot.v3"
 )
 
 //Channel definition
@@ -17,7 +17,7 @@ type Channel struct {
 }
 
 //Start http server in a given port
-func Start(serverPort int, bot *tb.Bot, c interface{}) {
+func Start(serverPort int, bot *tele.Bot, c interface{}) {
 	log.Info(fmt.Sprintf("Starting http server at port: %d", serverPort))
 	channels := []Channel{}
 	err := mapstructure.Decode(c, &channels)
@@ -35,7 +35,7 @@ func Start(serverPort int, bot *tb.Bot, c interface{}) {
 
 }
 
-func apiMessages(bot *tb.Bot, channels []Channel) func(http.ResponseWriter, *http.Request) {
+func apiMessages(bot *tele.Bot, channels []Channel) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		log.Debug(fmt.Sprintf("GET params: %v", r.URL.Query()))
 
@@ -46,7 +46,7 @@ func apiMessages(bot *tb.Bot, channels []Channel) func(http.ResponseWriter, *htt
 		if authToken != "" && chatID != 0 {
 
 			if data != "" {
-				var to = tb.Chat{}
+				var to = tele.Chat{}
 				to.ID = chatID
 				_, err := bot.Send(&to, data)
 				if err != nil {

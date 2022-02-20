@@ -15,7 +15,9 @@ import (
 	"github.com/ssalvatori/zbot-telegram/server"
 	"github.com/ssalvatori/zbot-telegram/user"
 	"github.com/ssalvatori/zbot-telegram/utils"
-	tb "gopkg.in/tucnak/telebot.v2"
+
+	tele "gopkg.in/telebot.v3"
+	"gopkg.in/telebot.v3/middleware"
 )
 
 //ExternalModule definition
@@ -105,15 +107,17 @@ func Execute() {
 
 	command.Setup()
 
-	poller := &tb.LongPoller{Timeout: 10 * time.Second}
+	poller := &tele.LongPoller{Timeout: 10 * time.Second}
 
-	middleware := tb.NewMiddlewarePoller(poller, middleware)
+	middlewareCustom := tele.NewMiddlewarePoller(poller, middlewareCustom)
 
-	bot, err := tb.NewBot(tb.Settings{
-		Token:       APIToken,
-		Poller:      middleware,
-		Synchronous: false,
+	bot, err := tele.NewBot(tele.Settings{
+		Token:  APIToken,
+		Poller: middlewareCustom,
+		// Synchronous: false,
 	})
+
+	bot.Use(middleware.Logger())
 
 	if err != nil {
 		log.Fatal(err)
@@ -132,7 +136,7 @@ func Execute() {
 	// }
 
 	log.Debug(fmt.Sprintf("Modules to load %+v", ExternalModules))
-	botCommands := []tb.Command{}
+	botCommands := []tele.Command{}
 
 	//Register extra modules
 	for _, module := range ExternalModules {
@@ -147,38 +151,49 @@ func Execute() {
 			continue
 		}
 
-		bot.Handle(cmdString, func(m *tb.Message) {
-			response := runExternalModule(Db, m, ExternalModules)
-			_, err = bot.Send(m.Chat, response)
+		bot.Handle(cmdString, func(c tele.Context) error {
+
+			log.Debug(fmt.Sprintf("User: [%s], message: [%s] payload: [%s] private: [%t]", c.Sender().Username, c.Text(), c.Message().Payload, c.Message().Private()))
+
+			response := runExternalModule(Db, c.Message(), ExternalModules)
+			err = c.Send(response)
 			if err != nil {
 				log.Error(err)
 				log.Error("Could not send the message")
 			}
+
+			return err
 		})
-		botCommands = append(botCommands, tb.Command{Text: "/" + module.Key, Description: module.Description})
+
+		botCommands = append(botCommands, tele.Command{Text: "/" + module.Key, Description: module.Description})
 	}
 
-	log.Debug(fmt.Sprintf("Seting bot commands: %+v", botCommands))
+	log.Debug(fmt.Sprintf("Setting bot commands: %+v", botCommands))
 	err = bot.SetCommands(botCommands)
 	if err != nil {
 		log.Error("Error trying to set commands")
 		log.Error(err)
 	}
 
-	bot.Handle(tb.OnText, func(m *tb.Message) {
+	bot.Handle(tele.OnText, func(c tele.Context) error {
+
 		chatName := ""
-		if m.Chat.Type != "private" {
-			chatName = m.Chat.Title
+		if c.Message().Private() {
+			return nil
 		}
 
-		var response = messagesProcessing(Db, m, chatName)
+		chatName = c.Chat().Title
+
+		var response = messagesProcessing(Db, c.Message(), chatName)
 		if response != "" {
-			_, err = bot.Send(m.Chat, response)
+			err = c.Send(response)
 			if err != nil {
 				log.Error("Could not send the message")
 				log.Error(err)
 			}
+			return err
 		}
+		return nil
 	})
 
 	go bot.Start()
@@ -188,7 +203,7 @@ func Execute() {
 	select {} // keep running
 }
 
-func runExternalModule(db db.ZbotDatabase, message *tb.Message, modules []ExternalModule) string {
+func runExternalModule(db db.ZbotDatabase, message *tele.Message, modules []ExternalModule) string {
 
 	cmd, err := utils.ParseCommand(message.Text)
 	if err != nil {
@@ -216,7 +231,7 @@ func runExternalModule(db db.ZbotDatabase, message *tb.Message, modules []Extern
 }
 
 //messagesProcessing
-func messagesProcessing(db db.ZbotDatabase, message *tb.Message, chatName string) string {
+func messagesProcessing(db db.ZbotDatabase, message *tele.Message, chatName string) string {
 
 	private := false
 	if message.Chat.Type == "private" && chatName == "" {
@@ -253,7 +268,7 @@ func checkIgnoreList(db db.ZbotDatabase, username string) bool {
 }
 
 //cmdProcessing process message using commands
-func cmdProcessing(db db.ZbotDatabase, msg tb.Message, chatName string, private bool) string {
+func cmdProcessing(db db.ZbotDatabase, msg tele.Message, chatName string, private bool) string {
 
 	commandName := command.GetCommandInformation(msg.Text)
 
@@ -325,7 +340,7 @@ func SetDisabledLearnChannels(channelsList []string) {
 	command.DisableLearnChannels = channelsList
 }
 
-func appendChannel(channels []Channel, chat tb.Chat) []Channel {
+func appendChannel(channels []Channel, chat tele.Chat) []Channel {
 
 	for i := range channels {
 		if channels[i].ID == chat.ID {
@@ -341,7 +356,7 @@ func appendChannel(channels []Channel, chat tb.Chat) []Channel {
 	return channels
 }
 
-func middleware(msg *tb.Update) bool {
+func middlewareCustom(msg *tele.Update) bool {
 	if msg.Message == nil {
 		return true
 	}
