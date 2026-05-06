@@ -34,6 +34,13 @@ func TestAppendCommandOK(t *testing.T) {
 
 }
 
+func TestAppendCommandDisabledChannel(t *testing.T) {
+	DisableLearnChannels = []string{"disabled-chat"}
+	defer func() { DisableLearnChannels = nil }()
+	_, err := appendCommand.ProcessText("!append foo bar", userTest, "disabled-chat", false)
+	assert.Equal(t, ErrLearnDisabledChannel, err)
+}
+
 func TestAppendCommandNotMatch(t *testing.T) {
 
 	result, _ := appendCommand.ProcessText("!append6 foor ala", userTest, "testchat", false)

@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/ssalvatori/zbot-telegram/user"
 )
@@ -33,7 +33,7 @@ func (handler *LastCommand) ProcessText(text string, user user.User, chat string
 		}
 		lastItems, err := handler.Db.Last(chat, 10)
 		if err != nil {
-			log.Error(err)
+			slog.Error("last query error", "err", err)
 			return "", err
 		}
 		return PrintTerms(lastItems), nil

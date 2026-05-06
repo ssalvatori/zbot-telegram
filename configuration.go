@@ -2,25 +2,19 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
+	"log/slog"
+	"os"
 
-	log "github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v4"
 )
 
-//Configuration bot configuration
+// Configuration bot configuration
 type Configuration struct {
-	Zbot     configurationZbot     `yaml:"zbot"`
-	Db       configurationDb       `yaml:"db"`
-	Webhook  configurationWebhook  `yaml:"webhook"`
+	Zbot configurationZbot `yaml:"zbot"`
+	Db   configurationDb   `yaml:"db"`
+	// Webhook  configurationWebhook  `yaml:"webhook"`
 	Commands configurationCommands `yaml:"commands"`
 	Modules  configurationModules  `yaml:"modules"`
-}
-
-type configurationWebhook struct {
-	Disable bool      `yaml:"disable,omitempty"`
-	Port    int       `yaml:"port"`
-	Auth    []channel `yaml:"auth"`
 }
 
 type channel struct {
@@ -68,8 +62,8 @@ type configurationModule struct {
 
 func readConfiguration(filename string) (*Configuration, error) {
 
-	log.Info("Reading file " + filename)
-	buf, err := ioutil.ReadFile(filename)
+	slog.Info("Reading file", "filename", filename)
+	buf, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}

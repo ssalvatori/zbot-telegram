@@ -27,6 +27,13 @@ func TestSearchCommandOK(t *testing.T) {
 	result, _ = searchCommand.ProcessText("!search", userTest, "testchat", false)
 	assert.Equal(t, "", result, "Search empty")
 }
+func TestSearchCommandDisabledChannel(t *testing.T) {
+	DisableLearnChannels = []string{"disabled-chat"}
+	defer func() { DisableLearnChannels = nil }()
+	_, err := searchCommand.ProcessText("!search foo", userTest, "disabled-chat", false)
+	assert.Equal(t, ErrLearnDisabledChannel, err)
+}
+
 func TestSearchCommandNotMatch(t *testing.T) {
 
 	result, err := searchCommand.ProcessText("!search6", userTest, "testchat", false)

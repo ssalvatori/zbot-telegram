@@ -9,7 +9,9 @@ import (
 
 	"container/list"
 
-	log "github.com/sirupsen/logrus"
+	"log/slog"
+	"os"
+
 	command "github.com/ssalvatori/zbot-telegram/commands"
 	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/ssalvatori/zbot-telegram/server"
@@ -20,27 +22,27 @@ import (
 	"gopkg.in/telebot.v3/middleware"
 )
 
-//ExternalModule definition
+// ExternalModule definition
 type ExternalModule struct {
 	Key         string
 	File        string
 	Description string
 }
 
-//Channel definition
+// Channel definition
 type Channel struct {
 	ID        int64
 	Title     string
 	AuthToken string
 }
 
-//ConfigurationFlags configurations false means the feature is disabled
+// ConfigurationFlags configurations false means the feature is disabled
 type ConfigurationFlags struct {
 	Ignore bool
 	Level  bool
 }
 
-//ConfigurationWebhook configuration
+// ConfigurationWebhook configuration
 type ConfigurationWebhook struct {
 	Enable bool
 	Port   int
@@ -96,14 +98,14 @@ var (
 	}
 )
 
-//Execute run Zbot
+// Execute run Zbot
 func Execute() {
-	log.Info("Loading zbot-telegram version [" + version + "] [" + buildTime + "] [" + gitHash + "]")
+	slog.Info("Loading zbot-telegram", "version", version, "buildTime", buildTime, "gitHash", gitHash)
 
-	log.Info("Database: ", DatabaseType)
-	log.Info("Modules: ", ModulesPath)
-	log.Info("Configuration Flags Ignore: ", Flags.Ignore)
-	log.Info("Configuration Flags Level: ", Flags.Level)
+	slog.Info("Database", "type", DatabaseType)
+	slog.Info("Modules", "path", ModulesPath)
+	slog.Info("Configuration Flags Ignore", "ignore", Flags.Ignore)
+	slog.Info("Configuration Flags Level", "level", Flags.Level)
 
 	command.Setup()
 
@@ -120,14 +122,16 @@ func Execute() {
 	bot.Use(middleware.Logger())
 
 	if err != nil {
-		log.Fatal(err)
+		slog.Error("bot init error", "err", err)
+		os.Exit(1)
 	}
 
 	err = Db.Init()
 	defer Db.Close()
 
 	if err != nil {
-		log.Fatal(err)
+		slog.Error("db init error", "err", err)
+		os.Exit(1)
 	}
 
 	//TODO: Not implemented
@@ -135,31 +139,29 @@ func Execute() {
 	// 	//go Db.UserCleanupIgnorelist()
 	// }
 
-	log.Debug(fmt.Sprintf("Modules to load %+v", ExternalModules))
+	slog.Debug("Modules to load", "modules", ExternalModules)
 	botCommands := []tele.Command{}
 
 	//Register extra modules
 	for _, module := range ExternalModules {
 		var cmdString = fmt.Sprintf("/%s", module.Key)
-		log.Debug(fmt.Sprintf("Loading module %s from path %s%s", module.Key, ModulesPath, module.File))
+		slog.Debug("Loading module", "key", module.Key, "path", ModulesPath+module.File)
 
 		_, err := command.LookPathCommand(ModulesPath + module.File)
 
 		if err != nil {
-			log.Error(fmt.Sprintf("File %s for module [%s] can't be loaded %s", module.File, module.Key, ModulesPath))
-			log.Error(err)
+			slog.Error("module file not found", "file", module.File, "key", module.Key, "path", ModulesPath)
 			continue
 		}
 
 		bot.Handle(cmdString, func(c tele.Context) error {
 
-			log.Debug(fmt.Sprintf("User: [%s], message: [%s] payload: [%s] private: [%t]", c.Sender().Username, c.Text(), c.Message().Payload, c.Message().Private()))
+			slog.Debug("incoming message", "user", c.Sender().Username, "text", c.Text(), "payload", c.Message().Payload, "private", c.Message().Private())
 
 			response := runExternalModule(Db, c.Message(), ExternalModules)
 			err = c.Send(response)
 			if err != nil {
-				log.Error(err)
-				log.Error("Could not send the message")
+				slog.Error("send error", "err", err)
 			}
 
 			return err
@@ -168,11 +170,10 @@ func Execute() {
 		botCommands = append(botCommands, tele.Command{Text: "/" + module.Key, Description: module.Description})
 	}
 
-	log.Debug(fmt.Sprintf("Setting bot commands: %+v", botCommands))
+	slog.Debug("Setting bot commands", "commands", botCommands)
 	err = bot.SetCommands(botCommands)
 	if err != nil {
-		log.Error("Error trying to set commands")
-		log.Error(err)
+		slog.Error("set commands error", "err", err)
 	}
 
 	bot.Handle(tele.OnText, func(c tele.Context) error {
@@ -188,8 +189,7 @@ func Execute() {
 		if response != "" {
 			err = c.Send(response)
 			if err != nil {
-				log.Error("Could not send the message")
-				log.Error(err)
+				slog.Error("send response error", "err", err)
 			}
 			return err
 		}
@@ -207,13 +207,13 @@ func runExternalModule(db db.ZbotDatabase, message *tele.Message, modules []Exte
 
 	cmd, err := utils.ParseCommand(message.Text)
 	if err != nil {
-		log.Error(err)
+		slog.Error("parse command error", "err", err)
 		return ""
 	}
 
 	cmdFile, err := utils.GetCommandFile(cmd, modules)
 	if err != nil {
-		log.Error(err)
+		slog.Error("get command file error", "err", err)
 		return ""
 	}
 
@@ -225,12 +225,12 @@ func runExternalModule(db db.ZbotDatabase, message *tele.Message, modules []Exte
 	}
 
 	user := user.BuildUser(message.Sender, db)
-	log.Debug(fmt.Sprintf("Running module %s ", fullPathToBinary))
+	slog.Debug("Running module", "path", fullPathToBinary)
 	response := utils.RunExternalCommand(fullPathToBinary, user.Username, strconv.Itoa(user.Level), chatName, strings.TrimSpace(message.Payload))
 	return response
 }
 
-//messagesProcessing
+// messagesProcessing
 func messagesProcessing(db db.ZbotDatabase, message *tele.Message, chatName string) string {
 
 	private := false
@@ -244,36 +244,37 @@ func messagesProcessing(db db.ZbotDatabase, message *tele.Message, chatName stri
 
 	if !checkIgnoreList(db, username) {
 		if processingMsg.MatchString(message.Text) {
-			log.Debug(fmt.Sprintf("Received a message from %s with the text: %s", username, message.Text))
+			slog.Debug("received message", "user", username, "text", message.Text)
 			return cmdProcessing(db, *message, chatName, private)
 		}
 	} else {
-		log.Debug(fmt.Sprintf("User [%s] ignored", username))
+		slog.Debug("user ignored", "user", username)
 	}
 
 	return ""
 }
 
-//checkIgnoreList check user in the ignore list
-//return true if user is on the ignore_list
-//		 false if the flag ignore is disable or the user is not in the list
+// checkIgnoreList check user in the ignore list
+// return true if user is on the ignore_list
+//
+//	false if the flag ignore is disable or the user is not in the list
 func checkIgnoreList(db db.ZbotDatabase, username string) bool {
 
 	if Flags.Ignore {
-		log.Debug(fmt.Sprintf("Checking user [%s] ", username))
+		slog.Debug("Checking user", "user", username)
 		return db.UserCheckIgnore(username)
 	}
 
 	return false
 }
 
-//cmdProcessing process message using commands
+// cmdProcessing process message using commands
 func cmdProcessing(db db.ZbotDatabase, msg tele.Message, chatName string, private bool) string {
 
 	commandName := command.GetCommandInformation(msg.Text)
 
 	if command.IsCommandDisabled(commandName) {
-		log.Debug("Command [", commandName, "] is disabled")
+		slog.Debug("command disabled", "command", commandName)
 		return ""
 	}
 
@@ -325,17 +326,17 @@ func cmdProcessing(db db.ZbotDatabase, msg tele.Message, chatName string, privat
 	return outputMsg
 }
 
-//SetDisabledCommands setup disabled commands
+// SetDisabledCommands setup disabled commands
 func SetDisabledCommands(cmdList []string) {
 	command.DisabledCommands = cmdList
 }
 
-//GetDisabledCommands get disabled zbot commands
+// GetDisabledCommands get disabled zbot commands
 func GetDisabledCommands() []string {
 	return command.DisabledCommands
 }
 
-//SetDisabledLearnChannels set list of channels where learns commands wont be used
+// SetDisabledLearnChannels set list of channels where learns commands wont be used
 func SetDisabledLearnChannels(channelsList []string) {
 	command.DisableLearnChannels = channelsList
 }

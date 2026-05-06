@@ -9,8 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mitchellh/mapstructure"
-	log "github.com/sirupsen/logrus"
+	"log/slog"
+
+	"github.com/go-viper/mapstructure/v2"
 )
 
 // InArray returns true if the string 's' is found in the array 'arr', otherwise false
@@ -23,24 +24,24 @@ func InArray(s string, arr []string) bool {
 	return false
 }
 
-//GetCurrentDirectory Return the current path
+// GetCurrentDirectory Return the current path
 func GetCurrentDirectory() string {
 	ex, err := os.Getwd()
 	if err != nil {
-		log.Error(fmt.Errorf("Could get the path %v", err))
+		slog.Error("could not get working directory", "err", err)
 		return os.Getenv("PWD")
 	}
 	return ex
 }
 
-//ConvertToDateToUTC convert unix timestamp to dd-mm-YYYY hh:mm:ss
+// ConvertToDateToUTC convert unix timestamp to dd-mm-YYYY hh:mm:ss
 func ConvertToDateToUTC(unixtime int64) string {
 	location, _ := time.LoadLocation("UTC")
 	unixTimeUTC := time.Unix(unixtime, 0).In(location)
 	return fmt.Sprint(unixTimeUTC)
 }
 
-//StringToArray parse a string "," as separeator
+// StringToArray parse a string "," as separeator
 func StringToArray(cmds string) []string {
 
 	if len(cmds) == 0 {
@@ -58,20 +59,19 @@ func StringToArray(cmds string) []string {
 
 var execCommand = exec.Command
 
-//RunExternalCommand Run external file with a set of arguments
+// RunExternalCommand Run external file with a set of arguments
 func RunExternalCommand(command string, args ...string) string {
 	output, err := execCommand(command, args...).CombinedOutput()
 	if err != nil {
-		log.Error(fmt.Sprintf("%s", output))
-		log.Error(err)
+		slog.Error("external command failed", "output", string(output), "err", err)
 		return ""
 	}
 	return fmt.Sprintf("%s", output)
 }
 
-//ParseCommand Parse and return command, expecting /command [arg1 arg2]
+// ParseCommand Parse and return command, expecting /command [arg1 arg2]
 func ParseCommand(text string) (string, error) {
-	log.Debug(fmt.Sprintf("Parsing text %s", text))
+	slog.Debug("Parsing text", "text", text)
 
 	commandPattern := regexp.MustCompile(`^\/([a-zA-Z0-9\_\-]+)([\s(\S*)]*)?`)
 	if commandPattern.MatchString(text) {
@@ -82,7 +82,7 @@ func ParseCommand(text string) (string, error) {
 	return "", errors.New("Text could not been parser")
 }
 
-//GetCommandFile Find file using command key
+// GetCommandFile Find file using command key
 func GetCommandFile(cmd string, m interface{}) (string, error) {
 
 	type ExternalModule struct {
@@ -94,7 +94,7 @@ func GetCommandFile(cmd string, m interface{}) (string, error) {
 	modules := []ExternalModule{}
 	err := mapstructure.Decode(m, &modules)
 	if err != nil {
-		log.Error(err)
+		slog.Error("decode error", "err", err)
 		return "", fmt.Errorf("Command %s not found in list of commands", cmd)
 	}
 

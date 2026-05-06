@@ -7,17 +7,18 @@ import (
 	"strconv"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
+	"log/slog"
+
 	"github.com/ssalvatori/zbot-telegram/user"
 )
 
-//ExecCommand handler to exec.Command
+// ExecCommand handler to exec.Command
 var ExecCommand = exec.Command
 
-//LookPathCommand handler to exec.LookPath
+// LookPathCommand handler to exec.LookPath
 var LookPathCommand = exec.LookPath
 
-//ExternalCommand definition
+// ExternalCommand definition
 type ExternalCommand struct {
 	PathModules string
 }
@@ -31,12 +32,12 @@ func (handler *ExternalCommand) ProcessText(text string, user user.User, chat st
 		args := commandPattern.FindStringSubmatch(text)
 		externalModule := args[1]
 
-		log.Debug("Looking for module: " + handler.PathModules + externalModule)
+		slog.Debug("Looking for module", "path", handler.PathModules+externalModule)
 
 		fullPathToBinary, err := LookPathCommand(handler.PathModules + externalModule)
 
 		if err != nil {
-			log.Error(err)
+			slog.Error("module lookup error", "err", err)
 			// return "", fmt.Errorf("Internal error with command [%s]", externalModule)
 			return "", nil
 		}
@@ -47,12 +48,12 @@ func (handler *ExternalCommand) ProcessText(text string, user user.User, chat st
 	return "", nil
 }
 
-//RunCommand run external command, the bot is providing the following arguments <username> <level> <chat> <command_arguments>
+// RunCommand run external command, the bot is providing the following arguments <username> <level> <chat> <command_arguments>
 func (handler *ExternalCommand) RunCommand(command string, args ...string) string {
-	output, err := ExecCommand(command, args...).CombinedOutput()
+	cmd := ExecCommand(command, args...)
+	output, err := cmd.Output()
 	if err != nil {
-		log.Error(fmt.Sprintf("%s", output))
-		log.Error(err)
+		slog.Error("external command error", "output", string(output), "err", err)
 		return ""
 	}
 	return fmt.Sprintf("%s", output)

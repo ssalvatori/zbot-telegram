@@ -31,6 +31,13 @@ func TestFindCommandOK(t *testing.T) {
 	assert.Equal(t, ErrNextCommand, err, "Private Message")
 
 }
+func TestFindCommandDisabledChannel(t *testing.T) {
+	DisableLearnChannels = []string{"disabled-chat"}
+	defer func() { DisableLearnChannels = nil }()
+	_, err := findCommand.ProcessText("!find foo", userTest, "disabled-chat", false)
+	assert.Equal(t, ErrLearnDisabledChannel, err)
+}
+
 func TestFindCommandNotMatch(t *testing.T) {
 
 	result, _ := findCommand.ProcessText("!find6", userTest, "testchat", false)

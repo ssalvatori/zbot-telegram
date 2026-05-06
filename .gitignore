@@ -34,3 +34,5 @@ zbot-telegram
 zbot_dev.conf
 plex.py
 vendor/**
+
+coverage.out

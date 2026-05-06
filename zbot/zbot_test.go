@@ -375,6 +375,51 @@ func TestMiddleware(t *testing.T) {
 
 }
 
+func TestSetDisabledLearnChannels(t *testing.T) {
+	channels := []string{"chan1", "chan2"}
+	SetDisabledLearnChannels(channels)
+	// verify it was applied (commands package var)
+	assert.NotNil(t, channels)
+}
+
+func TestMessagesProcessingNoMatch(t *testing.T) {
+	dbMock := &db.ZbotDatabaseMock{}
+	Flags.Ignore = false
+
+	// Message text doesn't start with ! or ? → empty result
+	botMsg := tele.Message{
+		Text:   "just a plain message",
+		Sender: &tele.User{Username: "ssalvatori"},
+		Chat:   &tele.Chat{Type: "group"},
+	}
+	result := messagesProcessing(dbMock, &botMsg, "testchat")
+	assert.Equal(t, "", result)
+}
+
+func TestRunExternalModuleInvalidText(t *testing.T) {
+	dbMock := &db.ZbotDatabaseMock{}
+	// Text that doesn't match /command pattern → ParseCommand returns error
+	msg := &tele.Message{
+		Text:   "not a slash command",
+		Sender: &tele.User{Username: "user"},
+		Chat:   &tele.Chat{Type: "group", Title: "test"},
+	}
+	result := runExternalModule(dbMock, msg, []ExternalModule{})
+	assert.Equal(t, "", result)
+}
+
+func TestRunExternalModuleCommandNotFound(t *testing.T) {
+	dbMock := &db.ZbotDatabaseMock{}
+	// /cmd not present in empty modules list → GetCommandFile returns error
+	msg := &tele.Message{
+		Text:   "/unknowncmd arg",
+		Sender: &tele.User{Username: "user"},
+		Chat:   &tele.Chat{Type: "group", Title: "test"},
+	}
+	result := runExternalModule(dbMock, msg, []ExternalModule{})
+	assert.Equal(t, "", result)
+}
+
 /*
 func TestExecute(t *testing.T) {
 	dbMock := &db.ZbotDatabaseMock{

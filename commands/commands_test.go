@@ -2,6 +2,8 @@ package command
 
 import (
 	"container/list"
+	"errors"
+	"sort"
 	"testing"
 
 	"github.com/ssalvatori/zbot-telegram/db"
@@ -130,3 +132,42 @@ func TestSetDisabledCommands(t *testing.T) {
 	assert.Equal(t, disabledCommands, DisabledCommands, "no disabled command")
 }
 */
+
+func TestSetup(t *testing.T) {
+	Setup()
+}
+
+func TestCheckLearnCommandOnChannel(t *testing.T) {
+	DisableLearnChannels = []string{"disabled-chat"}
+	sort.Strings(DisableLearnChannels)
+	defer func() { DisableLearnChannels = nil }()
+
+	assert.True(t, checkLearnCommandOnChannel("disabled-chat"), "channel should be disabled")
+	assert.False(t, checkLearnCommandOnChannel("testchat"), "channel should not be disabled")
+}
+
+type FakeCommandLearnDisabled struct{}
+
+func (h *FakeCommandLearnDisabled) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
+	return "", ErrLearnDisabledChannel
+}
+
+type FakeCommandError struct{}
+
+func (h *FakeCommandError) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
+	return "", errors.New("some internal error")
+}
+
+func TestRunLearnDisabledChannel(t *testing.T) {
+	l := &CommandsList{List: list.New()}
+	l.Chain("learn-disabled", &FakeCommandLearnDisabled{}, 0)
+	result := l.Run("learn-disabled", "!learn-disabled", userTest, "test", false)
+	assert.Equal(t, "Learn modules are been disabled for this channel!", result)
+}
+
+func TestRunInternalError(t *testing.T) {
+	l := &CommandsList{List: list.New()}
+	l.Chain("error-cmd", &FakeCommandError{}, 0)
+	result := l.Run("error-cmd", "!error-cmd", userTest, "test", false)
+	assert.Equal(t, "Internal Error, check logs", result)
+}

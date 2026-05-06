@@ -4,25 +4,28 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mitchellh/mapstructure"
-	log "github.com/sirupsen/logrus"
+	"log/slog"
+	"os"
+
+	"github.com/go-viper/mapstructure/v2"
 	tele "gopkg.in/telebot.v3"
 )
 
-//Channel definition
+// Channel definition
 type Channel struct {
 	ID        int64
 	Title     string
 	AuthToken string
 }
 
-//Start http server in a given port
+// Start http server in a given port
 func Start(serverPort int, bot *tele.Bot, c interface{}) {
-	log.Info(fmt.Sprintf("Starting http server at port: %d", serverPort))
+	slog.Info("Starting http server", "port", serverPort)
 	channels := []Channel{}
 	err := mapstructure.Decode(c, &channels)
 	if err != nil {
-		log.Fatal(err)
+		slog.Error("decode channels error", "err", err)
+		os.Exit(1)
 	}
 
 	http.HandleFunc("/messages", apiMessages(bot, channels))
@@ -30,14 +33,15 @@ func Start(serverPort int, bot *tele.Bot, c interface{}) {
 	err = http.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", serverPort), nil)
 
 	if err != nil {
-		log.Fatal("ListenAndServe: " + err.Error())
+		slog.Error("ListenAndServe failed", "err", err)
+		os.Exit(1)
 	}
 
 }
 
 func apiMessages(bot *tele.Bot, channels []Channel) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		log.Debug(fmt.Sprintf("GET params: %v", r.URL.Query()))
+		slog.Debug("GET params", "params", r.URL.Query())
 
 		authToken := r.URL.Query().Get("token")
 		chatID := getChatID(authToken, channels)
@@ -50,12 +54,11 @@ func apiMessages(bot *tele.Bot, channels []Channel) func(http.ResponseWriter, *h
 				to.ID = chatID
 				_, err := bot.Send(&to, data)
 				if err != nil {
-					log.Error("Could not set the message")
-					log.Error(err)
+					slog.Error("could not send message", "err", err)
 				}
 				_, err = w.Write([]byte("OK"))
 				if err != nil {
-					log.Error(err)
+					slog.Error("write error", "err", err)
 				}
 			}
 
@@ -65,12 +68,12 @@ func apiMessages(bot *tele.Bot, channels []Channel) func(http.ResponseWriter, *h
 		_, err := w.Write([]byte("Forbidden"))
 
 		if err != nil {
-			log.Error(err)
+			slog.Error("write forbidden error", "err", err)
 		}
 	}
 }
 
-//getChatId return the chat_id associated with that token
+// getChatId return the chat_id associated with that token
 func getChatID(token string, channels []Channel) int64 {
 
 	for i := range channels {

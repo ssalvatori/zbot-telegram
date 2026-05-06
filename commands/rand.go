@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/ssalvatori/zbot-telegram/user"
 )
@@ -38,7 +38,7 @@ func (handler *RandCommand) ProcessText(text string, user user.User, chat string
 			limit, err = strconv.Atoi(term[2])
 
 			if err != nil {
-				log.Error(fmt.Printf("Problem converting %s", term[2]))
+				slog.Error("problem converting limit", "term", term[2])
 				limit = 1
 			}
 		}
@@ -52,7 +52,7 @@ func (handler *RandCommand) ProcessText(text string, user user.User, chat string
 			if errors.Is(err, db.ErrNotFound) {
 				return "no results", nil
 			}
-			log.Error(err)
+			slog.Error("rand query error", "err", err)
 			return "", fmt.Errorf("Internal error, check logs")
 		}
 		var output []string

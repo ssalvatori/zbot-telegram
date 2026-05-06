@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"regexp"
 
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/ssalvatori/zbot-telegram/user"
 )
@@ -29,7 +29,7 @@ func (handler *StatsCommand) ProcessText(text string, user user.User, chat strin
 		}
 		statTotal, err := handler.Db.Statistics(chat)
 		if err != nil {
-			log.Error(err)
+			slog.Error("statistics error", "err", err)
 			return "", db.ErrInternalError
 		}
 		return fmt.Sprintf("Number of definitions: %s", statTotal), nil

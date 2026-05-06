@@ -12,7 +12,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 )
 
 //ZbotDatabaseSqlite struct
@@ -28,21 +28,14 @@ func (d *ZbotDatabaseSqlite) GetConnectionInfo() string {
 
 //Close close connecttion to DB
 func (d *ZbotDatabaseSqlite) Close() {
-	log.Debug("Closing DB connection")
+	slog.Debug("Closing DB connection")
 }
 
 //Init connect to sqlite db
 func (d *ZbotDatabaseSqlite) Init() error {
-	log.Info("Connecting to database: " + d.File)
+	slog.Info("Connecting to database", "file", d.File)
 
-	newLogger := logger.New(
-		log.New(), // io writer
-		logger.Config{
-			SlowThreshold: time.Second,   // Slow SQL threshold
-			LogLevel:      logger.Silent, // Log level
-			Colorful:      false,         // Disable color
-		},
-	)
+	newLogger := logger.Default.LogMode(logger.Silent)
 
 	db, err := gorm.Open(sqlite.Open(d.File), &gorm.Config{
 		Logger: newLogger,
@@ -52,17 +45,17 @@ func (d *ZbotDatabaseSqlite) Init() error {
 	})
 
 	if err != nil {
-		log.Error(err)
+		slog.Error("open db error", "err", err)
 		return err
 	}
 	if db == nil {
-		log.Error(err)
+		slog.Error("nil db after open")
 		return errors.New("Error connecting")
 	}
 
 	err = db.Debug().AutoMigrate(&Definition{}, &UserIgnore{})
 	if err != nil {
-		log.Error(err)
+		slog.Error("migration error", "err", err)
 		return errors.New("Error during migration")
 	}
 
@@ -76,7 +69,7 @@ func (d *ZbotDatabaseSqlite) Statistics(chat string) (string, error) {
 
 	var count int64
 	if result := d.DB.Model(&Definition{}).Where("chat = ? COLLATE NOCASE", chat).Count(&count); result.Error != nil {
-		log.Error(result.Error)
+		slog.Error("statistics query error", "err", result.Error)
 		return "", result.Error
 	}
 
@@ -87,7 +80,7 @@ func (d *ZbotDatabaseSqlite) Statistics(chat string) (string, error) {
 func (d *ZbotDatabaseSqlite) Last(chat string, limit int) ([]Definition, error) {
 	definitions := []Definition{}
 	if err := d.DB.Debug().Model(&Definition{}).Where("chat = ? COLLATE NOCASE", chat).Limit(limit).Order("ID desc").Find(&definitions).Error; err != nil {
-		log.Error(err)
+		slog.Error("last query error", "err", err)
 		return nil, err
 	}
 	return definitions, nil
@@ -109,7 +102,7 @@ func (d *ZbotDatabaseSqlite) Top(chat string, limit int) ([]Definition, error) {
 func (d *ZbotDatabaseSqlite) Rand(chat string, limit int) ([]Definition, error) {
 	definitions := []Definition{}
 	if result := d.DB.Debug().Model(&Definition{}).Where("chat = ? COLLATE NOCASE", chat).Limit(limit).Order("random()").Find(&definitions); result.Error != nil {
-		log.Error(result.Error)
+		slog.Error("rand query error", "err", result.Error)
 		return []Definition{}, result.Error
 	}
 
@@ -133,7 +126,7 @@ func (d *ZbotDatabaseSqlite) Get(term string, chat string) (Definition, error) {
 //IncreaseHits increase the definition hits by one
 func (d *ZbotDatabaseSqlite) IncreaseHits(id uint) error {
 	if err := d.DB.Debug().Model(&Definition{}).Where("id = ?", id).UpdateColumn("hits", gorm.Expr("hits + ?", 1)).Error; err != nil {
-		log.Error(err)
+		slog.Error("increase hits error", "err", err)
 		return ErrInternalError
 	}
 	return nil
@@ -178,20 +171,20 @@ func (d *ZbotDatabaseSqlite) Search(criteria string, chat string, limit int) ([]
 func (d *ZbotDatabaseSqlite) Set(definition Definition) (string, error) {
 	count := 1
 	term := definition.Term
-	log.Debug(definition)
+	slog.Debug("set definition", "definition", definition)
 	for {
 		err := d._set(term, definition)
 		if err != nil {
-			log.Debug("SQL insert error: ", err.Error())
+			slog.Debug("SQL insert error", "err", err.Error())
 			if strings.Contains(err.Error(), "UNIQUE constraint failed") {
 				term = fmt.Sprintf("%s%d", definition.Term, count)
-				log.Debug(fmt.Sprintf("New Term: %s", term))
+				slog.Debug("new term", "term", term)
 				count = count + 1
 			} else {
 				return "", err
 			}
 		} else {
-			log.Debug("trying with: ", term)
+			slog.Debug("trying with term", "term", term)
 			break
 		}
 	}
@@ -204,7 +197,7 @@ func (d *ZbotDatabaseSqlite) _set(term string, definition Definition) error {
 	definition.Term = term
 
 	if err := d.DB.Debug().Model(&Definition{}).Create(&definition).Error; err != nil {
-		log.Error(err)
+		slog.Error("create definition error", "err", err)
 		return err
 	}
 	return nil
@@ -225,7 +218,7 @@ func (d *ZbotDatabaseSqlite) Append(item Definition, chat string) error {
 		appenedMeaning := fmt.Sprintf("%s. %s", definition.Meaning, item.Meaning)
 		def := Definition{Meaning: appenedMeaning, Author: item.Author}
 		if err := d.DB.Debug().Model(&definition).Updates(def).Error; err != nil {
-			log.Error(err)
+			slog.Error("append definition error", "err", err)
 			return err
 		}
 		return nil
@@ -237,14 +230,14 @@ func (d *ZbotDatabaseSqlite) Append(item Definition, chat string) error {
 func (d *ZbotDatabaseSqlite) Lock(item Definition, chat string) error {
 	definition, err := d.Get(item.Term, item.Chat)
 	if err != nil {
-		log.Error(err)
+		slog.Error("lock get error", "err", err)
 		return err
 	}
 
 	if !definition.Locked.Bool {
 		def := Definition{Locked: sql.NullBool{Bool: true, Valid: true}, LockedBy: sql.NullString{String: item.Author}}
 		if err := d.DB.Debug().Model(&definition).Updates(def).Where("chat = ? COLLATE NOCASE", chat).Error; err != nil {
-			log.Error(err)
+			slog.Error("lock update error", "err", err)
 			return err
 		}
 		return nil

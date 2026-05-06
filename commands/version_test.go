@@ -19,12 +19,7 @@ func TestVersionCommandOK(t *testing.T) {
 
 func TestVersionCommandNotMatch(t *testing.T) {
 
-	result, _ := statsCommand.ProcessText("!version6", userTest, "testchat", false)
+	result, err := versionCommand.ProcessText("!version6", userTest, "testchat", false)
 	assert.Equal(t, "", result, "Empty output doesn't match")
-
-	_, err := statsCommand.ProcessText("!version", userTest, "testchat", false)
-	assert.Equal(t, "no action in command", err.Error(), "Error output doesn't match")
-
-	_, err = statsCommand.ProcessText("!version", userTest, "testchat", true)
-	assert.Error(t, err, "Private message")
+	assert.Equal(t, ErrNextCommand, err, "Error output doesn't match")
 }

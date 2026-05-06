@@ -74,3 +74,16 @@ func TestIgnoreError(t *testing.T) {
 	assert.Error(t, err, "Private message")
 
 }
+
+func TestIgnorePrivateMessage(t *testing.T) {
+	_, err := ignoreCommand.ProcessText("!ignore help", userTest, "testchat", true)
+	assert.Equal(t, ErrNextCommand, err, "Private message")
+}
+
+func TestIgnoreListError(t *testing.T) {
+	ignoreCommand.Db = &db.ZbotDatabaseMock{
+		Error: true,
+	}
+	_, err := ignoreCommand.ProcessText("!ignore list", userTest, "testchat", false)
+	assert.Error(t, err, "List DB error")
+}

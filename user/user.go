@@ -7,7 +7,7 @@ import (
 
 	"strconv"
 
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 	tele "gopkg.in/telebot.v3"
 )
 
@@ -40,7 +40,7 @@ func GetUserLevel(Db db.ZbotDatabase, username string) int {
 	userLevel, err := Db.UserLevel(username)
 
 	if err != nil {
-		log.Error(err)
+		slog.Error("user level error", "err", err)
 		return 0
 	}
 

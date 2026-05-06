@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"regexp"
 
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/ssalvatori/zbot-telegram/user"
 )
@@ -38,7 +38,7 @@ func (handler *LearnCommand) ProcessText(text string, user user.User, chat strin
 		}
 		usedTerm, err := handler.Db.Set(def)
 		if err != nil {
-			log.Error()
+			slog.Error("learn db error", "err", err)
 			return "", err
 		}
 		return fmt.Sprintf("[%s] - [%s]", usedTerm, def.Meaning), nil
