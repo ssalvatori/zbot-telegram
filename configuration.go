@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
+	"log/slog"
+	"os"
 
-	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
 
@@ -68,8 +68,8 @@ type configurationModule struct {
 
 func readConfiguration(filename string) (*Configuration, error) {
 
-	log.Info("Reading file " + filename)
-	buf, err := ioutil.ReadFile(filename)
+	slog.Info("Reading file", "filename", filename)
+	buf, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}

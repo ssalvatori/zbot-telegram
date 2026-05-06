@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"regexp"
 
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/ssalvatori/zbot-telegram/user"
 )
@@ -36,13 +36,13 @@ func (handler *AppendCommand) ProcessText(text string, user user.User, chat stri
 		}
 		err := handler.Db.Append(def, chat)
 		if err != nil {
-			log.Error(err.Error())
+			slog.Error("append error", "err", err)
 			return "", ErrInternalError
 		}
 
 		def, err = handler.Db.Get(def.Term, chat)
 		if err != nil {
-			log.Error(err.Error())
+			slog.Error("get after append error", "err", err)
 			return "", ErrInternalError
 		}
 		return fmt.Sprintf("[%s] = [%s]", def.Term, def.Meaning), nil

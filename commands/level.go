@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strconv"
 
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 	"github.com/ssalvatori/zbot-telegram/db"
 
 	"strings"
@@ -32,7 +32,7 @@ func (handler *LevelCommand) DelUser(userToCheck string, user string) (string, e
 func (handler *LevelCommand) GetLevel(user string) (string, error) {
 	level, err := handler.Db.UserLevel(user)
 	if err != nil {
-		log.Error(err)
+		slog.Error("get level error", "err", err)
 		return "", err
 	}
 	return fmt.Sprintf("%s level %s", user, level), nil

@@ -18,6 +18,10 @@ func TestLastCommandOK(t *testing.T) {
 	assert.Equal(t, "[ foo ]", result, "Last Command")
 }
 
+func TestLastCommandSetDb(t *testing.T) {
+	lastCommand.SetDb(&db.ZbotDatabaseMock{})
+}
+
 func TestLastCommandNotMatch(t *testing.T) {
 	result, _ := lastCommand.ProcessText("!last6", userTest, "testchat", false)
 	assert.Equal(t, "", result, "Empty output doesn't match")

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/ssalvatori/zbot-telegram/user"
 	"github.com/ssalvatori/zbot-telegram/utils"
@@ -39,7 +39,7 @@ func (handler *IgnoreCommand) ProcessText(text string, user user.User, chat stri
 		case "list":
 			ignoredUsers, err := handler.Db.UserIgnoreList()
 			if err != nil {
-				log.Error(err)
+				slog.Error("ignore list error", "err", err)
 				return "", err
 			}
 			result = strings.Join(getUserIgnored(ignoredUsers), "/n")
@@ -47,7 +47,7 @@ func (handler *IgnoreCommand) ProcessText(text string, user user.User, chat stri
 			if !strings.EqualFold(strings.ToLower(args[3]), strings.ToLower(user.Username)) {
 				err := handler.Db.UserIgnoreInsert(args[3])
 				if err != nil {
-					log.Error(err)
+					slog.Error("ignore insert error", "err", err)
 					return "", err
 				}
 				result = fmt.Sprintf("User [%s] ignored for 10 minutes", args[3])
@@ -76,7 +76,7 @@ func convertDates(since string, until string) (string, string) {
 	_, err := time.LoadLocation("UTC")
 
 	if err != nil {
-		log.Error(err)
+		slog.Error("load UTC location error", "err", err)
 	}
 
 	var i int64
@@ -84,14 +84,14 @@ func convertDates(since string, until string) (string, string) {
 	sinceFormated := time.Unix(100, 0)
 	untilFormated := time.Unix(600, 0)
 	if err != nil {
-		log.Error("converting ignore time (since)")
+		slog.Error("converting ignore time since")
 	} else {
 		sinceFormated = time.Unix(i, 0)
 	}
 
 	i, err = strconv.ParseInt(until, 10, 64)
 	if err != nil {
-		log.Error("converting ignore time (until)")
+		slog.Error("converting ignore time until")
 	} else {
 		untilFormated = time.Unix(i, 0)
 	}

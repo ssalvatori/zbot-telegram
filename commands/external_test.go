@@ -65,7 +65,7 @@ func TestHelperProcess(t *testing.T) {
 		os.Exit(0)
 	}
 
-	fmt.Fprintf(os.Stderr, "%s\n", strings.Join(args, " "))
+	fmt.Fprintf(os.Stdout, "%s\n", strings.Join(args, " "))
 	os.Exit(0)
 }
 
@@ -87,6 +87,29 @@ func TestExternalCommandOK(t *testing.T) {
 	// assert.Equal(t, "Internal error", err.Error(), "external mock")
 	assert.Nil(t, err)
 
+}
+
+func fakeExecCommandFail(command string, args ...string) *exec.Cmd {
+	cs := []string{"-test.run=TestHelperProcessFail", "--", command}
+	cs = append(cs, args...)
+	cmd := exec.Command(os.Args[0], cs...)
+	cmd.Env = []string{"GO_WANT_HELPER_FAIL=1"}
+	return cmd
+}
+
+func TestHelperProcessFail(t *testing.T) {
+	if os.Getenv("GO_WANT_HELPER_FAIL") != "1" {
+		return
+	}
+	os.Exit(1)
+}
+
+func TestRunCommandError(t *testing.T) {
+	ExecCommand = fakeExecCommandFail
+	defer func() { ExecCommand = exec.Command }()
+
+	out := externalCommand.RunCommand("some_command", "arg1")
+	assert.Equal(t, "", out, "Run Command Error")
 }
 
 func TestExternalCommandInject(t *testing.T) {

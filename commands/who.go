@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"regexp"
 
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/ssalvatori/zbot-telegram/user"
 	"github.com/ssalvatori/zbot-telegram/utils"
@@ -44,13 +44,13 @@ func (handler *WhoCommand) ProcessText(text string, user user.User, chat string,
 			if errors.Is(err, db.ErrNotFound) {
 				return "", fmt.Errorf("Definition [%s] not found", item.Term)
 			}
-			log.Error(err.Error())
+			slog.Error("who get error", "err", err)
 			return "", ErrInternalError
 		}
 
 		err = handler.Db.IncreaseHits(Item.ID)
 		if err != nil {
-			log.Error(err.Error())
+			slog.Error("who increase hits error", "err", err)
 			return "", ErrInternalError
 			// if !errors.Is(err, db.ErrInternalError) {
 			// 	return "Internal Error, check logs", nil

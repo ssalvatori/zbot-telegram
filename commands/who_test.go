@@ -32,6 +32,18 @@ func TestWhoCommandNotMatch(t *testing.T) {
 	assert.Equal(t, "no action in command", err.Error(), "Error output doesn't match")
 }
 
+func TestWhoCommandSetDb(t *testing.T) {
+	whoCommand.SetDb(&db.ZbotDatabaseMock{})
+}
+
+func TestWhoCommandNotFound(t *testing.T) {
+	whoCommand.Db = &db.ZbotDatabaseMock{
+		NotFound: true,
+	}
+	_, err := whoCommand.ProcessText("!who foo", userTest, "testchat", false)
+	assert.EqualError(t, err, "Definition [foo] not found")
+}
+
 func TestWhoCommandError(t *testing.T) {
 
 	whoCommand.Db = &db.ZbotDatabaseMock{

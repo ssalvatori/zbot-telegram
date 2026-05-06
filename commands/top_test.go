@@ -30,6 +30,26 @@ func TestTopCommandNotMatch(t *testing.T) {
 	assert.Equal(t, "no action in command", err.Error(), "Error output doesn't match")
 }
 
+func TestTopCommandPrivate(t *testing.T) {
+	_, err := topCommand.ProcessText("!top", userTest, "testchat", true)
+	assert.Equal(t, ErrNextCommand, err, "Private message")
+}
+
+func TestTopCommandSetDb(t *testing.T) {
+	topCommand.SetDb(&db.ZbotDatabaseMock{})
+}
+
+func TestTopCommandWithLimit(t *testing.T) {
+	topCommand.Db = &db.ZbotDatabaseMock{
+		FindTerms: []string{"foo"},
+	}
+	result, _ := topCommand.ProcessText("!top 5", userTest, "testchat", false)
+	assert.Equal(t, "foo", result, "Top with limit")
+
+	result, _ = topCommand.ProcessText("!top 200", userTest, "testchat", false)
+	assert.Equal(t, "foo", result, "Top with limit capped at 100")
+}
+
 func TestTopCommandError(t *testing.T) {
 
 	topCommand.Db = &db.ZbotDatabaseMock{

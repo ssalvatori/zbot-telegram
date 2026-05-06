@@ -1,11 +1,10 @@
 package main
 
 import (
+	"log/slog"
 	"os"
 	"os/exec"
 	"testing"
-
-	log "github.com/sirupsen/logrus"
 
 	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/ssalvatori/zbot-telegram/zbot"
@@ -61,16 +60,16 @@ func TestSetUp(t *testing.T) {
 
 func TestSetupLog(t *testing.T) {
 
-	levels := map[string]string{
-		"info":  "info",
-		"debug": "debug",
-		"error": "error",
-		"":      "info",
+	levels := map[string]slog.Level{
+		"info":  slog.LevelInfo,
+		"debug": slog.LevelDebug,
+		"error": slog.LevelError,
+		"":      slog.LevelInfo,
 	}
 	for key, value := range levels {
 		os.Setenv("ZBOT_LOG_LEVEL", key)
 		setupLog()
-		assert.Equal(t, log.GetLevel().String(), value, "Setup log levels")
+		assert.Equal(t, logLevel.Level(), value, "Setup log levels for key: "+key)
 	}
 
 }

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"regexp"
 
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/ssalvatori/zbot-telegram/user"
 )
@@ -34,7 +34,7 @@ func (handler *LockCommand) ProcessText(text string, user user.User, chat string
 		}
 		err := handler.Db.Lock(def, chat)
 		if err != nil {
-			log.Error(err)
+			slog.Error("lock error", "err", err)
 			return "", err
 		}
 		return fmt.Sprintf("[%s] locked", def.Term), nil

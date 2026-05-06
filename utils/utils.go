@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/mitchellh/mapstructure"
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 )
 
 // InArray returns true if the string 's' is found in the array 'arr', otherwise false
@@ -27,7 +27,7 @@ func InArray(s string, arr []string) bool {
 func GetCurrentDirectory() string {
 	ex, err := os.Getwd()
 	if err != nil {
-		log.Error(fmt.Errorf("Could get the path %v", err))
+		slog.Error("could not get working directory", "err", err)
 		return os.Getenv("PWD")
 	}
 	return ex
@@ -62,8 +62,7 @@ var execCommand = exec.Command
 func RunExternalCommand(command string, args ...string) string {
 	output, err := execCommand(command, args...).CombinedOutput()
 	if err != nil {
-		log.Error(fmt.Sprintf("%s", output))
-		log.Error(err)
+		slog.Error("external command failed", "output", string(output), "err", err)
 		return ""
 	}
 	return fmt.Sprintf("%s", output)
@@ -71,7 +70,7 @@ func RunExternalCommand(command string, args ...string) string {
 
 //ParseCommand Parse and return command, expecting /command [arg1 arg2]
 func ParseCommand(text string) (string, error) {
-	log.Debug(fmt.Sprintf("Parsing text %s", text))
+	slog.Debug("Parsing text", "text", text)
 
 	commandPattern := regexp.MustCompile(`^\/([a-zA-Z0-9\_\-]+)([\s(\S*)]*)?`)
 	if commandPattern.MatchString(text) {
@@ -94,7 +93,7 @@ func GetCommandFile(cmd string, m interface{}) (string, error) {
 	modules := []ExternalModule{}
 	err := mapstructure.Decode(m, &modules)
 	if err != nil {
-		log.Error(err)
+		slog.Error("decode error", "err", err)
 		return "", fmt.Errorf("Command %s not found in list of commands", cmd)
 	}
 

@@ -1,31 +1,31 @@
 package main
 
 import (
+	"fmt"
+	"log/slog"
 	"os"
 
-	"fmt"
-
-	env "github.com/caarlos0/env/v6"
+	env "github.com/caarlos0/env/v11"
 	"github.com/mitchellh/mapstructure"
-	log "github.com/sirupsen/logrus"
 	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/ssalvatori/zbot-telegram/zbot"
 )
 
-// setUpLog setup log level using environment variables
-func setupLog() {
-	log.SetOutput(os.Stdout)
+// logLevel holds the current log level and can be inspected in tests
+var logLevel = new(slog.LevelVar)
 
+// setupLog configures the default slog logger based on ZBOT_LOG_LEVEL
+func setupLog() {
 	switch os.Getenv("ZBOT_LOG_LEVEL") {
 	case "debug":
-		log.SetLevel(log.DebugLevel)
-	case "info":
-		log.SetLevel(log.InfoLevel)
+		logLevel.Set(slog.LevelDebug)
 	case "error":
-		log.SetLevel(log.ErrorLevel)
+		logLevel.Set(slog.LevelError)
 	default:
-		log.SetLevel(log.InfoLevel)
+		logLevel.Set(slog.LevelInfo)
 	}
+	h := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel})
+	slog.SetDefault(slog.New(h))
 }
 
 func setupDatabase(conf *Configuration) db.ZbotDatabase {
@@ -34,13 +34,15 @@ func setupDatabase(conf *Configuration) db.ZbotDatabase {
 
 	switch conf.Db.Engine {
 	case "mysql":
-		log.Info("Setting up mysql connections")
-		log.Fatal("Not implemented")
+		slog.Info("Setting up mysql connections")
+		slog.Error("mysql not implemented")
+		os.Exit(1)
 	case "sqlite":
-		log.Info("Setting up sqlite connections")
+		slog.Info("Setting up sqlite connections")
 		db = setupDatabaseSqlite(conf)
 	default:
-		log.Fatal("Select a database type (mysql o sqlite)")
+		slog.Error("no database type selected")
+		os.Exit(1)
 	}
 	return db
 
@@ -61,14 +63,16 @@ func setup() {
 
 	cfg := EnvironmentVariables{}
 	if err := env.Parse(&cfg); err != nil {
-		log.Fatal(fmt.Sprintf("%+v\n", err))
+		slog.Error("env parse error", "err", err)
+		os.Exit(1)
 	}
 
-	log.Debug(fmt.Sprintf("%+v\n", cfg))
+	slog.Debug("config", "cfg", fmt.Sprintf("%+v", cfg))
 
 	configuration, err := readConfiguration(cfg.ConfigurationFile)
 	if err != nil {
-		log.Fatal(err)
+		slog.Error("read configuration error", "err", err)
+		os.Exit(1)
 	}
 
 	zbot.APIToken = configuration.Zbot.Token
@@ -84,27 +88,29 @@ func setup() {
 	zbot.ExternalModules = []zbot.ExternalModule{}
 	err = mapstructure.Decode(configuration.Modules.List, &zbot.ExternalModules)
 	if err != nil {
-		log.Fatal(err)
+		slog.Error("decode modules error", "err", err)
+		os.Exit(1)
 	}
 
 	// zbot.ExternalModules = []zbot.ExternalModule(configuration.Modules.List)
 	zbot.Channels = setupChannels(configuration.Webhook.Auth)
 
 	if configuration.Webhook.Disable {
-		log.Info("WebServer: disable")
+		slog.Info("WebServer: disable")
 		zbot.Webhook.Enable = false
 	} else {
 		zbot.Webhook.Enable = true
-		log.Info("WebServer: enable")
+		slog.Info("WebServer: enable")
 
 		if len(configuration.Webhook.Auth) == 0 {
-			log.Fatal("No Webhook.Auth present, exiting now!!")
+			slog.Error("no Webhook.Auth present")
+			os.Exit(1)
 		}
 
 		if configuration.Webhook.Port != 0 {
 			zbot.Webhook.Port = configuration.Webhook.Port
 		}
-		log.Info(fmt.Sprintf("WebServer Port: %d", zbot.Webhook.Port))
+		slog.Info("WebServer port", "port", zbot.Webhook.Port)
 
 	}
 

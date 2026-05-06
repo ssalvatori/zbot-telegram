@@ -9,7 +9,7 @@ import (
 
 	"container/list"
 
-	log "github.com/sirupsen/logrus"
+	"log/slog"
 	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/ssalvatori/zbot-telegram/user"
 	"github.com/ssalvatori/zbot-telegram/utils"
@@ -164,21 +164,21 @@ func GetCommandInformation(text string) string {
 
 //CheckPermission validate if the user has enought permisison to use a command (each command has a requiredLevel)
 func CheckPermission(command string, user user.User, requiredLevel int) bool {
-	log.Debug("Checking permission for [", command, "] and user ", user.Username)
+	slog.Debug("Checking permission", "command", command, "user", user.Username)
 
 	return user.Level >= requiredLevel
 }
 
 // IsCommandDisabled check if a command is in the disable list
 func IsCommandDisabled(commandName string) bool {
-	log.Debug("Checking if [", commandName, "] is disabled")
+	slog.Debug("Checking if disabled", "command", commandName)
 	//TODO BUG check DisabledCommands before check the array
 	return utils.InArray(commandName, DisabledCommands)
 }
 
 // GetMinimumLevel get the minimum level required for a git command, if it is not defined return 0
 func GetMinimumLevel(commandName string, minimumLevels Levels) int {
-	log.Debug("Getting mininum level for ", commandName)
+	slog.Debug("Getting minimum level", "command", commandName)
 
 	field, ok := reflect.TypeOf(&minimumLevels).Elem().FieldByName(strings.Title(commandName))
 
@@ -194,7 +194,7 @@ func GetMinimumLevel(commandName string, minimumLevels Levels) int {
 
 //checkLearnCommandOnChannel check if channel is in list of channel where learn commands should be disabled
 func checkLearnCommandOnChannel(channel string) bool {
-	log.Debug("Checking if channel [", channel, "] is the list of ZBOT_CONFIG_DISABLE_LEARN_CHANNELS")
+	slog.Debug("Checking disable learn channels", "channel", channel)
 
 	i := sort.SearchStrings(DisableLearnChannels, channel)
 	if i < len(DisableLearnChannels) && DisableLearnChannels[i] == channel {
