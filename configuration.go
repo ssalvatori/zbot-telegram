@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
 
 	"go.yaml.in/yaml/v4"
 )
@@ -15,12 +16,6 @@ type Configuration struct {
 	// Webhook  configurationWebhook  `yaml:"webhook"`
 	Commands configurationCommands `yaml:"commands"`
 	Modules  configurationModules  `yaml:"modules"`
-}
-
-type channel struct {
-	Channel string `yaml:"channel"`
-	ID      int64  `yaml:"id,omitempty"`
-	Token   string `yaml:"token,omitempty"`
 }
 
 type configurationCommands struct {
@@ -62,8 +57,9 @@ type configurationModule struct {
 
 func readConfiguration(filename string) (*Configuration, error) {
 
+	filename = filepath.Clean(filename)
 	slog.Info("Reading file", "filename", filename)
-	buf, err := os.ReadFile(filename)
+	buf, err := os.ReadFile(filename) // #nosec G304 -- path is operator-supplied via ZBOT_CONFIG_FILE env var
 	if err != nil {
 		return nil, err
 	}

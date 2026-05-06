@@ -10,6 +10,7 @@ import (
 	"log/slog"
 
 	"github.com/ssalvatori/zbot-telegram/user"
+	"github.com/ssalvatori/zbot-telegram/utils"
 )
 
 // ExecCommand handler to exec.Command
@@ -42,7 +43,7 @@ func (handler *ExternalCommand) ProcessText(text string, user user.User, chat st
 			return "", nil
 		}
 
-		return handler.RunCommand(fullPathToBinary, user.Username, strconv.Itoa(user.Level), chat, strings.TrimSpace(args[2])), nil
+		return handler.RunCommand(fullPathToBinary, utils.SanitizeArg(user.Username), strconv.Itoa(user.Level), utils.SanitizeArg(chat), utils.SanitizeArg(strings.TrimSpace(args[2]))), nil
 
 	}
 	return "", nil

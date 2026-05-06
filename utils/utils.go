@@ -59,9 +59,23 @@ func StringToArray(cmds string) []string {
 
 var execCommand = exec.Command
 
+// controlChars matches ASCII C0 control characters (null byte through US, plus DEL).
+var controlChars = regexp.MustCompile(`[\x00-\x1F\x7F]`)
+
+// SanitizeArg removes null bytes and other ASCII control characters from s.
+// It is applied to all user-supplied strings before they are passed to external
+// module processes to prevent null-byte injection and log-line injection.
+func SanitizeArg(s string) string {
+	return controlChars.ReplaceAllString(s, "")
+}
+
 // RunExternalCommand Run external file with a set of arguments
 func RunExternalCommand(command string, args ...string) string {
-	output, err := execCommand(command, args...).CombinedOutput()
+	sanitized := make([]string, len(args))
+	for i, a := range args {
+		sanitized[i] = SanitizeArg(a)
+	}
+	output, err := execCommand(command, sanitized...).CombinedOutput()
 	if err != nil {
 		slog.Error("external command failed", "output", string(output), "err", err)
 		return ""

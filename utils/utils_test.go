@@ -55,6 +55,31 @@ func TestStringToArray(t *testing.T) {
 	assert.Equal(t, []string{}, StringToArray(""), "No commands")
 }
 
+func TestSanitizeArg(t *testing.T) {
+	tests := []struct {
+		in  string
+		out string
+	}{
+		{"hello world", "hello world"},
+		{"hello\x00world", "helloworld"},
+		{"line\nnewline", "linenewline"},
+		{"tab\there", "tabhere"},
+		{"null\x00byte\x00s", "nullbytes"},
+		{"clean", "clean"},
+		{"", ""},
+	}
+	for _, tt := range tests {
+		assert.Equal(t, tt.out, SanitizeArg(tt.in), "SanitizeArg(%q)", tt.in)
+	}
+}
+
+func TestRunExternalCommandSanitizesArgs(t *testing.T) {
+	// Null bytes in args must be stripped before exec
+	result := RunExternalCommand("echo", "hel\x00lo")
+	assert.NotContains(t, result, "\x00")
+	assert.Contains(t, result, "hello")
+}
+
 func TestParseCommand(t *testing.T) {
 
 	tests := []struct {

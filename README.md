@@ -4,13 +4,10 @@
 [![codecov](https://codecov.io/github/ssalvatori/zbot-telegram/graph/badge.svg?token=VWqgVPZrGy)](https://codecov.io/github/ssalvatori/zbot-telegram)
 [![Go Report Card](https://goreportcard.com/badge/github.com/ssalvatori/zbot-telegram)](https://goreportcard.com/report/github.com/ssalvatori/zbot-telegram)
 
-
-
 ## Features
 
   * Core Learn module [doc/learn](doc/learn.md)
   * Run external modules
-  * Webhook [doc/webhook](doc/webhook.md)
 
 ## Requirements
 
@@ -37,15 +34,6 @@ db:
   port: 3306
   username: db_username
   password: db_password
-webhook:
-  disable: true
-  port: 13371
-  auth:
-    - channel: channel1
-      id: 1234
-      token: <YOUR_SECURE_TOKEN>
-    - channel: channel2
-      token: <YOUR_SECURE_TOKEN>s
 commands:
   learn:
     disabled:

@@ -14,7 +14,7 @@ LDFLAGS := -X github.com/ssalvatori/zbot-telegram/zbot.version=$(VERSION) \
 
 .DEFAULT_GOAL := build
 
-.PHONY: build release release-snapshot build-docker build-docker-multiarch build-docker-push test coverage lint clean clean-docker help
+.PHONY: build release release-snapshot build-docker build-docker-multiarch build-docker-push test coverage lint docs clean clean-docker help
 
 build: ## Build the binary
 	CGO_ENABLED=1 go build -ldflags "$(LDFLAGS)" -o $(BINARY)
@@ -55,6 +55,10 @@ coverage: ## Run tests and show coverage report
 
 coverage-html: coverage ## Open HTML coverage report in browser
 	go tool cover -html=coverage.out
+
+docs: ## Serve documentation locally using pkgsite
+	@which pkgsite > /dev/null 2>&1 || go install golang.org/x/pkgsite/cmd/pkgsite@latest
+	pkgsite -open .
 
 lint: ## Run go vet
 	go vet ./...

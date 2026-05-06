@@ -117,5 +117,46 @@ func TestExternalCommandInject(t *testing.T) {
 
 	result, _ := externalCommand.ProcessText("!../../test arg1 arg2 arg3", userTest, "testchat", false)
 
-	assert.Equal(t, "", result, "external commmand inject")
+	assert.Equal(t, "", result, "external command inject path traversal")
+}
+
+func TestExternalCommandSanitizesControlChars(t *testing.T) {
+	userTest.Level = 100
+
+	LookPathCommand = fakeLookPathCommand
+	ExecCommand = fakeExecCommand
+
+	defer func() {
+		ExecCommand = exec.Command
+		LookPathCommand = exec.LookPath
+	}()
+
+	// Null bytes and newlines in args/chat must be stripped before exec.
+	// "arg1\x00arg2\narg3" → "arg1arg2arg3"; "testchat\x00injected" → "testchatinjected"
+	result, err := externalCommand.ProcessText("!external_module arg1\x00arg2\narg3", userTest, "testchat\x00injected", false)
+	assert.Nil(t, err)
+	assert.NotContains(t, result, "\x00", "null byte must be stripped from args")
+	assert.Contains(t, result, "arg1arg2arg3", "args must appear with control chars removed")
+	assert.Contains(t, result, "testchatinjected", "chat name must appear with null byte removed")
+}
+
+func TestExternalCommandSanitizesUsername(t *testing.T) {
+	userTest.Level = 100
+	originalUsername := userTest.Username
+	userTest.Username = "evil\x00user\nname"
+
+	defer func() {
+		userTest.Username = originalUsername
+		ExecCommand = exec.Command
+		LookPathCommand = exec.LookPath
+	}()
+
+	LookPathCommand = fakeLookPathCommand
+	ExecCommand = fakeExecCommand
+
+	// "evil\x00user\nname" → "evilusername"
+	result, err := externalCommand.ProcessText("!external_module somearg", userTest, "testchat", false)
+	assert.Nil(t, err)
+	assert.NotContains(t, result, "\x00", "null byte must be stripped from username")
+	assert.Contains(t, result, "evilusername", "username must appear with control chars removed")
 }

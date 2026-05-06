@@ -14,7 +14,6 @@ import (
 
 	command "github.com/ssalvatori/zbot-telegram/commands"
 	"github.com/ssalvatori/zbot-telegram/db"
-	"github.com/ssalvatori/zbot-telegram/server"
 	"github.com/ssalvatori/zbot-telegram/user"
 	"github.com/ssalvatori/zbot-telegram/utils"
 
@@ -64,9 +63,6 @@ var (
 	IgnoreDuration = 300
 	//DisableLearnChannels List of channels were Learn modules should be disabled (use comma as separator)
 	DisableLearnChannels = ""
-
-	//Webhook configuration
-	Webhook = ConfigurationWebhook{Enable: false, Port: 11337}
 
 	//Channels List of Channels where the bot is present (this list is growing with new messages)
 	Channels []Channel
@@ -197,9 +193,7 @@ func Execute() {
 	})
 
 	go bot.Start()
-	if Webhook.Enable {
-		go server.Start(Webhook.Port, bot, Channels)
-	}
+
 	select {} // keep running
 }
 
