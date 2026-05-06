@@ -8,6 +8,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestRunExternalCommand(t *testing.T) {
+	result := RunExternalCommand("echo", "hello")
+	assert.Contains(t, result, "hello")
+}
+
+func TestRunExternalCommandFailure(t *testing.T) {
+	result := RunExternalCommand("/nonexistent/binary")
+	assert.Equal(t, "", result)
+}
+
 func TestInArray(t *testing.T) {
 	tests := []struct {
 		lookFor        string

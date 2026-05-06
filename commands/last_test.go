@@ -22,6 +22,13 @@ func TestLastCommandSetDb(t *testing.T) {
 	lastCommand.SetDb(&db.ZbotDatabaseMock{})
 }
 
+func TestLastCommandDisabledChannel(t *testing.T) {
+	DisableLearnChannels = []string{"disabled-chat"}
+	defer func() { DisableLearnChannels = nil }()
+	_, err := lastCommand.ProcessText("!last", userTest, "disabled-chat", false)
+	assert.Equal(t, ErrLearnDisabledChannel, err)
+}
+
 func TestLastCommandNotMatch(t *testing.T) {
 	result, _ := lastCommand.ProcessText("!last6", userTest, "testchat", false)
 	assert.Equal(t, "", result, "Empty output doesn't match")

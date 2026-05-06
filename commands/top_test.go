@@ -21,6 +21,13 @@ func TestTopCommandOK(t *testing.T) {
 
 }
 
+func TestTopCommandDisabledChannel(t *testing.T) {
+	DisableLearnChannels = []string{"disabled-chat"}
+	defer func() { DisableLearnChannels = nil }()
+	_, err := topCommand.ProcessText("!top", userTest, "disabled-chat", false)
+	assert.Equal(t, ErrLearnDisabledChannel, err)
+}
+
 func TestTopCommandNotMatch(t *testing.T) {
 
 	result, _ := topCommand.ProcessText("!top6", userTest, "testchat", false)

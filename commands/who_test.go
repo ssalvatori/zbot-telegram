@@ -23,6 +23,13 @@ func TestWhoCommand(t *testing.T) {
 	assert.Equal(t, "[foo] by [ssalvatori] on [2020-11-01 10:10:46 +0000 UTC] hits [0]", result, "Who Command OK")
 }
 
+func TestWhoCommandDisabledChannel(t *testing.T) {
+	DisableLearnChannels = []string{"disabled-chat"}
+	defer func() { DisableLearnChannels = nil }()
+	_, err := whoCommand.ProcessText("!who foo", userTest, "disabled-chat", false)
+	assert.Equal(t, ErrLearnDisabledChannel, err)
+}
+
 func TestWhoCommandNotMatch(t *testing.T) {
 
 	result, _ := whoCommand.ProcessText("!who6", userTest, "testchat", false)

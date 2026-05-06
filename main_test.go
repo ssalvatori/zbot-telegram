@@ -104,3 +104,74 @@ func TestSetupDatabaseSqLite(t *testing.T) {
 	assert.Equal(t, zbot.DatabaseType, "sqlite", "DataBaseType sqlite OK")
 	assert.IsType(t, &db.ZbotDatabaseSqlite{}, dbInstance)
 }
+
+func TestReadConfigurationNotFound(t *testing.T) {
+	_, err := readConfiguration("/nonexistent/path/zbot.conf")
+	assert.Error(t, err)
+}
+
+func TestReadConfigurationInvalidYAML(t *testing.T) {
+	f, err := os.CreateTemp("", "zbot_bad_*.conf")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(f.Name())
+	f.WriteString("not: valid: yaml: ::::\n")
+	f.Close()
+	_, err = readConfiguration(f.Name())
+	assert.Error(t, err)
+}
+
+func TestSetupChannels(t *testing.T) {
+	channels := []channel{
+		{Channel: "chan1", ID: 111, Token: "tok1"},
+		{Channel: "chan2", ID: 222, Token: "tok2"},
+	}
+	result := setupChannels(channels)
+	assert.Len(t, result, 2)
+	assert.Equal(t, int64(111), result[0].ID)
+	assert.Equal(t, "chan1", result[0].Title)
+	assert.Equal(t, "tok1", result[0].AuthToken)
+}
+
+func TestSetupWebhookEnabled(t *testing.T) {
+	// Write a temp config with webhook enabled.
+	cfg := `zbot:
+  token: testtoken
+  ignore_duration: 10
+  ignore: false
+  level: false
+db:
+  engine: sqlite
+  file: /tmp/zbot_test_setup.db
+webhook:
+  disable: false
+  port: 19999
+  auth:
+    - channel: testchan
+      id: 1234
+      token: mytoken
+commands:
+  learn:
+    disabled: []
+  disabled: []
+modules:
+  path: ./modules/
+  list: []
+`
+	f, err := os.CreateTemp("", "zbot_webhook_*.conf")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(f.Name())
+	f.WriteString(cfg)
+	f.Close()
+
+	os.Setenv("ZBOT_CONFIG_FILE", f.Name())
+	defer os.Setenv("ZBOT_CONFIG_FILE", "./zbot.conf")
+
+	setup()
+
+	assert.True(t, zbot.Webhook.Enable)
+	assert.Equal(t, 19999, zbot.Webhook.Port)
+}

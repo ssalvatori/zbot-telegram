@@ -32,6 +32,13 @@ func TestRandCommandWithLimit(t *testing.T) {
 	assert.Equal(t, "[foo] - [bar]", result, "Rand with limit capped at 100")
 }
 
+func TestRandCommandDisabledChannel(t *testing.T) {
+	DisableLearnChannels = []string{"disabled-chat"}
+	defer func() { DisableLearnChannels = nil }()
+	_, err := randCommand.ProcessText("!rand", userTest, "disabled-chat", false)
+	assert.Equal(t, ErrLearnDisabledChannel, err)
+}
+
 func TestRandCommandNotMatch(t *testing.T) {
 
 	result, err := randCommand.ProcessText("!rand6", userTest, "testchat", false)

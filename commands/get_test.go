@@ -30,6 +30,13 @@ func TestGetCommandNoFound(t *testing.T) {
 	assert.Equal(t, "[foo2] Not found!", result, "Get no next command")
 }
 
+func TestGetCommandDisabledChannel(t *testing.T) {
+	DisableLearnChannels = []string{"disabled-chat"}
+	defer func() { DisableLearnChannels = nil }()
+	_, err := getCommand.ProcessText("? foo", userTest, "disabled-chat", false)
+	assert.Equal(t, ErrLearnDisabledChannel, err)
+}
+
 func TestGetCommandNotMatch(t *testing.T) {
 
 	result, _ := getCommand.ProcessText("?6", userTest, "testchat", false)
