@@ -11,6 +11,7 @@ import (
 
 	"log/slog"
 	"os"
+
 	command "github.com/ssalvatori/zbot-telegram/commands"
 	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/ssalvatori/zbot-telegram/server"
@@ -21,27 +22,27 @@ import (
 	"gopkg.in/telebot.v3/middleware"
 )
 
-//ExternalModule definition
+// ExternalModule definition
 type ExternalModule struct {
 	Key         string
 	File        string
 	Description string
 }
 
-//Channel definition
+// Channel definition
 type Channel struct {
 	ID        int64
 	Title     string
 	AuthToken string
 }
 
-//ConfigurationFlags configurations false means the feature is disabled
+// ConfigurationFlags configurations false means the feature is disabled
 type ConfigurationFlags struct {
 	Ignore bool
 	Level  bool
 }
 
-//ConfigurationWebhook configuration
+// ConfigurationWebhook configuration
 type ConfigurationWebhook struct {
 	Enable bool
 	Port   int
@@ -97,7 +98,7 @@ var (
 	}
 )
 
-//Execute run Zbot
+// Execute run Zbot
 func Execute() {
 	slog.Info("Loading zbot-telegram", "version", version, "buildTime", buildTime, "gitHash", gitHash)
 
@@ -229,7 +230,7 @@ func runExternalModule(db db.ZbotDatabase, message *tele.Message, modules []Exte
 	return response
 }
 
-//messagesProcessing
+// messagesProcessing
 func messagesProcessing(db db.ZbotDatabase, message *tele.Message, chatName string) string {
 
 	private := false
@@ -253,9 +254,10 @@ func messagesProcessing(db db.ZbotDatabase, message *tele.Message, chatName stri
 	return ""
 }
 
-//checkIgnoreList check user in the ignore list
-//return true if user is on the ignore_list
-//		 false if the flag ignore is disable or the user is not in the list
+// checkIgnoreList check user in the ignore list
+// return true if user is on the ignore_list
+//
+//	false if the flag ignore is disable or the user is not in the list
 func checkIgnoreList(db db.ZbotDatabase, username string) bool {
 
 	if Flags.Ignore {
@@ -266,7 +268,7 @@ func checkIgnoreList(db db.ZbotDatabase, username string) bool {
 	return false
 }
 
-//cmdProcessing process message using commands
+// cmdProcessing process message using commands
 func cmdProcessing(db db.ZbotDatabase, msg tele.Message, chatName string, private bool) string {
 
 	commandName := command.GetCommandInformation(msg.Text)
@@ -324,17 +326,17 @@ func cmdProcessing(db db.ZbotDatabase, msg tele.Message, chatName string, privat
 	return outputMsg
 }
 
-//SetDisabledCommands setup disabled commands
+// SetDisabledCommands setup disabled commands
 func SetDisabledCommands(cmdList []string) {
 	command.DisabledCommands = cmdList
 }
 
-//GetDisabledCommands get disabled zbot commands
+// GetDisabledCommands get disabled zbot commands
 func GetDisabledCommands() []string {
 	return command.DisabledCommands
 }
 
-//SetDisabledLearnChannels set list of channels where learns commands wont be used
+// SetDisabledLearnChannels set list of channels where learns commands wont be used
 func SetDisabledLearnChannels(channelsList []string) {
 	command.DisableLearnChannels = channelsList
 }

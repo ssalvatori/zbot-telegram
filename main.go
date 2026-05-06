@@ -6,7 +6,7 @@ import (
 	"os"
 
 	env "github.com/caarlos0/env/v11"
-	"github.com/mitchellh/mapstructure"
+	"github.com/go-viper/mapstructure/v2"
 	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/ssalvatori/zbot-telegram/zbot"
 )

@@ -5,10 +5,10 @@ import (
 	"log/slog"
 	"os"
 
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v4"
 )
 
-//Configuration bot configuration
+// Configuration bot configuration
 type Configuration struct {
 	Zbot     configurationZbot     `yaml:"zbot"`
 	Db       configurationDb       `yaml:"db"`

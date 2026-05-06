@@ -4,20 +4,21 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mitchellh/mapstructure"
 	"log/slog"
 	"os"
+
+	"github.com/go-viper/mapstructure/v2"
 	tele "gopkg.in/telebot.v3"
 )
 
-//Channel definition
+// Channel definition
 type Channel struct {
 	ID        int64
 	Title     string
 	AuthToken string
 }
 
-//Start http server in a given port
+// Start http server in a given port
 func Start(serverPort int, bot *tele.Bot, c interface{}) {
 	slog.Info("Starting http server", "port", serverPort)
 	channels := []Channel{}
@@ -72,7 +73,7 @@ func apiMessages(bot *tele.Bot, channels []Channel) func(http.ResponseWriter, *h
 	}
 }
 
-//getChatId return the chat_id associated with that token
+// getChatId return the chat_id associated with that token
 func getChatID(token string, channels []Channel) int64 {
 
 	for i := range channels {

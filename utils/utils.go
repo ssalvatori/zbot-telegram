@@ -9,8 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mitchellh/mapstructure"
 	"log/slog"
+
+	"github.com/go-viper/mapstructure/v2"
 )
 
 // InArray returns true if the string 's' is found in the array 'arr', otherwise false
@@ -23,7 +24,7 @@ func InArray(s string, arr []string) bool {
 	return false
 }
 
-//GetCurrentDirectory Return the current path
+// GetCurrentDirectory Return the current path
 func GetCurrentDirectory() string {
 	ex, err := os.Getwd()
 	if err != nil {
@@ -33,14 +34,14 @@ func GetCurrentDirectory() string {
 	return ex
 }
 
-//ConvertToDateToUTC convert unix timestamp to dd-mm-YYYY hh:mm:ss
+// ConvertToDateToUTC convert unix timestamp to dd-mm-YYYY hh:mm:ss
 func ConvertToDateToUTC(unixtime int64) string {
 	location, _ := time.LoadLocation("UTC")
 	unixTimeUTC := time.Unix(unixtime, 0).In(location)
 	return fmt.Sprint(unixTimeUTC)
 }
 
-//StringToArray parse a string "," as separeator
+// StringToArray parse a string "," as separeator
 func StringToArray(cmds string) []string {
 
 	if len(cmds) == 0 {
@@ -58,7 +59,7 @@ func StringToArray(cmds string) []string {
 
 var execCommand = exec.Command
 
-//RunExternalCommand Run external file with a set of arguments
+// RunExternalCommand Run external file with a set of arguments
 func RunExternalCommand(command string, args ...string) string {
 	output, err := execCommand(command, args...).CombinedOutput()
 	if err != nil {
@@ -68,7 +69,7 @@ func RunExternalCommand(command string, args ...string) string {
 	return fmt.Sprintf("%s", output)
 }
 
-//ParseCommand Parse and return command, expecting /command [arg1 arg2]
+// ParseCommand Parse and return command, expecting /command [arg1 arg2]
 func ParseCommand(text string) (string, error) {
 	slog.Debug("Parsing text", "text", text)
 
@@ -81,7 +82,7 @@ func ParseCommand(text string) (string, error) {
 	return "", errors.New("Text could not been parser")
 }
 
-//GetCommandFile Find file using command key
+// GetCommandFile Find file using command key
 func GetCommandFile(cmd string, m interface{}) (string, error) {
 
 	type ExternalModule struct {

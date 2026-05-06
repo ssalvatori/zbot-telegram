@@ -1,7 +1,7 @@
 # zbot-telegram
 
-[![Build Status](https://travis-ci.org/ssalvatori/zbot-telegram.svg?branch=master)](https://travis-ci.org/ssalvatori/zbot-telegram)
-[![Coverage Status](https://coveralls.io/repos/github/ssalvatori/zbot-telegram/badge.svg?branch=master)](https://coveralls.io/github/ssalvatori/zbot-telegram?branch=master)
+[![Go CICD](https://github.com/ssalvatori/zbot-telegram/actions/workflows/ci.yml/badge.svg)](https://github.com/ssalvatori/zbot-telegram/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/github/ssalvatori/zbot-telegram/graph/badge.svg?token=VWqgVPZrGy)](https://codecov.io/github/ssalvatori/zbot-telegram)
 [![Go Report Card](https://goreportcard.com/badge/github.com/ssalvatori/zbot-telegram)](https://goreportcard.com/report/github.com/ssalvatori/zbot-telegram)
 
 
@@ -19,7 +19,7 @@
 ## Setup
 
 You **must** set the **ZBOT_CONFIG_FILE** environment variable with the path to the configuration file
-* ZBOT_CONFIG_FILE : Path to the configuration file (default ./zbot.conf) 
+* ZBOT_CONFIG_FILE : Path to the configuration file (default ./zbot.conf)
 
 ## Configuration File
 
@@ -35,7 +35,7 @@ db:
   file: path_to_sqlite_file.db
   host: 127.0.0.1
   port: 3306
-  username: db_username 
+  username: db_username
   password: db_password
 webhook:
   disable: true
@@ -45,8 +45,8 @@ webhook:
       id: 1234
       token: <YOUR_SECURE_TOKEN>
     - channel: channel2
-      token: <YOUR_SECURE_TOKEN>s  
-commands:  
+      token: <YOUR_SECURE_TOKEN>s
+commands:
   learn:
     disabled:
       - zbot_dev
