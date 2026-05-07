@@ -1,57 +1,147 @@
 # Learn Module
 
-## Configuiration
-This set of modules are enabled by default but they can be disabled in the bot [configuration file](./configuration.md)
+The learn module is the core knowledge base system. It allows users in a Telegram group to collaboratively store and retrieve terms and definitions. Each chat group has its own isolated database.
 
-### Learn a *term*
-If the term is already  in the db an autoincrementa number will be added as a suffix. (term1, term2,...)
-```
-!learn [term] [meaning]
-```
+## Configuration
 
-### Get the *meaning* of a *term*
-```
-?[term]
-```
+The learn module is enabled by default. It can be disabled per-channel in the [configuration file](./configuration.md):
 
-### Get information a *term*
-```
-!who [term]
+```yaml
+commands:
+  learn:
+    disabled:
+      - channel_name
 ```
 
-### Append *meaning* to a *term*
+## Commands
+
+### Learn a term
+
+Store a new definition. If the term already exists, an auto-incremented suffix is added (term, term1, term2…).
+
 ```
-!append [term] [meaning]
+!learn <term> <meaning>
 ```
 
-### Get a random *term* 
+**Example:**
 ```
-!rand
-```
-
-### Get last term learned
-```
-!last
+!learn golang A statically typed, compiled language designed at Google
 ```
 
-### Search similar terms
+### Get a term
+
+Retrieve the meaning of a stored term. Each retrieval increments the term's hit counter.
+
 ```
-!search *term*
+?<term>
 ```
 
-### Find terms searching a *text* inside a meaning definition
+**Example:**
 ```
-!find *text*
+?golang
+→ golang: A statically typed, compiled language designed at Google
 ```
 
-### Top (get top [number] terms)
+### Who defined a term
+
+Show metadata about a term: author, creation date, and number of times it has been retrieved.
+
+```
+!who <term>
+```
+
+### Append to a term
+
+Add additional text to an existing term's meaning.
+
+```
+!append <term> <text>
+```
+
+**Example:**
+```
+!append golang — also great for CLI tools
+```
+
+### Search terms by name
+
+Find terms whose names match a pattern. Returns up to 10 results.
+
+```
+!search <pattern>
+```
+
+**Example:**
+```
+!search go*
+→ golang, goroutine, gomod
+```
+
+### Find terms by meaning content
+
+Search inside the meanings of all terms. Returns up to 10 results.
+
+```
+!find <text>
+```
+
+**Example:**
+```
+!find compiled language
+→ golang, rust, c
+```
+
+### Random terms
+
+Get one or more random terms from the database.
+
+```
+!rand [number]
+```
+
+- Default: 1
+- Maximum: 100
+
+### Top terms
+
+Get the most retrieved terms (highest hit count).
+
 ```
 !top [number]
 ```
 
+- Default: 10
+- Maximum: 100
 
-### Get total number of terms in db
+### Last terms added
+
+Show the 10 most recently added terms.
+
 ```
-!stats 
+!last
+```
+
+### Statistics
+
+Show the total number of definitions stored in the current chat.
+
+```
+!stats
+```
+
+### Lock a term
+
+Prevent a term from being modified or deleted. Requires level 1000.
+
+```
+!lock <term>
+```
+
+### Forget (delete) a term
+
+Remove a term from the database (soft delete). Requires level 1000.
+
+```
+!forget <term>
 ```
 

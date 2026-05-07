@@ -1,5 +1,7 @@
 # Zbot Configuration
 
+The bot is configured via a YAML file. By default it reads `./zbot.conf`, override with the `ZBOT_CONFIG_FILE` environment variable.
+
 ```yaml
 zbot:
   token: <TELEGRAM_TOKEN>
@@ -9,16 +11,7 @@ zbot:
 db:
   engine: sqlite
   file: path_to_sqlite_file.db
-webhook:
-  disable: true
-  port: 13371
-  auth:
-    - channel: channel1
-      id: 1234
-      token: <YOUR_SECURE_TOKEN>
-    - channel: channel2
-      token: <YOUR_SECURE_TOKEN>
-commands:  
+commands:
   learn:
     disabled:
       - zbot_dev
@@ -30,37 +23,62 @@ modules:
   path: ./modules/
   list:
     - key: crypto
-      file: cypto
+      file: crypto
       description: get some crypto data
-    - key: test
-      file: test
-      description: test module
-    - key: temp
-      file: temp.sh
-      description: get weather info
-    - key: plex
-      file: plex2.py
-      description: get plext information
 ```
 
-## zbot
+## Sections
 
-## db
+### zbot
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `token` | string | — | **Required.** Telegram Bot API token from BotFather |
+| `ignore_duration` | int | 300 | Duration in seconds to ignore a user after spam detection |
+| `ignore` | bool | false | Enable the spam filter / ignore system |
+| `level` | bool | false | Enable user permission level enforcement |
+
+### db
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `engine` | string | sqlite | Database engine (`sqlite`) |
+| `file` | string | — | Path to the SQLite database file |
+
+The database and all tables are created automatically on first startup via GORM migrations.
+
+### commands
+
 ```yaml
-db:
-  engine: sqlite
-  file: path_to_sqlite_file.db
+commands:
+  learn:
+    disabled:           # List of chat names where learn commands are disabled
+      - channel_name
+  disabled:             # List of globally disabled commands
+    - ignore
+    - level
+    - forget
 ```
-## webhook
-```yaml
-webhook:
-  disable: bool // Enable or disable bot webhook (default: false)
-  port: int // Webhook port (default: 11337)
-  auth:
-    - channel: string // Channel name (bot will overwrite it using chat_id information)
-      id: int64 // Telegram Chat_ID (leave it empty and the bot will try to get it using channel name)
-      token: string // Token to autenticate request, this should be unique per channel
-```
-## commands
 
-## modules
+Disabling a command removes it from the bot entirely — users will receive no response.
+
+### modules
+
+```yaml
+modules:
+  path: ./modules/      # Directory containing module executables
+  list:
+    - key: crypto       # Command name (invoked as /crypto)
+      file: crypto      # Filename of the executable in modules path
+      description: "Get cryptocurrency data"
+```
+
+Each module is called with arguments: `<username> <user_level> <chat_name> <user_args>`
+
+The module's stdout is returned as the bot's reply message.
+
+## Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `ZBOT_CONFIG_FILE` | Path to the configuration file (default: `./zbot.conf`) |
