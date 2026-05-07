@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
-//Definition struct
+// Definition struct
 type Definition struct {
 	// gorm.Model
 	ID      uint
@@ -26,7 +26,7 @@ type Definition struct {
 	DeletedBy sql.NullString
 }
 
-//UserIgnore .
+// UserIgnore .
 type UserIgnore struct {
 	Username   string
 	CreatedAt  int64 `gorm:"autoCreateTime"`
@@ -35,8 +35,10 @@ type UserIgnore struct {
 	Chat       string
 }
 
-//ZbotDatabase DB interface for Zbot
+// ZbotDatabase DB interface for Zbot
 type ZbotDatabase interface {
+	SetIgnoreTime(int64)
+
 	GetConnectionInfo() string
 	Init() error
 	Close()

@@ -1,6 +1,7 @@
 package zbot
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -11,14 +12,14 @@ import (
 
 	"log/slog"
 	"os"
+	"os/signal"
 
+	"github.com/go-telegram/bot"
+	"github.com/go-telegram/bot/models"
 	command "github.com/ssalvatori/zbot-telegram/commands"
 	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/ssalvatori/zbot-telegram/user"
 	"github.com/ssalvatori/zbot-telegram/utils"
-
-	tele "gopkg.in/telebot.v3"
-	"gopkg.in/telebot.v3/middleware"
 )
 
 // ExternalModule definition
@@ -105,18 +106,15 @@ func Execute() {
 
 	command.Setup()
 
-	poller := &tele.LongPoller{Timeout: 10 * time.Second}
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer cancel()
 
-	middlewareCustom := tele.NewMiddlewarePoller(poller, middlewareCustom)
+	opts := []bot.Option{
+		bot.WithMiddlewares(spamFilterMiddleware),
+		bot.WithDefaultHandler(defaultHandler),
+	}
 
-	bot, err := tele.NewBot(tele.Settings{
-		Token:  APIToken,
-		Poller: middlewareCustom,
-		// Synchronous: false,
-	})
-
-	bot.Use(middleware.Logger())
-
+	b, err := bot.New(APIToken, opts...)
 	if err != nil {
 		slog.Error("bot init error", "err", err)
 		os.Exit(1)
@@ -130,17 +128,14 @@ func Execute() {
 		os.Exit(1)
 	}
 
-	//TODO: Not implemented
-	// if Flags.Ignore {
-	// 	//go Db.UserCleanupIgnorelist()
-	// }
+	Db.SetIgnoreTime(int64(IgnoreDuration))
 
 	slog.Debug("Modules to load", "modules", ExternalModules)
-	botCommands := []tele.Command{}
+	botCommands := []models.BotCommand{}
 
 	//Register extra modules
 	for _, module := range ExternalModules {
-		var cmdString = fmt.Sprintf("/%s", module.Key)
+		var cmdString = "/" + module.Key
 		slog.Debug("Loading module", "key", module.Key, "path", ModulesPath+module.File)
 
 		_, err := command.LookPathCommand(ModulesPath + module.File)
@@ -150,54 +145,87 @@ func Execute() {
 			continue
 		}
 
-		bot.Handle(cmdString, func(c tele.Context) error {
-
-			slog.Debug("incoming message", "user", c.Sender().Username, "text", c.Text(), "payload", c.Message().Payload, "private", c.Message().Private())
-
-			response := runExternalModule(Db, c.Message(), ExternalModules)
-			err = c.Send(response)
-			if err != nil {
-				slog.Error("send error", "err", err)
+		b.RegisterHandler(bot.HandlerTypeMessageText, cmdString, bot.MatchTypePrefix, func(ctx context.Context, b *bot.Bot, update *models.Update) {
+			msg := update.Message
+			if msg == nil {
+				return
 			}
 
-			return err
+			slog.Debug("incoming message", "user", msg.From.Username, "text", msg.Text, "private", msg.Chat.Type == "private")
+
+			response := runExternalModule(Db, msg, ExternalModules)
+			if response != "" {
+				_, err := b.SendMessage(ctx, &bot.SendMessageParams{
+					ChatID: msg.Chat.ID,
+					Text:   response,
+				})
+				if err != nil {
+					slog.Error("send error", "err", err)
+				}
+			}
 		})
 
-		botCommands = append(botCommands, tele.Command{Text: "/" + module.Key, Description: module.Description})
+		botCommands = append(botCommands, models.BotCommand{Command: module.Key, Description: module.Description})
 	}
 
 	slog.Debug("Setting bot commands", "commands", botCommands)
-	err = bot.SetCommands(botCommands)
+	_, err = b.SetMyCommands(ctx, &bot.SetMyCommandsParams{
+		Commands: botCommands,
+	})
 	if err != nil {
 		slog.Error("set commands error", "err", err)
 	}
 
-	bot.Handle(tele.OnText, func(c tele.Context) error {
-
-		chatName := ""
-		if c.Message().Private() {
-			return nil
-		}
-
-		chatName = c.Chat().Title
-
-		var response = messagesProcessing(Db, c.Message(), chatName)
-		if response != "" {
-			err = c.Send(response)
-			if err != nil {
-				slog.Error("send response error", "err", err)
-			}
-			return err
-		}
-		return nil
-	})
-
-	go bot.Start()
-
-	select {} // keep running
+	b.Start(ctx)
 }
 
-func runExternalModule(db db.ZbotDatabase, message *tele.Message, modules []ExternalModule) string {
+func defaultHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+	msg := update.Message
+	if msg == nil {
+		return
+	}
+
+	// Track channels
+	if msg.Chat.Type == "group" || msg.Chat.Type == "supergroup" {
+		Channels = appendChannel(Channels, msg.Chat)
+	}
+
+	if msg.Chat.Type == "private" {
+		return
+	}
+
+	chatName := msg.Chat.Title
+
+	var response = messagesProcessing(Db, msg, chatName)
+	if response != "" {
+		_, err := b.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID: msg.Chat.ID,
+			Text:   response,
+		})
+		if err != nil {
+			slog.Error("send response error", "err", err)
+		}
+	}
+}
+
+func spamFilterMiddleware(next bot.HandlerFunc) bot.HandlerFunc {
+	return func(ctx context.Context, b *bot.Bot, update *models.Update) {
+		if update.Message != nil && strings.Contains(update.Message.Text, "spam") {
+			return
+		}
+		next(ctx, b, update)
+	}
+}
+
+func extractPayload(text string) string {
+	parts := strings.SplitN(text, " ", 2)
+	if len(parts) < 2 {
+		return ""
+	}
+	return strings.TrimSpace(parts[1])
+}
+
+func runExternalModule(db db.ZbotDatabase, message *models.Message, modules []ExternalModule) string {
 
 	cmd, err := utils.ParseCommand(message.Text)
 	if err != nil {
@@ -218,14 +246,15 @@ func runExternalModule(db db.ZbotDatabase, message *tele.Message, modules []Exte
 		chatName = message.Chat.Title
 	}
 
-	user := user.BuildUser(message.Sender, db)
+	user := user.BuildUser(message.From, db)
 	slog.Debug("Running module", "path", fullPathToBinary)
-	response := utils.RunExternalCommand(fullPathToBinary, user.Username, strconv.Itoa(user.Level), chatName, strings.TrimSpace(message.Payload))
+	payload := extractPayload(message.Text)
+	response := utils.RunExternalCommand(fullPathToBinary, user.Username, strconv.Itoa(user.Level), chatName, payload)
 	return response
 }
 
 // messagesProcessing
-func messagesProcessing(db db.ZbotDatabase, message *tele.Message, chatName string) string {
+func messagesProcessing(db db.ZbotDatabase, message *models.Message, chatName string) string {
 
 	private := false
 	if message.Chat.Type == "private" && chatName == "" {
@@ -234,7 +263,7 @@ func messagesProcessing(db db.ZbotDatabase, message *tele.Message, chatName stri
 
 	//we're going to process only the message starting with ! or ?
 	processingMsg := regexp.MustCompilePOSIX(`^[!|?].*`)
-	username := strings.ToLower(message.Sender.Username)
+	username := strings.ToLower(message.From.Username)
 
 	if !checkIgnoreList(db, username) {
 		if processingMsg.MatchString(message.Text) {
@@ -263,7 +292,7 @@ func checkIgnoreList(db db.ZbotDatabase, username string) bool {
 }
 
 // cmdProcessing process message using commands
-func cmdProcessing(db db.ZbotDatabase, msg tele.Message, chatName string, private bool) string {
+func cmdProcessing(db db.ZbotDatabase, msg models.Message, chatName string, private bool) string {
 
 	commandName := command.GetCommandInformation(msg.Text)
 
@@ -272,7 +301,7 @@ func cmdProcessing(db db.ZbotDatabase, msg tele.Message, chatName string, privat
 		return ""
 	}
 
-	user := user.BuildUser(msg.Sender, db)
+	user := user.BuildUser(msg.From, db)
 
 	if Flags.Level {
 		requiredLevel := command.GetMinimumLevel(commandName, levelsConfig)
@@ -305,17 +334,14 @@ func cmdProcessing(db db.ZbotDatabase, msg tele.Message, chatName string, privat
 	commandsList.Chain("level", &command.LevelCommand{Db: db}, levelsConfig.Level)
 	commandsList.Chain("lock", &command.LockCommand{Db: db}, levelsConfig.Lock)
 	commandsList.Chain("ignore", &command.IgnoreCommand{Db: db}, levelsConfig.Ignore)
-	// commandsList.Chain("external", &command.ExternalCommand{PathModules: ModulesPath}, levelsConfig.External)
 
 	var messageString = msg.Text
 
-	if msg.ReplyTo != nil {
-		messageString = fmt.Sprintf("%s %s %s", messageString, msg.ReplyTo.Sender.Username, msg.ReplyTo.Text)
+	if msg.ReplyToMessage != nil {
+		messageString = fmt.Sprintf("%s %s %s", messageString, msg.ReplyToMessage.From.Username, msg.ReplyToMessage.Text)
 	}
 
 	outputMsg := commandsList.Run(commandName, messageString, user, chatName, private)
-
-	//	outputMsg := commands.ProcessText(messageString, user)
 
 	return outputMsg
 }
@@ -335,7 +361,7 @@ func SetDisabledLearnChannels(channelsList []string) {
 	command.DisableLearnChannels = channelsList
 }
 
-func appendChannel(channels []Channel, chat tele.Chat) []Channel {
+func appendChannel(channels []Channel, chat models.Chat) []Channel {
 
 	for i := range channels {
 		if channels[i].ID == chat.ID {
@@ -349,20 +375,4 @@ func appendChannel(channels []Channel, chat tele.Chat) []Channel {
 
 	channels = append(channels, Channel{ID: chat.ID, Title: chat.Title})
 	return channels
-}
-
-func middlewareCustom(msg *tele.Update) bool {
-	if msg.Message == nil {
-		return true
-	}
-
-	if strings.Contains(msg.Message.Text, "spam") {
-		return false
-	}
-
-	if msg.Message.Chat.Type == "group" || msg.Message.Chat.Type == "supergroup" {
-		Channels = appendChannel(Channels, *msg.Message.Chat)
-	}
-
-	return true
 }

@@ -1,12 +1,14 @@
 package zbot
 
 import (
+	"context"
 	"testing"
 
+	"github.com/go-telegram/bot"
+	"github.com/go-telegram/bot/models"
 	command "github.com/ssalvatori/zbot-telegram/commands"
 	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/stretchr/testify/assert"
-	tele "gopkg.in/telebot.v3"
 )
 
 func TestProcessingIsCommandDisabled(t *testing.T) {
@@ -21,7 +23,7 @@ func TestProcessingIsCommandDisabled(t *testing.T) {
 		"version",
 	}
 
-	botMsg := tele.Message{Text: "!learn", Sender: &tele.User{Username: "zbot_test"}}
+	botMsg := models.Message{Text: "!learn", From: &models.User{Username: "zbot_test"}}
 	result := cmdProcessing(dbMock, botMsg, "test_chat", false)
 	assert.Equal(t, "", result, "command disabled")
 
@@ -37,12 +39,12 @@ func TestProcessingVersion(t *testing.T) {
 	buildTime = "2017-05-06 09:59:21.318841424 +0300 EEST"
 	command.DisabledCommands = nil
 
-	botMsg := tele.Message{
+	botMsg := models.Message{
 		Text: "!version",
-		Sender: &tele.User{
+		From: &models.User{
 			Username: "zbot_test",
 		},
-		Chat: &tele.Chat{
+		Chat: models.Chat{
 			Type:  "supergroup",
 			Title: "testgroup",
 		},
@@ -58,12 +60,12 @@ func TestProcessingStats(t *testing.T) {
 		File:  "hola.db",
 	}
 
-	botMsg := tele.Message{
+	botMsg := models.Message{
 		Text: "!stats",
-		Sender: &tele.User{
+		From: &models.User{
 			Username: "zbot_test",
 		},
-		Chat: &tele.Chat{
+		Chat: models.Chat{
 			Type:  "supergroup",
 			Title: "testgroup",
 		},
@@ -79,12 +81,12 @@ func TestProcessingPing(t *testing.T) {
 		File:  "hola.db",
 	}
 
-	botMsg := tele.Message{
+	botMsg := models.Message{
 		Text: "!ping",
-		Sender: &tele.User{
+		From: &models.User{
 			Username: "zbot_test",
 		},
-		Chat: &tele.Chat{
+		Chat: models.Chat{
 			Type:  "supergroup",
 			Title: "testgroup",
 		},
@@ -99,7 +101,7 @@ func TestProcessingRand(t *testing.T) {
 		RandDef: []db.Definition{{Term: "hola", Meaning: "gatolinux"}},
 	}
 
-	botMsg := tele.Message{Text: "!rand", Sender: &tele.User{Username: "zbot_test"}, Chat: &tele.Chat{Type: "private"}}
+	botMsg := models.Message{Text: "!rand", From: &models.User{Username: "zbot_test"}, Chat: models.Chat{Type: "private"}}
 	result := cmdProcessing(dbMock, botMsg, "test_chat", false)
 	assert.Equal(t, "[hola] - [gatolinux]", result, "!rand")
 }
@@ -113,7 +115,7 @@ func TestProcessingGet(t *testing.T) {
 		Meaning: "foo bar!",
 	}
 
-	botMsg := tele.Message{Text: "? hola", Sender: &tele.User{Username: "zbot_test"}, Chat: &tele.Chat{Type: "private"}}
+	botMsg := models.Message{Text: "? hola", From: &models.User{Username: "zbot_test"}, Chat: models.Chat{Type: "private"}}
 	result := cmdProcessing(dbMock, botMsg, "test_chat", false)
 	assert.Equal(t, result, "[hola] - [foo bar!]", "? def fail")
 
@@ -128,7 +130,7 @@ func TestProcessingFind(t *testing.T) {
 		Meaning: "foo bar!",
 	}
 
-	botMsg := tele.Message{Text: "!find hola", Sender: &tele.User{Username: "zbot_test"}, Chat: &tele.Chat{Type: "private"}}
+	botMsg := models.Message{Text: "!find hola", From: &models.User{Username: "zbot_test"}, Chat: models.Chat{Type: "private"}}
 	result := cmdProcessing(dbMock, botMsg, "test_chat", false)
 	assert.Equal(t, result, "hola", "!find fail")
 }
@@ -145,7 +147,7 @@ func TestProcessingSearch(t *testing.T) {
 		SearchTerms: []string{"hola", "chao", "foobar"},
 	}
 
-	botMsg := tele.Message{Text: "!search hola", Sender: &tele.User{Username: "zbot_test"}, Chat: &tele.Chat{Type: "private"}}
+	botMsg := models.Message{Text: "!search hola", From: &models.User{Username: "zbot_test"}, Chat: models.Chat{Type: "private"}}
 	result := cmdProcessing(dbMock, botMsg, "test_chat", false)
 	assert.Equal(t, "hola chao foobar", result, "!rand")
 }
@@ -162,10 +164,10 @@ func TestProcessingUserLevel(t *testing.T) {
 		SearchTerms: []string{"hola", "chao", "foobar"},
 	}
 
-	botMsg := tele.Message{
-		Text:   "!level",
-		Sender: &tele.User{FirstName: "ssalvato", Username: "ssalvato"},
-		Chat:   &tele.Chat{Type: "private"},
+	botMsg := models.Message{
+		Text: "!level",
+		From: &models.User{FirstName: "ssalvato", Username: "ssalvato"},
+		Chat: models.Chat{Type: "private"},
 	}
 	result := cmdProcessing(dbMock, botMsg, "test_chat", false)
 	assert.Equal(t, "ssalvato level 666", result, "!level self user")
@@ -186,10 +188,10 @@ func TestProcessingUserIgnoreList(t *testing.T) {
 		},
 	}
 
-	botMsg := tele.Message{
-		Text:   "!ignore list",
-		Sender: &tele.User{FirstName: "ssalvato", Username: "ssalvato"},
-		Chat:   &tele.Chat{Type: "private"},
+	botMsg := models.Message{
+		Text: "!ignore list",
+		From: &models.User{FirstName: "ssalvato", Username: "ssalvato"},
+		Chat: models.Chat{Type: "private"},
 	}
 	result := cmdProcessing(dbMock, botMsg, "test_chat", false)
 	assert.Equal(t, "[ @ssalvato ] since [1970-01-01 00:20:31 +0000 UTC] until [1970-01-01 01:16:04 +0000 UTC]", result, "!ignore list")
@@ -208,18 +210,18 @@ func TestProcessingUserIgnoreInsert(t *testing.T) {
 		UserIgnored: []db.UserIgnore{{Username: "ssalvatori", CreatedAt: 1231, ValidUntil: 4564}},
 	}
 
-	botMsg := tele.Message{
-		Text:   "!ignore add rigo",
-		Sender: &tele.User{FirstName: "ssalvatori", Username: "ssalvatori"},
-		Chat:   &tele.Chat{Type: "private"},
+	botMsg := models.Message{
+		Text: "!ignore add rigo",
+		From: &models.User{FirstName: "ssalvatori", Username: "ssalvatori"},
+		Chat: models.Chat{Type: "private"},
 	}
 	result := cmdProcessing(dbMock, botMsg, "test_chat", false)
 	assert.Equal(t, "User [rigo] ignored for 10 minutes", result, "!ignore add OK")
 
-	botMsg = tele.Message{
-		Text:   "!ignore add ssalvatori",
-		Sender: &tele.User{FirstName: "ssalvatori", Username: "ssalvatori"},
-		Chat:   &tele.Chat{Type: "private"},
+	botMsg = models.Message{
+		Text: "!ignore add ssalvatori",
+		From: &models.User{FirstName: "ssalvatori", Username: "ssalvatori"},
+		Chat: models.Chat{Type: "private"},
 	}
 	result = cmdProcessing(dbMock, botMsg, "test_chat", false)
 	assert.Equal(t, "You can't ignore yourself", result, "!ignore add myself")
@@ -232,18 +234,18 @@ func TestProcessingLearnReplyTo(t *testing.T) {
 		File:  "hola.db",
 	}
 
-	botMsg := tele.Message{Text: "!learn arg1",
-		Sender: &tele.User{
+	botMsg := models.Message{Text: "!learn arg1",
+		From: &models.User{
 			Username:  "ssalvatori",
 			FirstName: "stefano",
 		},
-		ReplyTo: &tele.Message{
+		ReplyToMessage: &models.Message{
 			Text: "message in reply-to",
-			Sender: &tele.User{
+			From: &models.User{
 				Username: "otheruser",
 			},
 		},
-		Chat: &tele.Chat{Type: "private"},
+		Chat: models.Chat{Type: "private"},
 	}
 	result := cmdProcessing(dbMock, botMsg, "test_chat", false)
 
@@ -258,18 +260,18 @@ func TestMessageProcessing(t *testing.T) {
 
 	Flags.Ignore = false
 
-	botMsg := tele.Message{Text: "!learn arg1",
-		Sender: &tele.User{
+	botMsg := models.Message{Text: "!learn arg1",
+		From: &models.User{
 			Username:  "ssalvatori",
 			FirstName: "stefano",
 		},
-		ReplyTo: &tele.Message{
+		ReplyToMessage: &models.Message{
 			Text: "message in reply-to",
-			Sender: &tele.User{
+			From: &models.User{
 				Username: "otheruser",
 			},
 		},
-		Chat: &tele.Chat{Type: "private"},
+		Chat: models.Chat{Type: "private"},
 	}
 
 	result := cmdProcessing(dbMock, botMsg, "test_chat", false)
@@ -286,18 +288,18 @@ func TestMessagesProcessingIgnoredUser(t *testing.T) {
 
 	Flags.Ignore = true
 
-	botMsg := tele.Message{Text: "!learn arg1",
-		Sender: &tele.User{
+	botMsg := models.Message{Text: "!learn arg1",
+		From: &models.User{
 			Username:  "ssalvatori",
 			FirstName: "stefano",
 		},
-		ReplyTo: &tele.Message{
+		ReplyToMessage: &models.Message{
 			Text: "message in reply-to",
-			Sender: &tele.User{
+			From: &models.User{
 				Username: "otheruser",
 			},
 		},
-		Chat: &tele.Chat{Type: "private"},
+		Chat: models.Chat{Type: "private"},
 	}
 
 	result := messagesProcessing(dbMock, &botMsg, "test_chat")
@@ -321,18 +323,18 @@ func TestProcessingNotEnoughPermissions(t *testing.T) {
 	Flags.Level = true
 	Flags.Ignore = false
 
-	botMsg := tele.Message{Text: "!forget arg1",
-		Sender: &tele.User{
+	botMsg := models.Message{Text: "!forget arg1",
+		From: &models.User{
 			Username:  "ssalvatori",
 			FirstName: "stefano",
 		},
-		ReplyTo: &tele.Message{
+		ReplyToMessage: &models.Message{
 			Text: "message in reply-to",
-			Sender: &tele.User{
+			From: &models.User{
 				Username: "otheruser",
 			},
 		},
-		Chat: &tele.Chat{Type: "private"},
+		Chat: models.Chat{Type: "private"},
 	}
 
 	result := messagesProcessing(dbMock, &botMsg, "test_chat")
@@ -340,39 +342,51 @@ func TestProcessingNotEnoughPermissions(t *testing.T) {
 }
 
 func TestAppendChannel(t *testing.T) {
-	chat := &tele.Chat{
+	chat := models.Chat{
 		Type:  "group",
 		ID:    -1234,
 		Title: "test 1",
 	}
 
 	channels := []Channel{}
-	assert.Equal(t, []Channel{{ID: -1234, Title: "test 1"}}, appendChannel(channels, *chat), "Add Channel")
+	assert.Equal(t, []Channel{{ID: -1234, Title: "test 1"}}, appendChannel(channels, chat), "Add Channel")
 
 	channels = []Channel{{ID: -66, Title: "test 1"}}
-	assert.Equal(t, []Channel{{ID: -66, Title: "test 1"}, {ID: -1234, Title: "test 1"}}, appendChannel(channels, *chat), "Add Channel")
+	assert.Equal(t, []Channel{{ID: -66, Title: "test 1"}, {ID: -1234, Title: "test 1"}}, appendChannel(channels, chat), "Add Channel")
 
 	channels = []Channel{{ID: -1234, Title: "test already"}}
-	assert.Equal(t, []Channel{{ID: -1234, Title: "test 1"}}, appendChannel(channels, *chat), "Channel already present (updating title)")
+	assert.Equal(t, []Channel{{ID: -1234, Title: "test 1"}}, appendChannel(channels, chat), "Channel already present (updating title)")
 
 	channels = []Channel{{ID: -12345, Title: "test already"}, {ID: 0, Title: "test 1"}}
-	assert.Equal(t, []Channel{{ID: -12345, Title: "test already"}, {ID: -1234, Title: "test 1"}}, appendChannel(channels, *chat), "Channel's ID is copied from message")
+	assert.Equal(t, []Channel{{ID: -12345, Title: "test already"}, {ID: -1234, Title: "test 1"}}, appendChannel(channels, chat), "Channel's ID is copied from message")
 }
 
 func TestMiddleware(t *testing.T) {
+	called := false
+	next := func(ctx context.Context, b *bot.Bot, update *models.Update) {
+		called = true
+	}
+	handler := spamFilterMiddleware(next)
 
-	msg := tele.Update{}
-	assert.True(t, middlewareCustom(&msg), "No Message")
+	// nil message → next is called
+	called = false
+	handler(context.Background(), nil, &models.Update{})
+	assert.True(t, called, "No Message - should pass through")
 
-	msg = tele.Update{Message: &tele.Message{Text: "test spam"}}
-	assert.False(t, middlewareCustom(&msg), "No Message")
+	// spam message → next is NOT called
+	called = false
+	handler(context.Background(), nil, &models.Update{Message: &models.Message{Text: "test spam"}})
+	assert.False(t, called, "Spam message - should be filtered")
 
-	msg = tele.Update{Message: &tele.Message{Text: "test", Chat: &tele.Chat{Type: "private"}}}
-	assert.True(t, middlewareCustom(&msg), "Private message")
+	// normal message → next is called
+	called = false
+	handler(context.Background(), nil, &models.Update{Message: &models.Message{Text: "test", Chat: models.Chat{Type: "private"}}})
+	assert.True(t, called, "Private message - should pass through")
 
-	msg = tele.Update{Message: &tele.Message{Text: "test", Chat: &tele.Chat{Type: "group"}}}
-	assert.True(t, middlewareCustom(&msg), "Group message")
-
+	// group message → next is called
+	called = false
+	handler(context.Background(), nil, &models.Update{Message: &models.Message{Text: "test", Chat: models.Chat{Type: "group"}}})
+	assert.True(t, called, "Group message - should pass through")
 }
 
 func TestSetDisabledLearnChannels(t *testing.T) {
@@ -387,10 +401,10 @@ func TestMessagesProcessingNoMatch(t *testing.T) {
 	Flags.Ignore = false
 
 	// Message text doesn't start with ! or ? → empty result
-	botMsg := tele.Message{
-		Text:   "just a plain message",
-		Sender: &tele.User{Username: "ssalvatori"},
-		Chat:   &tele.Chat{Type: "group"},
+	botMsg := models.Message{
+		Text: "just a plain message",
+		From: &models.User{Username: "ssalvatori"},
+		Chat: models.Chat{Type: "group"},
 	}
 	result := messagesProcessing(dbMock, &botMsg, "testchat")
 	assert.Equal(t, "", result)
@@ -399,10 +413,10 @@ func TestMessagesProcessingNoMatch(t *testing.T) {
 func TestRunExternalModuleInvalidText(t *testing.T) {
 	dbMock := &db.ZbotDatabaseMock{}
 	// Text that doesn't match /command pattern → ParseCommand returns error
-	msg := &tele.Message{
-		Text:   "not a slash command",
-		Sender: &tele.User{Username: "user"},
-		Chat:   &tele.Chat{Type: "group", Title: "test"},
+	msg := &models.Message{
+		Text: "not a slash command",
+		From: &models.User{Username: "user"},
+		Chat: models.Chat{Type: "group", Title: "test"},
 	}
 	result := runExternalModule(dbMock, msg, []ExternalModule{})
 	assert.Equal(t, "", result)
@@ -411,10 +425,10 @@ func TestRunExternalModuleInvalidText(t *testing.T) {
 func TestRunExternalModuleCommandNotFound(t *testing.T) {
 	dbMock := &db.ZbotDatabaseMock{}
 	// /cmd not present in empty modules list → GetCommandFile returns error
-	msg := &tele.Message{
-		Text:   "/unknowncmd arg",
-		Sender: &tele.User{Username: "user"},
-		Chat:   &tele.Chat{Type: "group", Title: "test"},
+	msg := &models.Message{
+		Text: "/unknowncmd arg",
+		From: &models.User{Username: "user"},
+		Chat: models.Chat{Type: "group", Title: "test"},
 	}
 	result := runExternalModule(dbMock, msg, []ExternalModule{})
 	assert.Equal(t, "", result)

@@ -13,7 +13,6 @@ import (
 type Configuration struct {
 	Zbot configurationZbot `yaml:"zbot"`
 	Db   configurationDb   `yaml:"db"`
-	// Webhook  configurationWebhook  `yaml:"webhook"`
 	Commands configurationCommands `yaml:"commands"`
 	Modules  configurationModules  `yaml:"modules"`
 }

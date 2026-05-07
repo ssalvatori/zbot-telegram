@@ -52,6 +52,7 @@ func setupDatabaseSqlite(conf *Configuration) db.ZbotDatabase {
 	zbot.DatabaseType = "sqlite"
 	database := new(db.ZbotDatabaseSqlite)
 	database.File = conf.Db.File
+	database.IgnoreTime = int64(conf.Zbot.IgnoreDuration)
 	return database
 }
 

@@ -225,6 +225,11 @@ func TestSqliteUserLevel(t *testing.T) {
 func TestSqliteUserCheckIgnore(t *testing.T) {
 	d, cleanup := setupTestSqliteDB(t)
 	defer cleanup()
+	d.IgnoreTime = 60
+	// User not in ignore list → false
+	assert.False(t, d.UserCheckIgnore("user1"))
+	// Insert user, then check → true
+	assert.NoError(t, d.UserIgnoreInsert("user1"))
 	assert.True(t, d.UserCheckIgnore("user1"))
 }
 

@@ -3,22 +3,20 @@ package user
 import (
 	"testing"
 
+	"github.com/go-telegram/bot/models"
 	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/stretchr/testify/assert"
-
-	// tele "gopkg.in/tucnak/telebot.v3"
-	tele "gopkg.in/telebot.v3"
 )
 
 func TestBuildUser(t *testing.T) {
-	sender := tele.User{}
+	sender := models.User{}
 	var newUser User
 
 	mockDatabase := &db.ZbotDatabaseMock{
 		Level: "10",
 	}
 
-	sender = tele.User{
+	sender = models.User{
 		FirstName: "stefano",
 		Username:  "ssalvatori",
 	}
@@ -31,7 +29,7 @@ func TestBuildUser(t *testing.T) {
 
 	assert.Equal(t, newUser, BuildUser(&sender, mockDatabase), "creating with username")
 
-	sender = tele.User{
+	sender = models.User{
 		FirstName: "stefano",
 		Username:  "",
 	}

@@ -3,10 +3,10 @@ package db
 import (
 	"errors"
 
-	"gopkg.in/telebot.v3"
+	"github.com/go-telegram/bot/models"
 )
 
-//ZbotDatabaseMock mock object
+// ZbotDatabaseMock mock object
 type ZbotDatabaseMock struct {
 	Level             string
 	File              string
@@ -19,7 +19,7 @@ type ZbotDatabaseMock struct {
 	SearchTerms       []string
 	NotFound          bool
 	RandDef           []Definition
-	User              telebot.User
+	User              models.User
 	IgnoreList        []string
 	UserIgnored       []UserIgnore
 	IgnoreUser        bool
@@ -27,21 +27,25 @@ type ZbotDatabaseMock struct {
 	IgnoreListCleaned bool
 }
 
-//GetConnectionInfo mock
+func (d *ZbotDatabaseMock) SetIgnoreTime(int64) {
+
+}
+
+// GetConnectionInfo mock
 func (d *ZbotDatabaseMock) GetConnectionInfo() string {
 	return "mock"
 }
 
-//Init mock
+// Init mock
 func (d *ZbotDatabaseMock) Init() error {
 	return nil
 }
 
-//Close mock
+// Close mock
 func (d *ZbotDatabaseMock) Close() {
 }
 
-//Statistics mock
+// Statistics mock
 func (d *ZbotDatabaseMock) Statistics(chat string) (string, error) {
 	if d.Error {
 		return "", errors.New("mock")
@@ -49,7 +53,7 @@ func (d *ZbotDatabaseMock) Statistics(chat string) (string, error) {
 	return d.Level, nil
 }
 
-//Top mock
+// Top mock
 func (d *ZbotDatabaseMock) Top(chat string, limit int) ([]Definition, error) {
 	var items []Definition
 
@@ -64,7 +68,7 @@ func (d *ZbotDatabaseMock) Top(chat string, limit int) ([]Definition, error) {
 	return items, nil
 }
 
-//Rand mock
+// Rand mock
 func (d *ZbotDatabaseMock) Rand(chat string, limit int) ([]Definition, error) {
 	if d.Error {
 		return []Definition{}, errors.New("mock")
@@ -72,7 +76,7 @@ func (d *ZbotDatabaseMock) Rand(chat string, limit int) ([]Definition, error) {
 	return d.RandDef, nil
 }
 
-//Last mock
+// Last mock
 func (d *ZbotDatabaseMock) Last(chat string, last int) ([]Definition, error) {
 
 	if d.Error {
@@ -82,7 +86,7 @@ func (d *ZbotDatabaseMock) Last(chat string, last int) ([]Definition, error) {
 	return []Definition{{Term: d.Term, Meaning: d.Meaning}}, nil
 }
 
-//Set mock
+// Set mock
 func (d *ZbotDatabaseMock) Set(def Definition) (string, error) {
 	if d.Error {
 		return "", errors.New("mock")
@@ -90,7 +94,7 @@ func (d *ZbotDatabaseMock) Set(def Definition) (string, error) {
 	return def.Term, nil
 }
 
-//Find mock
+// Find mock
 func (d *ZbotDatabaseMock) Find(criteria string, chat string, limit int) ([]Definition, error) {
 	if d.NotFound {
 		return []Definition{}, nil
@@ -101,7 +105,7 @@ func (d *ZbotDatabaseMock) Find(criteria string, chat string, limit int) ([]Defi
 	return []Definition{{Term: d.Term}}, nil
 }
 
-//Get definition mock
+// Get definition mock
 func (d *ZbotDatabaseMock) Get(term string, chat string) (Definition, error) {
 	if d.NotFound {
 		return Definition{}, ErrNotFound
@@ -112,7 +116,7 @@ func (d *ZbotDatabaseMock) Get(term string, chat string) (Definition, error) {
 	return Definition{Term: d.Term, Meaning: d.Meaning, Author: d.Author, UpdatedAt: d.UpdateAt}, nil
 }
 
-//_set mock
+// _set mock
 func (d *ZbotDatabaseMock) _set(term string, def Definition) error {
 
 	if d.Error {
@@ -122,7 +126,7 @@ func (d *ZbotDatabaseMock) _set(term string, def Definition) error {
 	return nil
 }
 
-//Search mock
+// Search mock
 func (d *ZbotDatabaseMock) Search(str string, chat string, limit int) ([]Definition, error) {
 	var items []Definition
 
@@ -137,7 +141,7 @@ func (d *ZbotDatabaseMock) Search(str string, chat string, limit int) ([]Definit
 	return items, nil
 }
 
-//UserLevel Mock
+// UserLevel Mock
 func (d *ZbotDatabaseMock) UserLevel(str string) (string, error) {
 	if d.Error {
 		return "", errors.New("mock")
@@ -145,7 +149,7 @@ func (d *ZbotDatabaseMock) UserLevel(str string) (string, error) {
 	return d.Level, nil
 }
 
-//UserCheckIgnore Mock, it will return false if error is set otherwise it will return IgnoreUser value
+// UserCheckIgnore Mock, it will return false if error is set otherwise it will return IgnoreUser value
 func (d *ZbotDatabaseMock) UserCheckIgnore(str string) bool {
 
 	if d.Error {
@@ -155,18 +159,18 @@ func (d *ZbotDatabaseMock) UserCheckIgnore(str string) bool {
 	return d.IgnoreUser
 }
 
-//UserIgnoreInsert mock
+// UserIgnoreInsert mock
 func (d *ZbotDatabaseMock) UserIgnoreInsert(username string) error {
 	return nil
 }
 
-//UserCleanupIgnorelist mock
+// UserCleanupIgnorelist mock
 func (d *ZbotDatabaseMock) UserCleanupIgnorelist() error {
 	d.IgnoreListCleaned = true
 	return nil
 }
 
-//Lock mock
+// Lock mock
 func (d *ZbotDatabaseMock) Lock(item Definition, chat string) error {
 	if d.Error {
 		return errors.New("mock")
@@ -174,7 +178,7 @@ func (d *ZbotDatabaseMock) Lock(item Definition, chat string) error {
 	return nil
 }
 
-//Append mock
+// Append mock
 func (d *ZbotDatabaseMock) Append(item Definition, chat string) error {
 	if d.Error {
 		return errors.New("mock")
@@ -182,7 +186,7 @@ func (d *ZbotDatabaseMock) Append(item Definition, chat string) error {
 	return nil
 }
 
-//Forget mock
+// Forget mock
 func (d *ZbotDatabaseMock) Forget(item Definition, chat string) error {
 	if d.Error {
 		return errors.New("mock")
@@ -190,7 +194,7 @@ func (d *ZbotDatabaseMock) Forget(item Definition, chat string) error {
 	return nil
 }
 
-//UserIgnoreList mock
+// UserIgnoreList mock
 func (d *ZbotDatabaseMock) UserIgnoreList() ([]UserIgnore, error) {
 	if d.Error {
 		return nil, errors.New("mock")
@@ -198,7 +202,7 @@ func (d *ZbotDatabaseMock) UserIgnoreList() ([]UserIgnore, error) {
 	return d.UserIgnored, nil
 }
 
-//IncreaseHits mock
+// IncreaseHits mock
 func (d *ZbotDatabaseMock) IncreaseHits(limit uint) error {
 	return nil
 }

@@ -36,3 +36,4 @@ plex.py
 vendor/**
 
 coverage.out
+dist/

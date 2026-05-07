@@ -26,12 +26,18 @@ release-snapshot: ## Build a snapshot release locally (no publish)
 	goreleaser release --snapshot --clean
 
 build-docker: ## Build image for current platform
-	docker build -t $(DOCKER_IMAGE) --build-arg OS=linux --build-arg ARCH=amd64 .
+	docker buildx build \
+		--build-arg VERSION=$(VERSION) \
+		--build-arg GIT_HASH=$(GIT_HASH) \
+		--build-arg BUILD_TIME=$(BUILD_TIME) \
+		-t $(DOCKER_IMAGE) .
 
 build-docker-multiarch: ## Build and load multi-arch image (linux/amd64 + linux/arm64) using buildx
 	docker buildx build \
 		--platform $(DOCKER_PLATFORMS) \
-		--build-arg OS=linux \
+		--build-arg VERSION=$(VERSION) \
+		--build-arg GIT_HASH=$(GIT_HASH) \
+		--build-arg BUILD_TIME=$(BUILD_TIME) \
 		-t $(DOCKER_IMAGE):$(VERSION) \
 		-t $(DOCKER_IMAGE):latest \
 		--load \
@@ -40,7 +46,9 @@ build-docker-multiarch: ## Build and load multi-arch image (linux/amd64 + linux/
 build-docker-push: ## Build and push multi-arch image to registry (set DOCKER_IMAGE to full registry path)
 	docker buildx build \
 		--platform $(DOCKER_PLATFORMS) \
-		--build-arg OS=linux \
+		--build-arg VERSION=$(VERSION) \
+		--build-arg GIT_HASH=$(GIT_HASH) \
+		--build-arg BUILD_TIME=$(BUILD_TIME) \
 		-t $(DOCKER_IMAGE):$(VERSION) \
 		-t $(DOCKER_IMAGE):latest \
 		--push \
