@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
-//Definition struct
+// Definition struct
 type Definition struct {
 	// gorm.Model
 	ID      uint
@@ -26,7 +26,7 @@ type Definition struct {
 	DeletedBy sql.NullString
 }
 
-//UserIgnore .
+// UserIgnore .
 type UserIgnore struct {
 	Username   string
 	CreatedAt  int64 `gorm:"autoCreateTime"`
@@ -35,8 +35,10 @@ type UserIgnore struct {
 	Chat       string
 }
 
-//ZbotDatabase DB interface for Zbot
+// ZbotDatabase DB interface for Zbot
 type ZbotDatabase interface {
+	// Engine returns the backend name (e.g. "sqlite")
+	Engine() string
 	GetConnectionInfo() string
 	Init() error
 	Close()
@@ -52,7 +54,8 @@ type ZbotDatabase interface {
 	Search(string, string, int) ([]Definition, error)
 	Forget(Definition, string) error
 	UserLevel(string) (string, error)
-	UserIgnoreInsert(string) error
+	//UserIgnoreInsert ignore username for durationSeconds, recording who requested it and on which chat
+	UserIgnoreInsert(username string, durationSeconds int, createdBy string, chat string) error
 	//UserCheckIgnore return true if the user is on the ignore_list, false if it isn´t
 	UserCheckIgnore(string) bool
 	UserCleanupIgnorelist() error

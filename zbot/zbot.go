@@ -1,25 +1,25 @@
 package zbot
 
 import (
+	"container/list"
+	"context"
+	"errors"
 	"fmt"
+	"log/slog"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
-	"container/list"
-
-	"log/slog"
-	"os"
-
+	"github.com/go-viper/mapstructure/v2"
 	command "github.com/ssalvatori/zbot-telegram/commands"
+	configuration "github.com/ssalvatori/zbot-telegram/configuration"
 	"github.com/ssalvatori/zbot-telegram/db"
-	"github.com/ssalvatori/zbot-telegram/server"
 	"github.com/ssalvatori/zbot-telegram/user"
 	"github.com/ssalvatori/zbot-telegram/utils"
 
-	tele "gopkg.in/telebot.v3"
-	"gopkg.in/telebot.v3/middleware"
+	tele "gopkg.in/telebot.v4"
+	"gopkg.in/telebot.v4/middleware"
 )
 
 // ExternalModule definition
@@ -29,181 +29,261 @@ type ExternalModule struct {
 	Description string
 }
 
-// Channel definition
-type Channel struct {
-	ID        int64
-	Title     string
-	AuthToken string
-}
-
-// ConfigurationFlags configurations false means the feature is disabled
-type ConfigurationFlags struct {
+// Flags feature toggles; false means the feature is disabled
+type Flags struct {
 	Ignore bool
 	Level  bool
 }
 
-// ConfigurationWebhook configuration
-type ConfigurationWebhook struct {
-	Enable bool
-	Port   int
+// Config is everything the bot needs to run. Build it with ConfigFromFile or
+// fill it directly in tests.
+type Config struct {
+	// Token Telegram API Token (key:secret Format)
+	Token string
+	// ModulesPath Absolute path where the modules are located
+	ModulesPath string
+	// IgnoreDuration Ignore a user for this amount of seconds
+	IgnoreDuration int
+	Flags          Flags
+	// Modules list of extra modules
+	Modules []ExternalModule
+	// DisabledCommands commands that must not be executed
+	DisabledCommands []string
+	// DisabledLearnChannels channels where learn commands must not be executed
+	DisabledLearnChannels []string
+	// Channels pre-configured channels (the list grows as messages arrive)
+	Channels []Channel
+	// Levels minimum user level per command
+	Levels command.Levels
 }
 
+// Version information, injected at build time with -ldflags -X
 var (
 	version   = "dev-master"
 	buildTime = time.Now().Format("2006-01-02 15:04:05")
 	gitHash   = "undefined"
-	//DatabaseType database backend to be use (mysql or sqlite)
-	DatabaseType = ""
-	//APIToken Telegram API Token (key:secret Format)
-	APIToken = ""
-	//ModulesPath Absolute path where the modules are located
-	ModulesPath = utils.GetCurrentDirectory() + "/../modules/"
-	//Flags zbot configurations
-	Flags = ConfigurationFlags{Ignore: false, Level: false}
-	//IgnoreDuration Ignore a user for this amount of seconds
-	IgnoreDuration = 300
-	//DisableLearnChannels List of channels were Learn modules should be disabled (use comma as separator)
-	DisableLearnChannels = ""
-
-	//Webhook configuration
-	Webhook = ConfigurationWebhook{Enable: false, Port: 11337}
-
-	//Channels List of Channels where the bot is present (this list is growing with new messages)
-	Channels []Channel
-
-	//ExternalModules List of extra modules
-	ExternalModules []ExternalModule
-
-	//Db interface to the database
-	Db db.ZbotDatabase
-
-	levelsConfig = command.Levels{
-		Ignore:   100,
-		Lock:     1000,
-		Learn:    0,
-		Append:   0,
-		Forget:   1000,
-		Who:      0,
-		Top:      0,
-		Stats:    0,
-		Version:  0,
-		Ping:     0,
-		Last:     0,
-		Rand:     0,
-		Find:     0,
-		Get:      0,
-		Search:   0,
-		External: 0,
-		Level:    0,
-	}
 )
 
-// Execute run Zbot
-func Execute() {
-	slog.Info("Loading zbot-telegram", "version", version, "buildTime", buildTime, "gitHash", gitHash)
+// DefaultLevels minimum user level required per command when Flags.Level is on
+var DefaultLevels = command.Levels{
+	Ignore:   100,
+	Lock:     1000,
+	Learn:    0,
+	Append:   0,
+	Forget:   1000,
+	Who:      0,
+	Top:      0,
+	Stats:    0,
+	Version:  0,
+	Ping:     0,
+	Last:     0,
+	Rand:     0,
+	Find:     0,
+	Get:      0,
+	Search:   0,
+	External: 0,
+	Level:    0,
+}
 
-	slog.Info("Database", "type", DatabaseType)
-	slog.Info("Modules", "path", ModulesPath)
-	slog.Info("Configuration Flags Ignore", "ignore", Flags.Ignore)
-	slog.Info("Configuration Flags Level", "level", Flags.Level)
+// commandPrefix matches messages that should be processed as bot commands (starting with ! or ?)
+var commandPrefix = regexp.MustCompile(`^[!?]`)
 
+// ConfigFromFile maps the on-disk configuration into a Config.
+func ConfigFromFile(conf *configuration.Configuration) (Config, error) {
+	cfg := Config{
+		Token:                 conf.Zbot.Token,
+		ModulesPath:           conf.Modules.Path,
+		IgnoreDuration:        conf.Zbot.IgnoreDuration,
+		Flags:                 Flags{Ignore: conf.Zbot.Ignore, Level: conf.Zbot.Level},
+		DisabledCommands:      conf.Commands.Disabled,
+		DisabledLearnChannels: conf.Commands.Learn.Disabled,
+		Levels:                DefaultLevels,
+	}
+
+	if err := mapstructure.Decode(conf.Modules.List, &cfg.Modules); err != nil {
+		return Config{}, fmt.Errorf("decode modules: %w", err)
+	}
+
+	return cfg, nil
+}
+
+// Bot is a running zbot instance.
+type Bot struct {
+	cfg      Config
+	db       db.ZbotDatabase
+	commands *command.CommandsList
+	channels *channelRegistry
+}
+
+// New wires a Bot together. It does not touch the network or the database;
+// that happens in Run.
+func New(cfg Config, database db.ZbotDatabase) (*Bot, error) {
+	if database == nil {
+		return nil, errors.New("database not configured")
+	}
+	if cfg.ModulesPath == "" {
+		cfg.ModulesPath = utils.GetCurrentDirectory() + "/../modules/"
+	}
+	if cfg.IgnoreDuration <= 0 {
+		cfg.IgnoreDuration = 300
+	}
+
+	// The command package still keeps these as globals; this is the only place we set them.
+	command.DisabledCommands = cfg.DisabledCommands
+	command.DisableLearnChannels = cfg.DisabledLearnChannels
 	command.Setup()
+
+	b := &Bot{
+		cfg:      cfg,
+		db:       database,
+		channels: newChannelRegistry(cfg.Channels),
+	}
+	b.commands = b.buildCommands()
+
+	return b, nil
+}
+
+// buildCommands creates the chain of built-in commands once.
+func (b *Bot) buildCommands() *command.CommandsList {
+	lv := b.cfg.Levels
+	d := b.db
+
+	cl := &command.CommandsList{List: list.New()}
+	cl.Chain("ping", &command.PingCommand{Db: d}, lv.Ping)
+	cl.Chain("version", &command.VersionCommand{GitHash: gitHash, Version: version, BuildTime: buildTime}, lv.Version)
+	cl.Chain("top", &command.TopCommand{Db: d}, lv.Top)
+	cl.Chain("stats", &command.StatsCommand{Db: d}, lv.Stats)
+	cl.Chain("last", &command.LastCommand{Db: d}, lv.Last)
+	cl.Chain("rand", &command.RandCommand{Db: d}, lv.Rand)
+	cl.Chain("who", &command.WhoCommand{Db: d}, lv.Who)
+	cl.Chain("find", &command.FindCommand{Db: d}, lv.Find)
+	cl.Chain("get", &command.GetCommand{Db: d}, lv.Get)
+	cl.Chain("search", &command.SearchCommand{Db: d}, lv.Search)
+	cl.Chain("learn", &command.LearnCommand{Db: d}, lv.Learn)
+	cl.Chain("append", &command.AppendCommand{Db: d}, lv.Append)
+	cl.Chain("forget", &command.ForgetCommand{Db: d}, lv.Forget)
+	cl.Chain("level", &command.LevelCommand{Db: d}, lv.Level)
+	cl.Chain("lock", &command.LockCommand{Db: d}, lv.Lock)
+	cl.Chain("ignore", &command.IgnoreCommand{Db: d, IgnoreDuration: b.cfg.IgnoreDuration, AdminLevel: lv.Ignore}, lv.Ignore)
+	return cl
+}
+
+// Run connects to Telegram and the database and processes updates until ctx
+// is cancelled or a fatal error occurs.
+func (b *Bot) Run(ctx context.Context) error {
+	slog.Info("Loading zbot-telegram", "version", version, "buildTime", buildTime, "gitHash", gitHash)
+	slog.Info("Database", "engine", b.db.Engine(), "connection", b.db.GetConnectionInfo())
+	slog.Info("Modules", "path", b.cfg.ModulesPath)
+	slog.Info("Configuration Flags", "ignore", b.cfg.Flags.Ignore, "level", b.cfg.Flags.Level)
 
 	poller := &tele.LongPoller{Timeout: 10 * time.Second}
 
-	middlewareCustom := tele.NewMiddlewarePoller(poller, middlewareCustom)
-
-	bot, err := tele.NewBot(tele.Settings{
-		Token:  APIToken,
-		Poller: middlewareCustom,
-		// Synchronous: false,
+	tb, err := tele.NewBot(tele.Settings{
+		Token:  b.cfg.Token,
+		Poller: tele.NewMiddlewarePoller(poller, b.filterUpdate),
 	})
-
-	bot.Use(middleware.Logger())
-
 	if err != nil {
-		slog.Error("bot init error", "err", err)
-		os.Exit(1)
+		return fmt.Errorf("bot init: %w", err)
+	}
+	tb.Use(middleware.Logger())
+
+	if err := b.db.Init(); err != nil {
+		return fmt.Errorf("db init: %w", err)
+	}
+	defer b.db.Close()
+
+	if b.cfg.Flags.Ignore {
+		if err := b.db.UserCleanupIgnorelist(); err != nil {
+			slog.Error("ignore list cleanup error", "err", err)
+		}
 	}
 
-	err = Db.Init()
-	defer Db.Close()
+	b.registerExternalModules(tb)
+	tb.Handle(tele.OnText, b.handleText)
 
-	if err != nil {
-		slog.Error("db init error", "err", err)
-		os.Exit(1)
-	}
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		tb.Start()
+	}()
 
-	//TODO: Not implemented
-	// if Flags.Ignore {
-	// 	//go Db.UserCleanupIgnorelist()
-	// }
+	<-ctx.Done()
+	slog.Info("Shutting down")
+	tb.Stop()
+	<-done
+	return nil
+}
 
-	slog.Debug("Modules to load", "modules", ExternalModules)
+// registerExternalModules installs a /<key> handler for every configured module whose binary exists.
+func (b *Bot) registerExternalModules(tb *tele.Bot) {
+	slog.Debug("Modules to load", "modules", b.cfg.Modules)
 	botCommands := []tele.Command{}
 
-	//Register extra modules
-	for _, module := range ExternalModules {
-		var cmdString = fmt.Sprintf("/%s", module.Key)
-		slog.Debug("Loading module", "key", module.Key, "path", ModulesPath+module.File)
+	for _, module := range b.cfg.Modules {
+		cmdString := "/" + module.Key
+		slog.Debug("Loading module", "key", module.Key, "path", b.cfg.ModulesPath+module.File)
 
-		_, err := command.LookPathCommand(ModulesPath + module.File)
-
-		if err != nil {
-			slog.Error("module file not found", "file", module.File, "key", module.Key, "path", ModulesPath)
+		if _, err := command.LookPathCommand(b.cfg.ModulesPath + module.File); err != nil {
+			slog.Error("module file not found", "file", module.File, "key", module.Key, "path", b.cfg.ModulesPath)
 			continue
 		}
 
-		bot.Handle(cmdString, func(c tele.Context) error {
-
-			slog.Debug("incoming message", "user", c.Sender().Username, "text", c.Text(), "payload", c.Message().Payload, "private", c.Message().Private())
-
-			response := runExternalModule(Db, c.Message(), ExternalModules)
-			err = c.Send(response)
-			if err != nil {
-				slog.Error("send error", "err", err)
-			}
-
-			return err
-		})
-
-		botCommands = append(botCommands, tele.Command{Text: "/" + module.Key, Description: module.Description})
+		tb.Handle(cmdString, b.handleExternalModule)
+		botCommands = append(botCommands, tele.Command{Text: cmdString, Description: module.Description})
 	}
 
 	slog.Debug("Setting bot commands", "commands", botCommands)
-	err = bot.SetCommands(botCommands)
-	if err != nil {
+	if err := tb.SetCommands(botCommands); err != nil {
 		slog.Error("set commands error", "err", err)
 	}
-
-	bot.Handle(tele.OnText, func(c tele.Context) error {
-
-		chatName := ""
-		if c.Message().Private() {
-			return nil
-		}
-
-		chatName = c.Chat().Title
-
-		var response = messagesProcessing(Db, c.Message(), chatName)
-		if response != "" {
-			err = c.Send(response)
-			if err != nil {
-				slog.Error("send response error", "err", err)
-			}
-			return err
-		}
-		return nil
-	})
-
-	go bot.Start()
-	if Webhook.Enable {
-		go server.Start(Webhook.Port, bot, Channels)
-	}
-	select {} // keep running
 }
 
-func runExternalModule(db db.ZbotDatabase, message *tele.Message, modules []ExternalModule) string {
+func (b *Bot) handleExternalModule(c tele.Context) error {
+	slog.Debug("incoming message", "user", c.Sender().Username, "text", c.Text(), "payload", c.Message().Payload, "private", c.Message().Private())
+
+	response := b.runExternalModule(c.Message())
+	if err := c.Send(response); err != nil {
+		slog.Error("send error", "err", err)
+		return err
+	}
+	return nil
+}
+
+func (b *Bot) handleText(c tele.Context) error {
+	if c.Message().Private() {
+		return nil
+	}
+
+	response := b.messagesProcessing(c.Message(), c.Chat().Title)
+	if response == "" {
+		return nil
+	}
+
+	if err := c.Send(response); err != nil {
+		slog.Error("send response error", "err", err)
+		return err
+	}
+	return nil
+}
+
+// filterUpdate is the poller middleware: drops spam and records the chats the bot is in.
+func (b *Bot) filterUpdate(u *tele.Update) bool {
+	if u.Message == nil {
+		return true
+	}
+
+	if strings.Contains(u.Message.Text, "spam") {
+		return false
+	}
+
+	if u.Message.Chat != nil && (u.Message.Chat.Type == "group" || u.Message.Chat.Type == "supergroup") {
+		b.channels.Track(*u.Message.Chat)
+	}
+
+	return true
+}
+
+func (b *Bot) runExternalModule(message *tele.Message) string {
 
 	cmd, err := utils.ParseCommand(message.Text)
 	if err != nil {
@@ -211,164 +291,76 @@ func runExternalModule(db db.ZbotDatabase, message *tele.Message, modules []Exte
 		return ""
 	}
 
-	cmdFile, err := utils.GetCommandFile(cmd, modules)
+	cmdFile, err := utils.GetCommandFile(cmd, b.cfg.Modules)
 	if err != nil {
 		slog.Error("get command file error", "err", err)
 		return ""
 	}
 
-	fullPathToBinary, _ := command.LookPathCommand(ModulesPath + cmdFile)
+	fullPathToBinary, _ := command.LookPathCommand(b.cfg.ModulesPath + cmdFile)
 
 	chatName := ""
 	if message.Chat.Type != "private" {
 		chatName = message.Chat.Title
 	}
 
-	user := user.BuildUser(message.Sender, db)
+	u := user.BuildUser(message.Sender, b.db)
 	slog.Debug("Running module", "path", fullPathToBinary)
-	response := utils.RunExternalCommand(fullPathToBinary, user.Username, strconv.Itoa(user.Level), chatName, strings.TrimSpace(message.Payload))
-	return response
+	return utils.RunExternalCommand(fullPathToBinary, u.Username, strconv.Itoa(u.Level), chatName, strings.TrimSpace(message.Payload))
 }
 
-// messagesProcessing
-func messagesProcessing(db db.ZbotDatabase, message *tele.Message, chatName string) string {
+// messagesProcessing decides whether a message is a command for the bot and runs it.
+func (b *Bot) messagesProcessing(message *tele.Message, chatName string) string {
 
-	private := false
-	if message.Chat.Type == "private" && chatName == "" {
-		private = true
-	}
+	slog.Debug("message", "chat", message.Chat, "text", message.Text)
 
-	//we're going to process only the message starting with ! or ?
-	processingMsg := regexp.MustCompilePOSIX(`^[!|?].*`)
+	private := message.Chat.Type == "private" && chatName == ""
 	username := strings.ToLower(message.Sender.Username)
 
-	if !checkIgnoreList(db, username) {
-		if processingMsg.MatchString(message.Text) {
-			slog.Debug("received message", "user", username, "text", message.Text)
-			return cmdProcessing(db, *message, chatName, private)
-		}
-	} else {
-		slog.Debug("user ignored", "user", username)
+	if b.ignoreMessage(username) {
+		slog.Debug("message ignored", "user", username)
+		return ""
 	}
 
-	return ""
-}
-
-// checkIgnoreList check user in the ignore list
-// return true if user is on the ignore_list
-//
-//	false if the flag ignore is disable or the user is not in the list
-func checkIgnoreList(db db.ZbotDatabase, username string) bool {
-
-	if Flags.Ignore {
-		slog.Debug("Checking user", "user", username)
-		return db.UserCheckIgnore(username)
+	if !commandPrefix.MatchString(message.Text) {
+		return ""
 	}
 
-	return false
+	slog.Debug("received command", "user", username, "text", message.Text)
+	return b.cmdProcessing(*message, chatName, private)
 }
 
-// cmdProcessing process message using commands
-func cmdProcessing(db db.ZbotDatabase, msg tele.Message, chatName string, private bool) string {
+// ignoreMessage returns true if the ignore feature is on and the user is in the ignore list.
+func (b *Bot) ignoreMessage(username string) bool {
+	if !b.cfg.Flags.Ignore {
+		return false
+	}
+	return b.db.UserCheckIgnore(username)
+}
+
+// cmdProcessing runs a command message through the command chain.
+func (b *Bot) cmdProcessing(msg tele.Message, chatName string, private bool) string {
 
 	commandName := command.GetCommandInformation(msg.Text)
 
 	if command.IsCommandDisabled(commandName) {
 		slog.Debug("command disabled", "command", commandName)
-		return ""
+		return fmt.Sprintf("Command [%v] is disabled", commandName)
 	}
 
-	user := user.BuildUser(msg.Sender, db)
+	u := user.BuildUser(msg.Sender, b.db)
 
-	if Flags.Level {
-		requiredLevel := command.GetMinimumLevel(commandName, levelsConfig)
-		if !command.CheckPermission(commandName, user, requiredLevel) {
+	if b.cfg.Flags.Level {
+		requiredLevel := command.GetMinimumLevel(commandName, b.cfg.Levels)
+		if !command.CheckPermission(commandName, u, requiredLevel) {
 			return fmt.Sprintf("Your level is not enough < %d", requiredLevel)
 		}
 	}
 
-	commandsList := &command.CommandsList{
-		List: list.New(),
-	}
-
-	commandsList.Chain("ping", &command.PingCommand{Db: db}, levelsConfig.Ping)
-	commandsList.Chain("version", &command.VersionCommand{
-		GitHash:   gitHash,
-		Version:   version,
-		BuildTime: buildTime,
-	}, levelsConfig.Version)
-	commandsList.Chain("top", &command.TopCommand{Db: db}, levelsConfig.Top)
-	commandsList.Chain("stats", &command.StatsCommand{Db: db}, levelsConfig.Stats)
-	commandsList.Chain("last", &command.LastCommand{Db: db}, levelsConfig.Last)
-	commandsList.Chain("rand", &command.RandCommand{Db: db}, levelsConfig.Rand)
-	commandsList.Chain("who", &command.WhoCommand{Db: db}, levelsConfig.Who)
-	commandsList.Chain("find", &command.FindCommand{Db: db}, levelsConfig.Find)
-	commandsList.Chain("get", &command.GetCommand{Db: db}, levelsConfig.Get)
-	commandsList.Chain("search", &command.SearchCommand{Db: db}, levelsConfig.Search)
-	commandsList.Chain("learn", &command.LearnCommand{Db: db}, levelsConfig.Learn)
-	commandsList.Chain("append", &command.AppendCommand{Db: db}, levelsConfig.Append)
-	commandsList.Chain("forget", &command.ForgetCommand{Db: db}, levelsConfig.Forget)
-	commandsList.Chain("level", &command.LevelCommand{Db: db}, levelsConfig.Level)
-	commandsList.Chain("lock", &command.LockCommand{Db: db}, levelsConfig.Lock)
-	commandsList.Chain("ignore", &command.IgnoreCommand{Db: db}, levelsConfig.Ignore)
-	// commandsList.Chain("external", &command.ExternalCommand{PathModules: ModulesPath}, levelsConfig.External)
-
-	var messageString = msg.Text
-
+	messageString := msg.Text
 	if msg.ReplyTo != nil {
 		messageString = fmt.Sprintf("%s %s %s", messageString, msg.ReplyTo.Sender.Username, msg.ReplyTo.Text)
 	}
 
-	outputMsg := commandsList.Run(commandName, messageString, user, chatName, private)
-
-	//	outputMsg := commands.ProcessText(messageString, user)
-
-	return outputMsg
-}
-
-// SetDisabledCommands setup disabled commands
-func SetDisabledCommands(cmdList []string) {
-	command.DisabledCommands = cmdList
-}
-
-// GetDisabledCommands get disabled zbot commands
-func GetDisabledCommands() []string {
-	return command.DisabledCommands
-}
-
-// SetDisabledLearnChannels set list of channels where learns commands wont be used
-func SetDisabledLearnChannels(channelsList []string) {
-	command.DisableLearnChannels = channelsList
-}
-
-func appendChannel(channels []Channel, chat tele.Chat) []Channel {
-
-	for i := range channels {
-		if channels[i].ID == chat.ID {
-			channels[i].Title = chat.Title
-			return channels
-		} else if channels[i].ID == 0 && chat.Title == channels[i].Title {
-			channels[i].ID = chat.ID
-			return channels
-		}
-	}
-
-	channels = append(channels, Channel{ID: chat.ID, Title: chat.Title})
-	return channels
-}
-
-func middlewareCustom(msg *tele.Update) bool {
-	if msg.Message == nil {
-		return true
-	}
-
-	if strings.Contains(msg.Message.Text, "spam") {
-		return false
-	}
-
-	if msg.Message.Chat.Type == "group" || msg.Message.Chat.Type == "supergroup" {
-		Channels = appendChannel(Channels, *msg.Message.Chat)
-	}
-
-	return true
+	return b.commands.Run(commandName, messageString, u, chatName, private)
 }

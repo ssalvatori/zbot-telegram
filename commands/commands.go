@@ -2,17 +2,19 @@ package command
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 
 	"container/list"
 
 	"log/slog"
+
 	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/ssalvatori/zbot-telegram/user"
-	"github.com/ssalvatori/zbot-telegram/utils"
 )
 
 // Levels command definition
@@ -78,13 +80,13 @@ type commandElement struct {
 	cmdString     string
 }
 
-//Setup initail setup
+// Setup initail setup
 func Setup() {
 	sort.Strings(LearnCommandList)
 }
 
 // Chain add a command and the required level to use it to the list of command
-func (cmdList *CommandsList) Chain(cmdDefinition string, cmd interface{}, level int) *CommandsList {
+func (cmdList *CommandsList) Chain(cmdDefinition string, cmd any, level int) *CommandsList {
 
 	newCommand := &commandElement{
 		command:       cmd.(zbotCommand),
@@ -123,7 +125,7 @@ type zbotCommand interface {
 	ProcessText(text string, username user.User, chat string, private bool) (string, error)
 }
 
-//getTerms transform Definition array into an array of term
+// getTerms transform Definition array into an array of term
 func getTerms(items []db.Definition) []string {
 	var terms []string
 	for _, item := range items {
@@ -162,7 +164,7 @@ func GetCommandInformation(text string) string {
 	return commandName
 }
 
-//CheckPermission validate if the user has enought permisison to use a command (each command has a requiredLevel)
+// CheckPermission validate if the user has enought permisison to use a command (each command has a requiredLevel)
 func CheckPermission(command string, user user.User, requiredLevel int) bool {
 	slog.Debug("Checking permission", "command", command, "user", user.Username)
 
@@ -171,9 +173,8 @@ func CheckPermission(command string, user user.User, requiredLevel int) bool {
 
 // IsCommandDisabled check if a command is in the disable list
 func IsCommandDisabled(commandName string) bool {
-	slog.Debug("Checking if disabled", "command", commandName)
-	//TODO BUG check DisabledCommands before check the array
-	return utils.InArray(commandName, DisabledCommands)
+	slog.Debug(fmt.Sprintf("Checking if command is disabled [%v]", commandName))
+	return slices.Contains(DisabledCommands, commandName)
 }
 
 // GetMinimumLevel get the minimum level required for a git command, if it is not defined return 0
@@ -192,14 +193,11 @@ func GetMinimumLevel(commandName string, minimumLevels Levels) int {
 	return int(f.Int())
 }
 
-//checkLearnCommandOnChannel check if channel is in list of channel where learn commands should be disabled
+// checkLearnCommandOnChannel check if channel is in list of channel where learn commands should be disabled
 func checkLearnCommandOnChannel(channel string) bool {
-	slog.Debug("Checking disable learn channels", "channel", channel)
 
-	i := sort.SearchStrings(DisableLearnChannels, channel)
-	if i < len(DisableLearnChannels) && DisableLearnChannels[i] == channel {
-		return true
-	}
+	slog.Debug(fmt.Sprintf("Checking channel [%v] is in the disabled learn list", channel))
+	slog.Debug(fmt.Sprintf("Disable learn channels: %v", DisableLearnChannels))
 
-	return false
+	return slices.Contains(DisableLearnChannels, channel)
 }

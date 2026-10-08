@@ -3,11 +3,39 @@ package zbot
 import (
 	"testing"
 
-	command "github.com/ssalvatori/zbot-telegram/commands"
 	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/stretchr/testify/assert"
-	tele "gopkg.in/telebot.v3"
+	tele "gopkg.in/telebot.v4"
 )
+
+// testFlags is applied to every bot created with newTestBot. Tests mutate it before building.
+var testFlags Flags
+
+func newTestBot(d db.ZbotDatabase) *Bot {
+	return newTestBotWithConfig(d, Config{})
+}
+
+func newTestBotWithConfig(d db.ZbotDatabase, cfg Config) *Bot {
+	cfg.Flags = testFlags
+	cfg.IgnoreDuration = 300
+	cfg.Levels = DefaultLevels
+	b, err := New(cfg, d)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
+func TestNew(t *testing.T) {
+	_, err := New(Config{}, nil)
+	assert.Error(t, err, "nil database is rejected")
+
+	b, err := New(Config{}, &db.ZbotDatabaseMock{})
+	assert.NoError(t, err)
+	assert.NotEmpty(t, b.cfg.ModulesPath, "default modules path applied")
+	assert.Equal(t, 300, b.cfg.IgnoreDuration, "default ignore duration applied")
+	assert.NotNil(t, b.commands, "command chain built once at construction")
+}
 
 func TestProcessingIsCommandDisabled(t *testing.T) {
 
@@ -16,14 +44,11 @@ func TestProcessingIsCommandDisabled(t *testing.T) {
 		File:  "hola.db",
 	}
 
-	command.DisabledCommands = []string{
-		"learn",
-		"version",
-	}
+	b := newTestBotWithConfig(dbMock, Config{DisabledCommands: []string{"learn", "version"}})
 
 	botMsg := tele.Message{Text: "!learn", Sender: &tele.User{Username: "zbot_test"}}
-	result := cmdProcessing(dbMock, botMsg, "test_chat", false)
-	assert.Equal(t, "", result, "command disabled")
+	result := b.cmdProcessing(botMsg, "test_chat", false)
+	assert.Equal(t, "Command [learn] is disabled", result, "command disabled")
 
 }
 
@@ -35,7 +60,6 @@ func TestProcessingVersion(t *testing.T) {
 	}
 
 	buildTime = "2017-05-06 09:59:21.318841424 +0300 EEST"
-	command.DisabledCommands = nil
 
 	botMsg := tele.Message{
 		Text: "!version",
@@ -47,7 +71,7 @@ func TestProcessingVersion(t *testing.T) {
 			Title: "testgroup",
 		},
 	}
-	result := cmdProcessing(dbMock, botMsg, "test_chat", false)
+	result := newTestBot(dbMock).cmdProcessing(botMsg, "test_chat", false)
 	assert.Equal(t, "zbot golang version ["+version+"] commit [undefined] build-time ["+buildTime+"]", result, "!version default")
 }
 
@@ -68,7 +92,7 @@ func TestProcessingStats(t *testing.T) {
 			Title: "testgroup",
 		},
 	}
-	result := cmdProcessing(dbMock, botMsg, "test_chat", false)
+	result := newTestBot(dbMock).cmdProcessing(botMsg, "test_chat", false)
 	assert.Equal(t, result, "Number of definitions: 666", "!stats")
 }
 
@@ -89,7 +113,7 @@ func TestProcessingPing(t *testing.T) {
 			Title: "testgroup",
 		},
 	}
-	result := cmdProcessing(dbMock, botMsg, "test_chat", false)
+	result := newTestBot(dbMock).cmdProcessing(botMsg, "test_chat", false)
 	assert.Equal(t, result, "pong!!", "!ping")
 }
 
@@ -100,7 +124,7 @@ func TestProcessingRand(t *testing.T) {
 	}
 
 	botMsg := tele.Message{Text: "!rand", Sender: &tele.User{Username: "zbot_test"}, Chat: &tele.Chat{Type: "private"}}
-	result := cmdProcessing(dbMock, botMsg, "test_chat", false)
+	result := newTestBot(dbMock).cmdProcessing(botMsg, "test_chat", false)
 	assert.Equal(t, "[hola] - [gatolinux]", result, "!rand")
 }
 
@@ -114,7 +138,7 @@ func TestProcessingGet(t *testing.T) {
 	}
 
 	botMsg := tele.Message{Text: "? hola", Sender: &tele.User{Username: "zbot_test"}, Chat: &tele.Chat{Type: "private"}}
-	result := cmdProcessing(dbMock, botMsg, "test_chat", false)
+	result := newTestBot(dbMock).cmdProcessing(botMsg, "test_chat", false)
 	assert.Equal(t, result, "[hola] - [foo bar!]", "? def fail")
 
 }
@@ -129,7 +153,7 @@ func TestProcessingFind(t *testing.T) {
 	}
 
 	botMsg := tele.Message{Text: "!find hola", Sender: &tele.User{Username: "zbot_test"}, Chat: &tele.Chat{Type: "private"}}
-	result := cmdProcessing(dbMock, botMsg, "test_chat", false)
+	result := newTestBot(dbMock).cmdProcessing(botMsg, "test_chat", false)
 	assert.Equal(t, result, "hola", "!find fail")
 }
 
@@ -146,7 +170,7 @@ func TestProcessingSearch(t *testing.T) {
 	}
 
 	botMsg := tele.Message{Text: "!search hola", Sender: &tele.User{Username: "zbot_test"}, Chat: &tele.Chat{Type: "private"}}
-	result := cmdProcessing(dbMock, botMsg, "test_chat", false)
+	result := newTestBot(dbMock).cmdProcessing(botMsg, "test_chat", false)
 	assert.Equal(t, "hola chao foobar", result, "!rand")
 }
 
@@ -167,7 +191,7 @@ func TestProcessingUserLevel(t *testing.T) {
 		Sender: &tele.User{FirstName: "ssalvato", Username: "ssalvato"},
 		Chat:   &tele.Chat{Type: "private"},
 	}
-	result := cmdProcessing(dbMock, botMsg, "test_chat", false)
+	result := newTestBot(dbMock).cmdProcessing(botMsg, "test_chat", false)
 	assert.Equal(t, "ssalvato level 666", result, "!level self user")
 }
 
@@ -191,7 +215,7 @@ func TestProcessingUserIgnoreList(t *testing.T) {
 		Sender: &tele.User{FirstName: "ssalvato", Username: "ssalvato"},
 		Chat:   &tele.Chat{Type: "private"},
 	}
-	result := cmdProcessing(dbMock, botMsg, "test_chat", false)
+	result := newTestBot(dbMock).cmdProcessing(botMsg, "test_chat", false)
 	assert.Equal(t, "[ @ssalvato ] since [1970-01-01 00:20:31 +0000 UTC] until [1970-01-01 01:16:04 +0000 UTC]", result, "!ignore list")
 }
 
@@ -213,15 +237,15 @@ func TestProcessingUserIgnoreInsert(t *testing.T) {
 		Sender: &tele.User{FirstName: "ssalvatori", Username: "ssalvatori"},
 		Chat:   &tele.Chat{Type: "private"},
 	}
-	result := cmdProcessing(dbMock, botMsg, "test_chat", false)
-	assert.Equal(t, "User [rigo] ignored for 10 minutes", result, "!ignore add OK")
+	result := newTestBot(dbMock).cmdProcessing(botMsg, "test_chat", false)
+	assert.Equal(t, "User [rigo] ignored for 5 minutes", result, "!ignore add OK")
 
 	botMsg = tele.Message{
 		Text:   "!ignore add ssalvatori",
 		Sender: &tele.User{FirstName: "ssalvatori", Username: "ssalvatori"},
 		Chat:   &tele.Chat{Type: "private"},
 	}
-	result = cmdProcessing(dbMock, botMsg, "test_chat", false)
+	result = newTestBot(dbMock).cmdProcessing(botMsg, "test_chat", false)
 	assert.Equal(t, "You can't ignore yourself", result, "!ignore add myself")
 
 }
@@ -245,7 +269,7 @@ func TestProcessingLearnReplyTo(t *testing.T) {
 		},
 		Chat: &tele.Chat{Type: "private"},
 	}
-	result := cmdProcessing(dbMock, botMsg, "test_chat", false)
+	result := newTestBot(dbMock).cmdProcessing(botMsg, "test_chat", false)
 
 	assert.Equal(t, "[arg1] - [otheruser message in reply-to]", result, "!learn with replayto")
 }
@@ -256,7 +280,7 @@ func TestMessageProcessing(t *testing.T) {
 		File:  "hola.db",
 	}
 
-	Flags.Ignore = false
+	testFlags.Ignore = false
 
 	botMsg := tele.Message{Text: "!learn arg1",
 		Sender: &tele.User{
@@ -272,7 +296,7 @@ func TestMessageProcessing(t *testing.T) {
 		Chat: &tele.Chat{Type: "private"},
 	}
 
-	result := cmdProcessing(dbMock, botMsg, "test_chat", false)
+	result := newTestBot(dbMock).cmdProcessing(botMsg, "test_chat", false)
 
 	assert.Equal(t, "[arg1] - [otheruser message in reply-to]", result, "!learn with replayto")
 }
@@ -284,7 +308,7 @@ func TestMessagesProcessingIgnoredUser(t *testing.T) {
 		IgnoreUser: true,
 	}
 
-	Flags.Ignore = true
+	testFlags.Ignore = true
 
 	botMsg := tele.Message{Text: "!learn arg1",
 		Sender: &tele.User{
@@ -300,15 +324,8 @@ func TestMessagesProcessingIgnoredUser(t *testing.T) {
 		Chat: &tele.Chat{Type: "private"},
 	}
 
-	result := messagesProcessing(dbMock, &botMsg, "test_chat")
+	result := newTestBot(dbMock).messagesProcessing(&botMsg, "test_chat")
 	assert.Equal(t, "", result, "!learn ignored")
-}
-
-func TestGetDisabledCommands(t *testing.T) {
-	cmds := []string{"cmd1", "cmd2", "cmd3"}
-	SetDisabledCommands(cmds)
-	assert.Equal(t, cmds, GetDisabledCommands(), "Get Disabled Commands")
-
 }
 
 func TestProcessingNotEnoughPermissions(t *testing.T) {
@@ -318,8 +335,8 @@ func TestProcessingNotEnoughPermissions(t *testing.T) {
 		IgnoreUser: true,
 	}
 
-	Flags.Level = true
-	Flags.Ignore = false
+	testFlags.Level = true
+	testFlags.Ignore = false
 
 	botMsg := tele.Message{Text: "!forget arg1",
 		Sender: &tele.User{
@@ -335,7 +352,7 @@ func TestProcessingNotEnoughPermissions(t *testing.T) {
 		Chat: &tele.Chat{Type: "private"},
 	}
 
-	result := messagesProcessing(dbMock, &botMsg, "test_chat")
+	result := newTestBot(dbMock).messagesProcessing(&botMsg, "test_chat")
 	assert.Equal(t, "Your level is not enough < 1000", result, "Not enough permissions to use a command")
 }
 
@@ -361,30 +378,41 @@ func TestAppendChannel(t *testing.T) {
 
 func TestMiddleware(t *testing.T) {
 
+	b := newTestBot(&db.ZbotDatabaseMock{})
+
 	msg := tele.Update{}
-	assert.True(t, middlewareCustom(&msg), "No Message")
+	assert.True(t, b.filterUpdate(&msg), "No Message")
 
 	msg = tele.Update{Message: &tele.Message{Text: "test spam"}}
-	assert.False(t, middlewareCustom(&msg), "No Message")
+	assert.False(t, b.filterUpdate(&msg), "Spam is dropped")
 
 	msg = tele.Update{Message: &tele.Message{Text: "test", Chat: &tele.Chat{Type: "private"}}}
-	assert.True(t, middlewareCustom(&msg), "Private message")
+	assert.True(t, b.filterUpdate(&msg), "Private message")
+	assert.Empty(t, b.channels.Channels(), "private chats are not tracked")
 
-	msg = tele.Update{Message: &tele.Message{Text: "test", Chat: &tele.Chat{Type: "group"}}}
-	assert.True(t, middlewareCustom(&msg), "Group message")
+	msg = tele.Update{Message: &tele.Message{Text: "test", Chat: &tele.Chat{Type: "group", ID: -1, Title: "g"}}}
+	assert.True(t, b.filterUpdate(&msg), "Group message")
+	assert.Equal(t, []Channel{{ID: -1, Title: "g"}}, b.channels.Channels(), "group chats are tracked")
 
 }
 
-func TestSetDisabledLearnChannels(t *testing.T) {
-	channels := []string{"chan1", "chan2"}
-	SetDisabledLearnChannels(channels)
-	// verify it was applied (commands package var)
-	assert.NotNil(t, channels)
+func TestChannelRegistry(t *testing.T) {
+	r := newChannelRegistry([]Channel{{Title: "preconfigured", AuthToken: "tok"}})
+
+	r.Track(tele.Chat{ID: -1, Title: "preconfigured"})
+	r.Track(tele.Chat{ID: -2, Title: "new"})
+
+	got := r.Channels()
+	assert.Equal(t, []Channel{{ID: -1, Title: "preconfigured", AuthToken: "tok"}, {ID: -2, Title: "new"}}, got)
+
+	// The returned slice is a copy; mutating it must not affect the registry.
+	got[0].Title = "changed"
+	assert.Equal(t, "preconfigured", r.Channels()[0].Title)
 }
 
 func TestMessagesProcessingNoMatch(t *testing.T) {
 	dbMock := &db.ZbotDatabaseMock{}
-	Flags.Ignore = false
+	testFlags.Ignore = false
 
 	// Message text doesn't start with ! or ? → empty result
 	botMsg := tele.Message{
@@ -392,7 +420,7 @@ func TestMessagesProcessingNoMatch(t *testing.T) {
 		Sender: &tele.User{Username: "ssalvatori"},
 		Chat:   &tele.Chat{Type: "group"},
 	}
-	result := messagesProcessing(dbMock, &botMsg, "testchat")
+	result := newTestBot(dbMock).messagesProcessing(&botMsg, "testchat")
 	assert.Equal(t, "", result)
 }
 
@@ -404,7 +432,7 @@ func TestRunExternalModuleInvalidText(t *testing.T) {
 		Sender: &tele.User{Username: "user"},
 		Chat:   &tele.Chat{Type: "group", Title: "test"},
 	}
-	result := runExternalModule(dbMock, msg, []ExternalModule{})
+	result := newTestBot(dbMock).runExternalModule(msg)
 	assert.Equal(t, "", result)
 }
 
@@ -416,20 +444,6 @@ func TestRunExternalModuleCommandNotFound(t *testing.T) {
 		Sender: &tele.User{Username: "user"},
 		Chat:   &tele.Chat{Type: "group", Title: "test"},
 	}
-	result := runExternalModule(dbMock, msg, []ExternalModule{})
+	result := newTestBot(dbMock).runExternalModule(msg)
 	assert.Equal(t, "", result)
 }
-
-/*
-func TestExecute(t *testing.T) {
-	dbMock := &db.ZbotDatabaseMock{
-		Level:             "666",
-		File:              "hola.db",
-		IgnoreListCleaned: false,
-	}
-
-	Flags.Ignore = true
-	Execute()
-	assert.Equal(t, true, dbMock.IgnoreListCleaned, "Ignore List Called")
-}
-*/

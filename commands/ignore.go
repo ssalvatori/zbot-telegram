@@ -8,19 +8,24 @@ import (
 	"time"
 
 	"log/slog"
+
 	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/ssalvatori/zbot-telegram/user"
 	"github.com/ssalvatori/zbot-telegram/utils"
 )
 
-//IgnoreCommand definition
+// IgnoreCommand definition
 type IgnoreCommand struct {
 	Db db.ZbotDatabase
+	//IgnoreDuration how long (in seconds) an ignored user stays ignored
+	IgnoreDuration int
+	//AdminLevel minimum user level required to manage the ignore list
+	AdminLevel int
 }
 
 const dateFormat string = "02-01-2006 15:04:05 MST" //dd-mm-yyyy hh:ii:ss TZ
 
-//ProcessText run command
+// ProcessText run command
 func (handler *IgnoreCommand) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
 
 	if private {
@@ -31,6 +36,10 @@ func (handler *IgnoreCommand) ProcessText(text string, user user.User, chat stri
 	result := ""
 
 	if commandPattern.MatchString(text) {
+		if !user.IsAllow(handler.AdminLevel) {
+			return fmt.Sprintf("Only channel admins can use this command, your level is not enough < %d", handler.AdminLevel), nil
+		}
+
 		args := commandPattern.FindStringSubmatch(text)
 
 		switch args[1] {
@@ -45,12 +54,12 @@ func (handler *IgnoreCommand) ProcessText(text string, user user.User, chat stri
 			result = strings.Join(getUserIgnored(ignoredUsers), "/n")
 		case "add":
 			if !strings.EqualFold(strings.ToLower(args[3]), strings.ToLower(user.Username)) {
-				err := handler.Db.UserIgnoreInsert(args[3])
+				err := handler.Db.UserIgnoreInsert(args[3], handler.IgnoreDuration, user.Username, chat)
 				if err != nil {
 					slog.Error("ignore insert error", "err", err)
 					return "", err
 				}
-				result = fmt.Sprintf("User [%s] ignored for 10 minutes", args[3])
+				result = fmt.Sprintf("User [%s] ignored for %d minutes", args[3], handler.IgnoreDuration/60)
 			} else {
 				result = "You can't ignore yourself"
 			}

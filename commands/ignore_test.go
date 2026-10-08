@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var ignoreCommand = IgnoreCommand{}
+var ignoreCommand = IgnoreCommand{AdminLevel: 100}
 
 func TestIgnoreCommandHelp(t *testing.T) {
 	want := "*!ignore* Options available: \n list (show all user ignored) \n add <username> (ignore a user for 10 minutes)"
@@ -35,6 +35,7 @@ func TestIgnoreCommandAdd(t *testing.T) {
 			{Username: "jav", CreatedAt: 12, ValidUntil: 20, CreatedBy: "admin", Chat: "test_dev"},
 		},
 	}
+	ignoreCommand.IgnoreDuration = 600
 
 	userTest.Level = 1000
 	expected := "User [rigo] ignored for 10 minutes"
@@ -86,4 +87,13 @@ func TestIgnoreListError(t *testing.T) {
 	}
 	_, err := ignoreCommand.ProcessText("!ignore list", userTest, "testchat", false)
 	assert.Error(t, err, "List DB error")
+}
+
+func TestIgnoreCommandNotAdmin(t *testing.T) {
+	nonAdmin := userTest
+	nonAdmin.Level = 0
+
+	res, err := ignoreCommand.ProcessText("!ignore add rigo", nonAdmin, "testchat", false)
+	assert.NoError(t, err, "Ignore add non admin")
+	assert.Equal(t, "Only channel admins can use this command, your level is not enough < 100", res, "Ignore add non admin")
 }

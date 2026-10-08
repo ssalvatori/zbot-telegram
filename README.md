@@ -10,7 +10,6 @@
 
   * Core Learn module [doc/learn](doc/learn.md)
   * Run external modules
-  * Webhook [doc/webhook](doc/webhook.md)
 
 ## Requirements
 
@@ -37,15 +36,6 @@ db:
   port: 3306
   username: db_username
   password: db_password
-webhook:
-  disable: true
-  port: 13371
-  auth:
-    - channel: channel1
-      id: 1234
-      token: <YOUR_SECURE_TOKEN>
-    - channel: channel2
-      token: <YOUR_SECURE_TOKEN>s
 commands:
   learn:
     disabled:
@@ -66,9 +56,6 @@ modules:
     - key: temp
       file: temp.sh
       description: get weather info
-    - key: plex
-      file: plex2.py
-      description: get plext information
 ```
 
 ## Database Schemas

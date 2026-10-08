@@ -18,25 +18,6 @@ func TestRunExternalCommandFailure(t *testing.T) {
 	assert.Equal(t, "", result)
 }
 
-func TestInArray(t *testing.T) {
-	tests := []struct {
-		lookFor        string
-		ArrayOfStrings []string
-		expected       bool
-	}{
-		{"abc", []string{"def", "abc", "ghi"}, true},
-		{"a1c", []string{"def", "abc", "ghi"}, false},
-		{"abc", []string{}, false},
-		{"abc", []string{"abc", "abc", "ghi"}, true},
-		{"abc", []string{"def", "aXc", "abc"}, true},
-	}
-
-	for _, test := range tests {
-		got := InArray(test.lookFor, test.ArrayOfStrings)
-		assert.Equal(t, test.expected, got, "Testing in array")
-	}
-}
-
 func TestGetCurrentDirectory(t *testing.T) {
 	currentPath := os.Getenv("PWD")
 

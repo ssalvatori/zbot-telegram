@@ -1,22 +1,32 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
+	"os/signal"
+	"syscall"
 
 	env "github.com/caarlos0/env/v11"
-	"github.com/go-viper/mapstructure/v2"
+	"github.com/ssalvatori/zbot-telegram/configuration"
 	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/ssalvatori/zbot-telegram/zbot"
 )
 
+// environmentVariables are the process-level settings not covered by the configuration file.
+type environmentVariables struct {
+	ConfigurationFile string `env:"ZBOT_CONFIG_FILE" envDefault:"./zbot.conf"`
+	LogLevel          string `env:"ZBOT_LOG_LEVEL" envDefault:"info"`
+}
+
 // logLevel holds the current log level and can be inspected in tests
 var logLevel = new(slog.LevelVar)
 
-// setupLog configures the default slog logger based on ZBOT_LOG_LEVEL
-func setupLog() {
-	switch os.Getenv("ZBOT_LOG_LEVEL") {
+// setupLog configures the default slog logger for the given level name
+// ("debug", "info" or "error"). Unknown values fall back to info.
+func setupLog(level string) {
+	switch level {
 	case "debug":
 		logLevel.Set(slog.LevelDebug)
 	case "error":
@@ -28,77 +38,51 @@ func setupLog() {
 	slog.SetDefault(slog.New(h))
 }
 
-func setupDatabase(conf *Configuration) db.ZbotDatabase {
-
-	var db db.ZbotDatabase
-
-	switch conf.Db.Engine {
-	case "mysql":
-		slog.Info("Setting up mysql connections")
-		slog.Error("mysql not implemented")
-		os.Exit(1)
-	case "sqlite":
-		slog.Info("Setting up sqlite connections")
-		db = setupDatabaseSqlite(conf)
-	default:
-		slog.Error("no database type selected")
-		os.Exit(1)
-	}
-	return db
-
-}
-
-func setupDatabaseSqlite(conf *Configuration) db.ZbotDatabase {
-	zbot.DatabaseType = "sqlite"
-	database := new(db.ZbotDatabaseSqlite)
-	database.File = conf.Db.File
-	return database
-}
-
-func setup() {
-
-	type EnvironmentVariables struct {
-		ConfigurationFile string `env:"ZBOT_CONFIG_FILE" envDefault:"./zbot.conf"`
-	}
-
-	cfg := EnvironmentVariables{}
-	if err := env.Parse(&cfg); err != nil {
-		slog.Error("env parse error", "err", err)
-		os.Exit(1)
-	}
-
-	slog.Debug("config", "cfg", fmt.Sprintf("%+v", cfg))
-
-	configuration, err := readConfiguration(cfg.ConfigurationFile)
+// setup reads the configuration file and builds a ready-to-run bot from it.
+func setup(configurationFile string) (*zbot.Bot, error) {
+	conf, err := configuration.LoadConfiguration(configurationFile)
 	if err != nil {
-		slog.Error("read configuration error", "err", err)
-		os.Exit(1)
+		return nil, fmt.Errorf("read configuration: %w", err)
 	}
 
-	zbot.APIToken = configuration.Zbot.Token
-	zbot.ModulesPath = configuration.Modules.Path
-	zbot.IgnoreDuration = configuration.Zbot.IgnoreDuration
-	zbot.Flags.Ignore = configuration.Zbot.Ignore
-	zbot.Flags.Level = configuration.Zbot.Level
-
-	zbot.SetDisabledLearnChannels(configuration.Commands.Learn.Disabled)
-
-	zbot.Db = setupDatabase(configuration)
-
-	zbot.ExternalModules = []zbot.ExternalModule{}
-	err = mapstructure.Decode(configuration.Modules.List, &zbot.ExternalModules)
+	cfg, err := zbot.ConfigFromFile(conf)
 	if err != nil {
-		slog.Error("decode modules error", "err", err)
-		os.Exit(1)
+		return nil, fmt.Errorf("load configuration: %w", err)
 	}
 
+	database, err := db.New(conf.Db)
+	if err != nil {
+		return nil, fmt.Errorf("setup database: %w", err)
+	}
+
+	return zbot.New(cfg, database)
 }
 
-func init() {
-	setupLog()
+// run is the real entry point. It returns an error instead of exiting so that
+// main is the only place deciding the process exit code.
+func run(ctx context.Context) error {
+	envVars := environmentVariables{}
+	if err := env.Parse(&envVars); err != nil {
+		return fmt.Errorf("parse environment: %w", err)
+	}
+
+	setupLog(envVars.LogLevel)
+	slog.Debug("environment", "cfg", fmt.Sprintf("%+v", envVars))
+
+	bot, err := setup(envVars.ConfigurationFile)
+	if err != nil {
+		return err
+	}
+
+	return bot.Run(ctx)
 }
 
 func main() {
-	setup()
-	zbot.Execute()
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	if err := run(ctx); err != nil {
+		slog.Error("zbot stopped", "err", err)
+		os.Exit(1)
+	}
 }

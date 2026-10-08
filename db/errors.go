@@ -11,4 +11,8 @@ var (
 	ErrInternalError = errors.New("Internal error")
 	//ErrLearnDisabledChannel learn commands are disabled for a channel
 	ErrLearnDisabledChannel = errors.New("Learn commands disabled for this channel")
+	//ErrNoEngine no database engine selected in the configuration
+	ErrNoEngine = errors.New("no database engine selected")
+	//ErrUnsupportedEngine the configured database engine is not implemented
+	ErrUnsupportedEngine = errors.New("unsupported database engine")
 )

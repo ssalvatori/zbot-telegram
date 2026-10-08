@@ -6,8 +6,7 @@ import (
 	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/stretchr/testify/assert"
 
-	// tele "gopkg.in/tucnak/telebot.v3"
-	tele "gopkg.in/telebot.v3"
+	tele "gopkg.in/telebot.v4"
 )
 
 func TestBuildUser(t *testing.T) {

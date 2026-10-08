@@ -1,4 +1,4 @@
-package main
+package configuration
 
 import (
 	"fmt"
@@ -10,32 +10,25 @@ import (
 
 // Configuration bot configuration
 type Configuration struct {
-	Zbot configurationZbot `yaml:"zbot"`
-	Db   configurationDb   `yaml:"db"`
-	// Webhook  configurationWebhook  `yaml:"webhook"`
-	Commands configurationCommands `yaml:"commands"`
-	Modules  configurationModules  `yaml:"modules"`
+	Zbot     ConfigurationZbot     `yaml:"zbot"`
+	Db       ConfigurationDb       `yaml:"db"`
+	Commands ConfigurationCommands `yaml:"commands"`
+	Modules  ConfigurationModules  `yaml:"modules"`
 }
 
-type channel struct {
-	Channel string `yaml:"channel"`
-	ID      int64  `yaml:"id,omitempty"`
-	Token   string `yaml:"token,omitempty"`
-}
-
-type configurationCommands struct {
-	Learn    configurationLearn `yaml:"learn"`
+type ConfigurationCommands struct {
+	Learn    ConfigurationLearn `yaml:"learn"`
 	Disabled []string           `yaml:"disabled"`
 }
 
-type configurationZbot struct {
+type ConfigurationZbot struct {
 	Token          string `yaml:"token"`
 	IgnoreDuration int    `yaml:"ignore_duration"`
 	Ignore         bool   `yaml:"ignore"`
 	Level          bool   `yaml:"level"`
 }
 
-type configurationDb struct {
+type ConfigurationDb struct {
 	Engine   string `yaml:"engine"`
 	Name     string `yaml:"name"`
 	File     string `yaml:"file"`
@@ -45,22 +38,22 @@ type configurationDb struct {
 	Password string `yaml:"password"`
 }
 
-type configurationLearn struct {
+type ConfigurationLearn struct {
 	Disabled []string `yaml:"disabled"`
 }
 
-type configurationModules struct {
+type ConfigurationModules struct {
 	Path string                `yaml:"path"`
-	List []configurationModule `yaml:"list"`
+	List []ConfigurationModule `yaml:"list"`
 }
 
-type configurationModule struct {
+type ConfigurationModule struct {
 	Key         string `yaml:"key"`
 	File        string `yaml:"file"`
 	Description string `yaml:"description"`
 }
 
-func readConfiguration(filename string) (*Configuration, error) {
+func LoadConfiguration(filename string) (*Configuration, error) {
 
 	slog.Info("Reading file", "filename", filename)
 	buf, err := os.ReadFile(filename)

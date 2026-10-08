@@ -210,8 +210,19 @@ func TestSqliteForget(t *testing.T) {
 func TestSqliteUserIgnoreList(t *testing.T) {
 	d, cleanup := setupTestSqliteDB(t)
 	defer cleanup()
-	_, err := d.UserIgnoreList()
+
+	list, err := d.UserIgnoreList()
 	assert.NoError(t, err)
+	assert.Empty(t, list)
+
+	assert.NoError(t, d.UserIgnoreInsert("user1", 300, "admin", "testchat"))
+
+	list, err = d.UserIgnoreList()
+	assert.NoError(t, err)
+	assert.Len(t, list, 1)
+	assert.Equal(t, "user1", list[0].Username)
+	assert.Equal(t, "admin", list[0].CreatedBy)
+	assert.Equal(t, "testchat", list[0].Chat)
 }
 
 func TestSqliteUserLevel(t *testing.T) {
@@ -225,17 +236,32 @@ func TestSqliteUserLevel(t *testing.T) {
 func TestSqliteUserCheckIgnore(t *testing.T) {
 	d, cleanup := setupTestSqliteDB(t)
 	defer cleanup()
+
+	assert.False(t, d.UserCheckIgnore("user1"))
+
+	assert.NoError(t, d.UserIgnoreInsert("user1", 300, "admin", "testchat"))
 	assert.True(t, d.UserCheckIgnore("user1"))
+	assert.True(t, d.UserCheckIgnore("USER1"))
 }
 
 func TestSqliteUserIgnoreInsert(t *testing.T) {
 	d, cleanup := setupTestSqliteDB(t)
 	defer cleanup()
-	assert.NoError(t, d.UserIgnoreInsert("user1"))
+	assert.NoError(t, d.UserIgnoreInsert("user1", 300, "admin", "testchat"))
+	assert.True(t, d.UserCheckIgnore("user1"))
 }
 
 func TestSqliteUserCleanupIgnorelist(t *testing.T) {
 	d, cleanup := setupTestSqliteDB(t)
 	defer cleanup()
+
+	assert.NoError(t, d.UserIgnoreInsert("expired", -10, "admin", "testchat"))
+	assert.NoError(t, d.UserIgnoreInsert("active", 300, "admin", "testchat"))
+
 	assert.NoError(t, d.UserCleanupIgnorelist())
+
+	list, err := d.UserIgnoreList()
+	assert.NoError(t, err)
+	assert.Len(t, list, 1)
+	assert.Equal(t, "active", list[0].Username)
 }
