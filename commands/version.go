@@ -7,15 +7,17 @@ import (
 	"github.com/ssalvatori/zbot-telegram/user"
 )
 
-//VersionCommand configuration for version
+const VersionHelpMessage = "!version - show bot version"
+
+// VersionCommand configuration for version
 type VersionCommand struct {
 	Version   string
 	GitHash   string
 	BuildTime string
 }
 
-//ProcessText run command
-func (handler *VersionCommand) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
+// ProcessText run command
+func (handler *VersionCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool) (string, error) {
 
 	commandPattern := regexp.MustCompile(`^!version$`)
 

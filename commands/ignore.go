@@ -14,6 +14,8 @@ import (
 	"github.com/ssalvatori/zbot-telegram/utils"
 )
 
+const IgnoreHelpMessage = "!ignore <username> - ignore a <username> for 10 minutes"
+
 // IgnoreCommand definition
 type IgnoreCommand struct {
 	Db db.ZbotDatabase
@@ -26,7 +28,7 @@ type IgnoreCommand struct {
 const dateFormat string = "02-01-2006 15:04:05 MST" //dd-mm-yyyy hh:ii:ss TZ
 
 // ProcessText run command
-func (handler *IgnoreCommand) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
+func (handler *IgnoreCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool) (string, error) {
 
 	if private {
 		return "", ErrNextCommand
@@ -54,7 +56,7 @@ func (handler *IgnoreCommand) ProcessText(text string, user user.User, chat stri
 			result = strings.Join(getUserIgnored(ignoredUsers), "/n")
 		case "add":
 			if !strings.EqualFold(strings.ToLower(args[3]), strings.ToLower(user.Username)) {
-				err := handler.Db.UserIgnoreInsert(args[3], handler.IgnoreDuration, user.Username, chat)
+				err := handler.Db.UserIgnoreInsert(args[3], handler.IgnoreDuration, user.Username, uint(channelID))
 				if err != nil {
 					slog.Error("ignore insert error", "err", err)
 					return "", err

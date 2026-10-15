@@ -78,7 +78,7 @@ type FakeCommand2 struct {
 	cmd string
 }
 
-func (handler *FakeCommand2) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
+func (handler *FakeCommand2) ProcessText(text string, user user.User, channelID int, channelName string, private bool) (string, error) {
 	if text != "!fakecommand2" {
 		return "", ErrNextCommand
 	}
@@ -99,14 +99,14 @@ var cmdList = &CommandsList{
 
 func TestChainAndRun(t *testing.T) {
 
-	cmdList.Chain("fakecommand1", fake1Command, 0)
-	cmdList.Chain("fakecommand2", fake2Command, 0)
-	cmdList.Chain("fakecommand3", fake3Command, 0)
+	cmdList.Chain("fakecommand1", fake1Command, 0, "fakecommand1 help")
+	cmdList.Chain("fakecommand2", fake2Command, 0, "fakecommand2 help2")
+	cmdList.Chain("fakecommand3", fake3Command, 0, "fakecommand3 help3")
 	assert.Equal(t, 3, cmdList.List.Len(), "Chain add elements in the list")
 
-	assert.Equal(t, "Fake 2", cmdList.Run("fakecommand2", "!fakecommand2", userTest, "test", false))
-	assert.Equal(t, "", cmdList.Run("fakecommand1", "!fakecommand1", userTest, "test", false))
-	assert.Equal(t, "", cmdList.Run("fakecommand2", "!fakecommand5", userTest, "test", false))
+	assert.Equal(t, "Fake 2", cmdList.Run("fakecommand2", "!fakecommand2", userTest, 0, "test", false))
+	assert.Equal(t, "", cmdList.Run("fakecommand1", "!fakecommand1", userTest, 0, "test", false))
+	assert.Equal(t, "", cmdList.Run("fakecommand2", "!fakecommand5", userTest, 0, "test", false))
 
 }
 
@@ -148,26 +148,26 @@ func TestCheckLearnCommandOnChannel(t *testing.T) {
 
 type FakeCommandLearnDisabled struct{}
 
-func (h *FakeCommandLearnDisabled) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
+func (h *FakeCommandLearnDisabled) ProcessText(text string, user user.User, channelID int, channelName string, private bool) (string, error) {
 	return "", ErrLearnDisabledChannel
 }
 
 type FakeCommandError struct{}
 
-func (h *FakeCommandError) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
+func (h *FakeCommandError) ProcessText(text string, user user.User, channelID int, channelName string, private bool) (string, error) {
 	return "", errors.New("some internal error")
 }
 
 func TestRunLearnDisabledChannel(t *testing.T) {
 	l := &CommandsList{List: list.New()}
-	l.Chain("learn-disabled", &FakeCommandLearnDisabled{}, 0)
-	result := l.Run("learn-disabled", "!learn-disabled", userTest, "test", false)
+	l.Chain("learn-disabled", &FakeCommandLearnDisabled{}, 0, "")
+	result := l.Run("learn-disabled", "!learn-disabled", userTest, 0, "test", false)
 	assert.Equal(t, "Learn modules are been disabled for this channel!", result)
 }
 
 func TestRunInternalError(t *testing.T) {
 	l := &CommandsList{List: list.New()}
-	l.Chain("error-cmd", &FakeCommandError{}, 0)
-	result := l.Run("error-cmd", "!error-cmd", userTest, "test", false)
+	l.Chain("error-cmd", &FakeCommandError{}, 0, "")
+	result := l.Run("error-cmd", "!error-cmd", userTest, 0, "test", false)
 	assert.Equal(t, "Internal Error, check logs", result)
 }

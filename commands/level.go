@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"log/slog"
+
 	"github.com/ssalvatori/zbot-telegram/db"
 
 	"strings"
@@ -13,22 +14,24 @@ import (
 	"github.com/ssalvatori/zbot-telegram/user"
 )
 
-//LevelCommand definition
+const LevelHelpMessage = "!level <subcommand> <username> <level> - manage user levels in the channel"
+
+// LevelCommand definition
 type LevelCommand struct {
 	Db db.ZbotDatabase
 }
 
-//AddUser add level for a given user
+// AddUser add level for a given user
 func (handler *LevelCommand) AddUser(targetUser string, level int, responsibleUser string) (string, error) {
 	return "not ready", nil
 }
 
-//DelUser delete level for a given user
+// DelUser delete level for a given user
 func (handler *LevelCommand) DelUser(userToCheck string, user string) (string, error) {
 	return "not ready", nil
 }
 
-//GetLevel return level for a given user
+// GetLevel return level for a given user
 func (handler *LevelCommand) GetLevel(user string) (string, error) {
 	level, err := handler.Db.UserLevel(user)
 	if err != nil {
@@ -38,7 +41,7 @@ func (handler *LevelCommand) GetLevel(user string) (string, error) {
 	return fmt.Sprintf("%s level %s", user, level), nil
 }
 
-//PaserCommand identify user to check levels
+// PaserCommand identify user to check levels
 func (handler *LevelCommand) PaserCommand(cmd string, user string) map[string]string {
 
 	res := make(map[string]string)
@@ -73,8 +76,8 @@ func (handler *LevelCommand) PaserCommand(cmd string, user string) map[string]st
 	return res
 }
 
-//ProcessText run command
-func (handler *LevelCommand) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
+// ProcessText run command
+func (handler *LevelCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool) (string, error) {
 
 	if private {
 		return "", ErrNextCommand

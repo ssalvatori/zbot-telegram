@@ -8,9 +8,9 @@ var (
 	//ErrLocked definition is locked
 	ErrLocked = errors.New("Definition locked")
 	//ErrInternalError internal error
-	ErrInternalError = errors.New("Internal error")
+	ErrInternalError = errors.New("internal error")
 	//ErrLearnDisabledChannel learn commands are disabled for a channel
-	ErrLearnDisabledChannel = errors.New("Learn commands disabled for this channel")
+	ErrLearnDisabledChannel = errors.New("learn commands disabled for this channel")
 	//ErrNoEngine no database engine selected in the configuration
 	ErrNoEngine = errors.New("no database engine selected")
 	//ErrUnsupportedEngine the configured database engine is not implemented

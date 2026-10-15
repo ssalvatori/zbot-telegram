@@ -7,11 +7,11 @@ import (
 
 	"strconv"
 
-	"log/slog"
 	tele "gopkg.in/telebot.v4"
+	"log/slog"
 )
 
-//User zbot user definition
+// User zbot user definition
 type User struct {
 	Username string
 	Ident    string
@@ -19,7 +19,7 @@ type User struct {
 	Level    int
 }
 
-//BuildUser Create a user using telegram information
+// BuildUser Create a user using telegram information
 func BuildUser(sender *tele.User, db db.ZbotDatabase) User {
 	user := User{}
 	user.Ident = strings.ToLower(sender.FirstName)
@@ -35,7 +35,7 @@ func BuildUser(sender *tele.User, db db.ZbotDatabase) User {
 	return user
 }
 
-//GetUserLevel Get the current level for a user using its username
+// GetUserLevel Get the current level for a user using its username
 func GetUserLevel(Db db.ZbotDatabase, username string) int {
 	userLevel, err := Db.UserLevel(username)
 
@@ -49,13 +49,8 @@ func GetUserLevel(Db db.ZbotDatabase, username string) int {
 	return userLevelInt
 }
 
-//IsAllow Check if username has level greater or equal that a level given
+// IsAllow Check if username has level greater or equal that a level given
+// TODO: This function should consider if the user is a channel admin or not
 func (u User) IsAllow(level int) bool {
-	result := false
-
-	if u.Level >= level {
-		result = true
-	}
-
-	return result
+	return u.Level >= level
 }

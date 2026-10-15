@@ -5,7 +5,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ssalvatori/zbot-telegram/configuration"
 	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/ssalvatori/zbot-telegram/zbot"
 	"github.com/stretchr/testify/assert"
@@ -20,11 +19,11 @@ func TestSetUp(t *testing.T) {
 }
 
 func TestConfigFromFile(t *testing.T) {
-	conf, err := configuration.LoadConfiguration("./zbot.conf")
+	conf, err := zbot.LoadConfiguration("./zbot.conf")
 	if err != nil {
 		t.Fatal(err)
 	}
-	cfg, err := zbot.ConfigFromFile(conf)
+	cfg, err := zbot.LoadConfig(conf)
 	assert.NoError(t, err)
 	assert.Equal(t, "./modules/", cfg.ModulesPath, "Setting module path")
 	assert.Equal(t, "<TELEGRAM_TOKEN>", cfg.Token, "API TOKEN")
@@ -44,9 +43,12 @@ func TestSetUpNoDatabaseEngine(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.Remove(f.Name())
-	f.WriteString("zbot:\n  token: x\ndb:\n  engine: \"\"\n")
-	f.Close()
+	_, err = f.WriteString("zbot:\n  token: x\ndb:\n  engine: \"\"\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = os.Remove(f.Name()) }()
+	_ = f.Close()
 
 	bot, err := setup(f.Name())
 	assert.ErrorIs(t, err, db.ErrNoEngine)
@@ -69,7 +71,7 @@ func TestSetupLog(t *testing.T) {
 }
 
 func TestReadConfigurationNotFound(t *testing.T) {
-	_, err := configuration.LoadConfiguration("/nonexistent/path/zbot.conf")
+	_, err := zbot.LoadConfiguration("/nonexistent/path/zbot.conf")
 	assert.Error(t, err)
 }
 
@@ -78,9 +80,12 @@ func TestReadConfigurationInvalidYAML(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.Remove(f.Name())
-	f.WriteString("not: valid: yaml: ::::\n")
-	f.Close()
-	_, err = configuration.LoadConfiguration(f.Name())
+	_, err = f.WriteString("not: valid: yaml: ::::\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = os.Remove(f.Name()) }()
+	_ = f.Close()
+	_, err = zbot.LoadConfiguration(f.Name())
 	assert.Error(t, err)
 }

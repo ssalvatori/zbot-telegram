@@ -55,13 +55,13 @@ func (d *ZbotDatabaseSqlite) Init() error {
 	}
 	if db == nil {
 		slog.Error("nil db after open")
-		return errors.New("Error connecting")
+		return errors.New("error connecting")
 	}
 
 	err = db.Debug().AutoMigrate(&Definition{}, &UserIgnore{})
 	if err != nil {
 		slog.Error("migration error", "err", err)
-		return errors.New("Error during migration")
+		return errors.New("error during migration")
 	}
 
 	d.DB = db
@@ -248,7 +248,7 @@ func (d *ZbotDatabaseSqlite) Lock(item Definition, chat string) error {
 		return nil
 	}
 
-	return fmt.Errorf("Already locked by  %q", definition.LockedBy.String)
+	return fmt.Errorf("already locked by  %q", definition.LockedBy.String)
 }
 
 // Forget No implemented yet
@@ -273,10 +273,10 @@ func (d *ZbotDatabaseSqlite) UserLevel(str string) (string, error) {
 }
 
 // UserCheckIgnore return true if the user is currently on the ignore list
-func (d *ZbotDatabaseSqlite) UserCheckIgnore(username string) bool {
+func (d *ZbotDatabaseSqlite) UserCheckIgnore(username string, channelID uint) bool {
 	var count int64
 	now := time.Now().Unix()
-	if err := d.DB.Debug().Model(&UserIgnore{}).Where("username = ? COLLATE NOCASE", username).Where("valid_until > ?", now).Count(&count).Error; err != nil {
+	if err := d.DB.Debug().Model(&UserIgnore{}).Where("username = ? COLLATE NOCASE", username).Where("channel_id = ?", channelID).Where("valid_until > ?", now).Count(&count).Error; err != nil {
 		slog.Error("check ignore query error", "err", err)
 		return false
 	}
@@ -284,12 +284,12 @@ func (d *ZbotDatabaseSqlite) UserCheckIgnore(username string) bool {
 }
 
 // UserIgnoreInsert Add a user to ignore list
-func (d *ZbotDatabaseSqlite) UserIgnoreInsert(username string, durationSeconds int, createdBy string, chat string) error {
+func (d *ZbotDatabaseSqlite) UserIgnoreInsert(username string, durationSeconds int, createdBy string, channelID uint) error {
 	ignore := UserIgnore{
 		Username:   strings.ToLower(username),
 		ValidUntil: time.Now().Add(time.Duration(durationSeconds) * time.Second).Unix(),
 		CreatedBy:  createdBy,
-		Chat:       chat,
+		ChannelID:  channelID,
 	}
 
 	if err := d.DB.Debug().Create(&ignore).Error; err != nil {
@@ -307,4 +307,41 @@ func (d *ZbotDatabaseSqlite) UserCleanupIgnorelist() error {
 		return err
 	}
 	return nil
+}
+
+func (d *ZbotDatabaseSqlite) ListChannels() ([]Channel, error) {
+	var channels []Channel
+	if err := d.DB.Debug().Model(&Channel{}).Find(&channels).Error; err != nil {
+		slog.Error("list channels error", "err", err)
+		return nil, err
+	}
+	return channels, nil
+}
+
+// AddChannel add a new channel to the database
+func (d *ZbotDatabaseSqlite) AddChannel(channel string) error {
+	if err := d.DB.Debug().Model(&Channel{}).Create(&Channel{Name: channel, LearnEnabled: true, ExternalEnabled: true}).Error; err != nil {
+		slog.Error("add channel error", "err", err)
+		return err
+	}
+	return nil
+}
+
+// DeleteChannel delete a channel from the database
+func (d *ZbotDatabaseSqlite) RemoveChannel(channel string) (bool, error) {
+	if err := d.DB.Debug().Where("name = ? COLLATE NOCASE", channel).Delete(&Channel{}).Error; err != nil {
+		slog.Error("delete channel error", "err", err)
+		return false, err
+	}
+	return true, nil
+}
+
+// GetChannel get a channel information from the database
+func (d *ZbotDatabaseSqlite) GetChannel(channel string) (Channel, error) {
+	var ch Channel
+	if err := d.DB.Debug().Model(&Channel{}).Where("name = ? COLLATE NOCASE", channel).First(&ch).Error; err != nil {
+		slog.Error("get channel error", "err", err)
+		return Channel{}, err
+	}
+	return ch, nil
 }

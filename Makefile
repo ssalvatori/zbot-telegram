@@ -56,8 +56,14 @@ coverage: ## Run tests and show coverage report
 coverage-html: coverage ## Open HTML coverage report in browser
 	go tool cover -html=coverage.out
 
+verify:
+	golangci-lint run
+
 lint: ## Run go vet
 	go vet ./...
+
+security:
+	govulncheck ./...
 
 clean: ## Remove build artifacts
 	rm -f $(BINARY) coverage.out || true

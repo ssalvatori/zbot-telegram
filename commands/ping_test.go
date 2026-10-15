@@ -9,13 +9,13 @@ import (
 var pingCommand = PingCommand{}
 
 func TestPingCommandOK(t *testing.T) {
-	result, _ := pingCommand.ProcessText("!ping", userTest, "testchat", false)
+	result, _ := pingCommand.ProcessText("!ping", userTest, 0, "testchat", false)
 	assert.Equal(t, "pong!!", result, "Ping Command")
 }
 
 func TestPingCommandNotMatch(t *testing.T) {
 
-	result, err := pingCommand.ProcessText("!ping6", userTest, "testchat", false)
+	result, err := pingCommand.ProcessText("!ping6", userTest, 0, "testchat", false)
 	assert.Equal(t, "", result, "Empty output doesn't match")
 	assert.Equal(t, ErrNextCommand, err, "Error output doesn't match")
 }

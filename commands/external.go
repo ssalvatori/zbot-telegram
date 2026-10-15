@@ -1,7 +1,6 @@
 package command
 
 import (
-	"fmt"
 	"os/exec"
 	"regexp"
 	"strconv"
@@ -18,13 +17,15 @@ var ExecCommand = exec.Command
 // LookPathCommand handler to exec.LookPath
 var LookPathCommand = exec.LookPath
 
+const ExternalMessage = "run an external module"
+
 // ExternalCommand definition
 type ExternalCommand struct {
 	PathModules string
 }
 
 // ProcessText run command
-func (handler *ExternalCommand) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
+func (handler *ExternalCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool) (string, error) {
 
 	commandPattern := regexp.MustCompile(`^!([a-zA-Z0-9\_\-]+)([\s(\S*)]*)?`)
 
@@ -42,13 +43,13 @@ func (handler *ExternalCommand) ProcessText(text string, user user.User, chat st
 			return "", nil
 		}
 
-		return handler.RunCommand(fullPathToBinary, user.Username, strconv.Itoa(user.Level), chat, strings.TrimSpace(args[2])), nil
+		return handler.RunCommand(fullPathToBinary, user.Username, strconv.Itoa(user.Level), channelName, strings.TrimSpace(args[2])), nil
 
 	}
 	return "", nil
 }
 
-// RunCommand run external command, the bot is providing the following arguments <username> <level> <chat> <command_arguments>
+// RunCommand run external command, the bot is providing the following arguments <username> <level> <channelName> <command_arguments>
 func (handler *ExternalCommand) RunCommand(command string, args ...string) string {
 	cmd := ExecCommand(command, args...)
 	output, err := cmd.Output()
@@ -56,5 +57,5 @@ func (handler *ExternalCommand) RunCommand(command string, args ...string) strin
 		slog.Error("external command error", "output", string(output), "err", err)
 		return ""
 	}
-	return fmt.Sprintf("%s", output)
+	return string(output)
 }

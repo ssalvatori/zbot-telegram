@@ -56,7 +56,7 @@ func RunExternalCommand(command string, args ...string) string {
 		slog.Error("external command failed", "output", string(output), "err", err)
 		return ""
 	}
-	return fmt.Sprintf("%s", output)
+	return string(output)
 }
 
 // ParseCommand Parse and return command, expecting /command [arg1 arg2]
@@ -69,7 +69,7 @@ func ParseCommand(text string) (string, error) {
 		cmd := args[1]
 		return cmd, nil
 	}
-	return "", errors.New("Text could not been parser")
+	return "", errors.New("text could not been parser")
 }
 
 // GetCommandFile Find file using command key
@@ -85,7 +85,7 @@ func GetCommandFile(cmd string, m any) (string, error) {
 	err := mapstructure.Decode(m, &modules)
 	if err != nil {
 		slog.Error("decode error", "err", err)
-		return "", fmt.Errorf("Command %s not found in list of commands", cmd)
+		return "", fmt.Errorf("command %s not found in list of commands", cmd)
 	}
 
 	for i := range modules {
@@ -93,5 +93,5 @@ func GetCommandFile(cmd string, m any) (string, error) {
 			return modules[i].File, nil
 		}
 	}
-	return "", fmt.Errorf("Command %s not found in list of commands", cmd)
+	return "", fmt.Errorf("command %s not found in list of commands", cmd)
 }

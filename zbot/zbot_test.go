@@ -37,21 +37,6 @@ func TestNew(t *testing.T) {
 	assert.NotNil(t, b.commands, "command chain built once at construction")
 }
 
-func TestProcessingIsCommandDisabled(t *testing.T) {
-
-	dbMock := &db.ZbotDatabaseMock{
-		Level: "666",
-		File:  "hola.db",
-	}
-
-	b := newTestBotWithConfig(dbMock, Config{DisabledCommands: []string{"learn", "version"}})
-
-	botMsg := tele.Message{Text: "!learn", Sender: &tele.User{Username: "zbot_test"}}
-	result := b.cmdProcessing(botMsg, "test_chat", false)
-	assert.Equal(t, "Command [learn] is disabled", result, "command disabled")
-
-}
-
 func TestProcessingVersion(t *testing.T) {
 
 	dbMock := &db.ZbotDatabaseMock{
@@ -93,7 +78,7 @@ func TestProcessingStats(t *testing.T) {
 		},
 	}
 	result := newTestBot(dbMock).cmdProcessing(botMsg, "test_chat", false)
-	assert.Equal(t, result, "Number of definitions: 666", "!stats")
+	assert.Equal(t, "Number of definitions: 666", result, "!stats")
 }
 
 func TestProcessingPing(t *testing.T) {

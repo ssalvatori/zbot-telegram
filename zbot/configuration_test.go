@@ -1,4 +1,4 @@
-package configuration
+package zbot
 
 import (
 	"os"
@@ -22,14 +22,6 @@ db:
   port: 3306
   username: db_username
   password: db_password
-commands:
-  learn:
-    disabled:
-      - zbot_dev
-  disabled:
-    - ignore
-    - level
-    - forget
 modules:
   path: ./modules/
   list:
@@ -70,9 +62,6 @@ func TestLoadConfigurationValid(t *testing.T) {
 	assert.Equal(t, 3306, conf.Db.Port)
 	assert.Equal(t, "db_username", conf.Db.Username)
 	assert.Equal(t, "db_password", conf.Db.Password)
-
-	assert.Equal(t, []string{"zbot_dev"}, conf.Commands.Learn.Disabled)
-	assert.Equal(t, []string{"ignore", "level", "forget"}, conf.Commands.Disabled)
 
 	assert.Equal(t, "./modules/", conf.Modules.Path)
 	assert.Equal(t, []ConfigurationModule{

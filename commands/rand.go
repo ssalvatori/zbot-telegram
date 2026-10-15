@@ -8,17 +8,22 @@ import (
 	"strings"
 
 	"log/slog"
+
 	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/ssalvatori/zbot-telegram/user"
 )
 
-//RandCommand definition
+const RandHelpMessage = "!rand <limit> <limit> - get a random term, with an optional <limit> (default 1, max 20)"
+const RAND_MAX = 20
+
+// RandCommand definition
 type RandCommand struct {
-	Db db.ZbotDatabase
+	Db          db.ZbotDatabase
+	HelpMessage string
 }
 
 // ProcessText run command
-func (handler *RandCommand) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
+func (handler *RandCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool) (string, error) {
 
 	if private {
 		return "", ErrNextCommand
@@ -27,11 +32,11 @@ func (handler *RandCommand) ProcessText(text string, user user.User, chat string
 	commandPattern := regexp.MustCompile(`^!rand(\s+(\d+))?$`)
 
 	if commandPattern.MatchString(text) {
-		if checkLearnCommandOnChannel(chat) {
+		if checkLearnCommandOnChannel(channelName) {
 			return "", ErrLearnDisabledChannel
 		}
 		term := commandPattern.FindStringSubmatch(text)
-		var limit int = 1
+		limit := 1
 		var err error
 
 		if len(term) == 3 && term[2] != "" {
@@ -43,17 +48,17 @@ func (handler *RandCommand) ProcessText(text string, user user.User, chat string
 			}
 		}
 
-		if limit > 100 {
-			limit = 100
+		if limit > RAND_MAX {
+			limit = RAND_MAX
 		}
 
-		items, err := handler.Db.Rand(chat, limit)
+		items, err := handler.Db.Rand(channelName, limit)
 		if err != nil {
 			if errors.Is(err, db.ErrNotFound) {
 				return "no results", nil
 			}
 			slog.Error("rand query error", "err", err)
-			return "", fmt.Errorf("Internal error, check logs")
+			return "", fmt.Errorf("internal error, check logs")
 		}
 		var output []string
 		for _, item := range items {

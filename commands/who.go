@@ -6,23 +6,27 @@ import (
 	"regexp"
 
 	"log/slog"
+
 	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/ssalvatori/zbot-telegram/user"
 	"github.com/ssalvatori/zbot-telegram/utils"
 )
 
+const WhoHelpMessage = "!who <term> - get information about a term"
+
 // WhoCommand definition
 type WhoCommand struct {
-	Db db.ZbotDatabase
+	Db          db.ZbotDatabase
+	HelpMessage string
 }
 
-//SetDb set db connection if the module need it
+// SetDb set db connection if the module need it
 func (handler *WhoCommand) SetDb(db db.ZbotDatabase) {
 	handler.Db = db
 }
 
-//ProcessText run command
-func (handler *WhoCommand) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
+// ProcessText run command
+func (handler *WhoCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool) (string, error) {
 
 	if private {
 		return "", ErrNextCommand
@@ -31,7 +35,7 @@ func (handler *WhoCommand) ProcessText(text string, user user.User, chat string,
 	commandPattern := regexp.MustCompile(`^!who\s(\S*)$`)
 
 	if commandPattern.MatchString(text) {
-		if checkLearnCommandOnChannel(chat) {
+		if checkLearnCommandOnChannel(channelName) {
 			return "", ErrLearnDisabledChannel
 		}
 
@@ -39,10 +43,10 @@ func (handler *WhoCommand) ProcessText(text string, user user.User, chat string,
 		item := db.Definition{
 			Term: term[1],
 		}
-		Item, err := handler.Db.Get(item.Term, chat)
+		Item, err := handler.Db.Get(item.Term, channelName)
 		if err != nil {
 			if errors.Is(err, db.ErrNotFound) {
-				return "", fmt.Errorf("Definition [%s] not found", item.Term)
+				return "", fmt.Errorf("definition [%s] not found", item.Term)
 			}
 			slog.Error("who get error", "err", err)
 			return "", ErrInternalError

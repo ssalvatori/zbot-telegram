@@ -5,17 +5,21 @@ import (
 	"regexp"
 
 	"log/slog"
+
 	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/ssalvatori/zbot-telegram/user"
 )
 
+const StatsHelpMessage = "!stats - get the total number of terms"
+
 // StatsCommand definition
 type StatsCommand struct {
-	Db db.ZbotDatabase
+	Db          db.ZbotDatabase
+	HelpMessage string
 }
 
 // ProcessText run command
-func (handler *StatsCommand) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
+func (handler *StatsCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool) (string, error) {
 
 	if private {
 		return "", ErrNextCommand
@@ -24,10 +28,10 @@ func (handler *StatsCommand) ProcessText(text string, user user.User, chat strin
 	commandPattern := regexp.MustCompile(`^!stats$`)
 
 	if commandPattern.MatchString(text) {
-		if checkLearnCommandOnChannel(chat) {
+		if checkLearnCommandOnChannel(channelName) {
 			return "", ErrLearnDisabledChannel
 		}
-		statTotal, err := handler.Db.Statistics(chat)
+		statTotal, err := handler.Db.Statistics(channelName)
 		if err != nil {
 			slog.Error("statistics error", "err", err)
 			return "", db.ErrInternalError

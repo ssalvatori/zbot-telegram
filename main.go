@@ -9,7 +9,6 @@ import (
 	"syscall"
 
 	env "github.com/caarlos0/env/v11"
-	"github.com/ssalvatori/zbot-telegram/configuration"
 	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/ssalvatori/zbot-telegram/zbot"
 )
@@ -40,12 +39,12 @@ func setupLog(level string) {
 
 // setup reads the configuration file and builds a ready-to-run bot from it.
 func setup(configurationFile string) (*zbot.Bot, error) {
-	conf, err := configuration.LoadConfiguration(configurationFile)
+	conf, err := zbot.LoadConfiguration(configurationFile)
 	if err != nil {
 		return nil, fmt.Errorf("read configuration: %w", err)
 	}
 
-	cfg, err := zbot.ConfigFromFile(conf)
+	cfg, err := zbot.LoadConfig(conf)
 	if err != nil {
 		return nil, fmt.Errorf("load configuration: %w", err)
 	}

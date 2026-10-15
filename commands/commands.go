@@ -13,6 +13,9 @@ import (
 
 	"log/slog"
 
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+
 	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/ssalvatori/zbot-telegram/user"
 )
@@ -38,6 +41,7 @@ type Levels struct {
 	Search   int
 	External int
 	Level    int
+	Help     int
 }
 
 var (
@@ -48,7 +52,7 @@ var (
 	//ErrInternalError internal error
 	ErrInternalError = errors.New("internal zbot error")
 	//ErrLearnDisabledChannel learn commands are disabled for a channel
-	ErrLearnDisabledChannel = errors.New("Learn commands disabled for this channel")
+	ErrLearnDisabledChannel = errors.New("learn commands disabled for this channel")
 	//DisableLearnChannels list of channels where learn modules won't be working
 	DisableLearnChannels []string
 	//LearnCommandList list of modules part of learn command
@@ -70,6 +74,7 @@ var (
 )
 
 // CommandsList list of commandElement
+// CommandsList represents a list of commands with their required levels.
 type CommandsList struct {
 	List *list.List
 }
@@ -78,6 +83,7 @@ type commandElement struct {
 	requiredLevel int
 	command       zbotCommand
 	cmdString     string
+	helpMessage   string
 }
 
 // Setup initail setup
@@ -86,12 +92,13 @@ func Setup() {
 }
 
 // Chain add a command and the required level to use it to the list of command
-func (cmdList *CommandsList) Chain(cmdDefinition string, cmd any, level int) *CommandsList {
+func (cmdList *CommandsList) Chain(cmdDefinition string, cmd any, level int, helpMessage string) *CommandsList {
 
 	newCommand := &commandElement{
 		command:       cmd.(zbotCommand),
 		requiredLevel: level,
 		cmdString:     cmdDefinition,
+		helpMessage:   helpMessage,
 	}
 
 	cmdList.List.PushBack(newCommand)
@@ -99,12 +106,14 @@ func (cmdList *CommandsList) Chain(cmdDefinition string, cmd any, level int) *Co
 }
 
 // Run commands against a msg for a given user
-func (cmdList *CommandsList) Run(cmd string, msg string, user user.User, chat string, private bool) string {
+func (cmdList *CommandsList) Run(cmd string, msg string, user user.User, channelId int, channelName string, private bool) string {
 	var output string
 	var err error
 
+	slog.Debug("Running command", "cmd", cmd, "channelId", channelId, "channelName", channelName, "private", private)
+
 	for e := cmdList.List.Front(); e != nil; e = e.Next() {
-		output, err = e.Value.(*commandElement).command.(zbotCommand).ProcessText(msg, user, chat, private)
+		output, err = e.Value.(*commandElement).command.ProcessText(msg, user, channelId, channelName, private)
 		if err != nil {
 			if errors.Is(err, ErrNextCommand) {
 				continue
@@ -122,7 +131,7 @@ func (cmdList *CommandsList) Run(cmd string, msg string, user user.User, chat st
 
 // zbotCommand interface to be implemented by each command
 type zbotCommand interface {
-	ProcessText(text string, username user.User, chat string, private bool) (string, error)
+	ProcessText(text string, username user.User, channelID int, channelName string, private bool) (string, error)
 }
 
 // getTerms transform Definition array into an array of term
@@ -181,7 +190,7 @@ func IsCommandDisabled(commandName string) bool {
 func GetMinimumLevel(commandName string, minimumLevels Levels) int {
 	slog.Debug("Getting minimum level", "command", commandName)
 
-	field, ok := reflect.TypeOf(&minimumLevels).Elem().FieldByName(strings.Title(commandName))
+	field, ok := reflect.TypeOf(&minimumLevels).Elem().FieldByName(cases.Title(language.English).String(commandName))
 
 	if !ok {
 		return 0

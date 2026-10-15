@@ -2,9 +2,18 @@ package db
 
 import (
 	"fmt"
-
-	"github.com/ssalvatori/zbot-telegram/configuration"
 )
+
+// Config contains the settings needed to create a database backend.
+type Config struct {
+	Engine   string `yaml:"engine"`
+	Name     string `yaml:"name"`
+	File     string `yaml:"file"`
+	Host     string `yaml:"host"`
+	Port     int    `yaml:"port"`
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
+}
 
 // Engine names supported by New.
 const (
@@ -13,7 +22,7 @@ const (
 
 // New builds the database backend selected by conf. The returned database is
 // not connected yet; call Init on it before use.
-func New(conf configuration.ConfigurationDb) (ZbotDatabase, error) {
+func New(conf Config) (ZbotDatabase, error) {
 	switch conf.Engine {
 	case "":
 		return nil, ErrNoEngine

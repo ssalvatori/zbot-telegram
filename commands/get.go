@@ -7,17 +7,21 @@ import (
 	"strings"
 
 	"log/slog"
+
 	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/ssalvatori/zbot-telegram/user"
 )
 
-//GetCommand definition
+const GetHelpMessage = "!get <term> - get a <term>'s meaning"
+
+// GetCommand definition
 type GetCommand struct {
-	Db db.ZbotDatabase
+	Db          db.ZbotDatabase
+	HelpMessage string
 }
 
-//ProcessText run command
-func (handler *GetCommand) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
+// ProcessText run command
+func (handler *GetCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool) (string, error) {
 
 	if private {
 		return "", ErrNextCommand
@@ -27,11 +31,11 @@ func (handler *GetCommand) ProcessText(text string, user user.User, chat string,
 	var result string
 
 	if commandPattern.MatchString(text) {
-		if checkLearnCommandOnChannel(chat) {
+		if checkLearnCommandOnChannel(channelName) {
 			return "", ErrLearnDisabledChannel
 		}
 		term := commandPattern.FindStringSubmatch(text)
-		definition, err := handler.Db.Get(strings.ToLower(term[1]), chat)
+		definition, err := handler.Db.Get(strings.ToLower(term[1]), channelName)
 		if err != nil {
 			if errors.Is(err, db.ErrNotFound) {
 				return fmt.Sprintf("[%s] Not found!", term[1]), nil

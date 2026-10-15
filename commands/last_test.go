@@ -14,7 +14,7 @@ func TestLastCommandOK(t *testing.T) {
 		Term:    "foo",
 		Meaning: "bar",
 	}
-	result, _ := lastCommand.ProcessText("!last", userTest, "testchat", false)
+	result, _ := lastCommand.ProcessText("!last", userTest, 0, "testchat", false)
 	assert.Equal(t, "[ foo ]", result, "Last Command")
 }
 
@@ -25,15 +25,15 @@ func TestLastCommandSetDb(t *testing.T) {
 func TestLastCommandDisabledChannel(t *testing.T) {
 	DisableLearnChannels = []string{"disabled-chat"}
 	defer func() { DisableLearnChannels = nil }()
-	_, err := lastCommand.ProcessText("!last", userTest, "disabled-chat", false)
+	_, err := lastCommand.ProcessText("!last", userTest, 0, "disabled-chat", false)
 	assert.Equal(t, ErrLearnDisabledChannel, err)
 }
 
 func TestLastCommandNotMatch(t *testing.T) {
-	result, _ := lastCommand.ProcessText("!last6", userTest, "testchat", false)
+	result, _ := lastCommand.ProcessText("!last6", userTest, 0, "testchat", false)
 	assert.Equal(t, "", result, "Empty output doesn't match")
 
-	_, err := lastCommand.ProcessText("!last6", userTest, "testchat", false)
+	_, err := lastCommand.ProcessText("!last6", userTest, 0, "testchat", false)
 	assert.Equal(t, "no action in command", err.Error(), "Error output doesn't match")
 }
 
@@ -43,10 +43,10 @@ func TestLastCommandError(t *testing.T) {
 		Meaning: "bar",
 		Error:   true,
 	}
-	_, err := lastCommand.ProcessText("!last", userTest, "testchat", false)
+	_, err := lastCommand.ProcessText("!last", userTest, 0, "testchat", false)
 	assert.Error(t, err, "Internal Error")
 
-	_, err = lastCommand.ProcessText("!last", userTest, "testchat", true)
+	_, err = lastCommand.ProcessText("!last", userTest, 0, "testchat", true)
 	assert.Error(t, err, "Private message")
 }
 

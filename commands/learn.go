@@ -5,17 +5,20 @@ import (
 	"regexp"
 
 	"log/slog"
+
 	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/ssalvatori/zbot-telegram/user"
 )
 
-//LearnCommand defintion
+const LearnHelpMessage = "!learn <term> <meaning> - learn a <term> with <meaning>; duplicate terms receive a numeric suffix"
+
+// LearnCommand defintion
 type LearnCommand struct {
 	Db db.ZbotDatabase
 }
 
-//ProcessText Run module
-func (handler *LearnCommand) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
+// ProcessText Run module
+func (handler *LearnCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool) (string, error) {
 
 	if private {
 		return "", ErrNextCommand
@@ -25,7 +28,7 @@ func (handler *LearnCommand) ProcessText(text string, user user.User, chat strin
 
 	if commandPattern.MatchString(text) {
 		// nowDate := time.Now().Format("2006-01-02")
-		if checkLearnCommandOnChannel(chat) {
+		if checkLearnCommandOnChannel(channelName) {
 			return "", ErrLearnDisabledChannel
 		}
 		term := commandPattern.FindStringSubmatch(text)
@@ -34,7 +37,7 @@ func (handler *LearnCommand) ProcessText(text string, user user.User, chat strin
 			Meaning: term[2],
 			Author:  fmt.Sprintf("%s!%s@telegram.bot", user.Username, user.Ident),
 			// Date:    nowDate,
-			Chat: chat,
+			Chat: channelName,
 		}
 		usedTerm, err := handler.Db.Set(def)
 		if err != nil {

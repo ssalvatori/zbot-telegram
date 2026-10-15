@@ -32,7 +32,16 @@ type UserIgnore struct {
 	CreatedAt  int64 `gorm:"autoCreateTime"`
 	ValidUntil int64
 	CreatedBy  string
-	Chat       string
+	ChannelID  uint
+}
+
+// Channel
+type Channel struct {
+	ID              uint `gorm:"primaryKey"`
+	Name            string
+	LearnEnabled    bool  `grom:"default:true"`
+	ExternalEnabled bool  `grom:"default:true"`
+	CreatedAt       int64 `gorm:"autoCreateTime"`
 }
 
 // ZbotDatabase DB interface for Zbot
@@ -55,12 +64,20 @@ type ZbotDatabase interface {
 	Forget(Definition, string) error
 	UserLevel(string) (string, error)
 	//UserIgnoreInsert ignore username for durationSeconds, recording who requested it and on which chat
-	UserIgnoreInsert(username string, durationSeconds int, createdBy string, chat string) error
+	UserIgnoreInsert(string, int, string, uint) error
 	//UserCheckIgnore return true if the user is on the ignore_list, false if it isn´t
-	UserCheckIgnore(string) bool
+	UserCheckIgnore(string, uint) bool
 	UserCleanupIgnorelist() error
 	UserIgnoreList() ([]UserIgnore, error)
 
 	Lock(Definition, string) error
 	IncreaseHits(uint) error
+
+	// Channel
+	AddChannel(string) error            // Add a new channel to the database
+	RemoveChannel(string) (bool, error) // Remove channel from database
+	ListChannels() ([]Channel, error)   // List all channels in database
+	GetChannel(string) (Channel, error) // Get channel information
+	// DisableLearn(string) (string, error) // Disable learning for a channel
+	// IsLearnEnabled(string) (bool, error) // Check if learning is enabled for a channel
 }

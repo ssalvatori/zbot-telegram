@@ -5,17 +5,21 @@ import (
 	"regexp"
 
 	"log/slog"
+
 	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/ssalvatori/zbot-telegram/user"
 )
 
-//LockCommand definition
+const LockHelpMessage = "!lock <term> - lock a <term> to prevent modifications"
+
+// LockCommand definition
 type LockCommand struct {
-	Db db.ZbotDatabase
+	Db          db.ZbotDatabase
+	HelpMessage string
 }
 
-//ProcessText run command
-func (handler *LockCommand) ProcessText(text string, user user.User, chat string, private bool) (string, error) {
+// ProcessText run command
+func (handler *LockCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool) (string, error) {
 
 	if private {
 		return "", ErrNextCommand
@@ -24,7 +28,7 @@ func (handler *LockCommand) ProcessText(text string, user user.User, chat string
 	commandPattern := regexp.MustCompile(`^!lock\s(\S*)$`)
 
 	if commandPattern.MatchString(text) {
-		if checkLearnCommandOnChannel(chat) {
+		if checkLearnCommandOnChannel(channelName) {
 			return "", ErrLearnDisabledChannel
 		}
 		term := commandPattern.FindStringSubmatch(text)
@@ -32,7 +36,7 @@ func (handler *LockCommand) ProcessText(text string, user user.User, chat string
 			Author: user.Username,
 			Term:   term[1],
 		}
-		err := handler.Db.Lock(def, chat)
+		err := handler.Db.Lock(def, channelName)
 		if err != nil {
 			slog.Error("lock error", "err", err)
 			return "", err

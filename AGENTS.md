@@ -1,3 +1,53 @@
+# AGENTS.md
+
+This file provides instructions for AI coding agents to effectively work on this project.
+
+## Development Process
+
+Use `Makefile` for common commands.
+
+## Testing Instruction
+
+- **Run all tests**: To run all tests across all packages, use the following command from the project root:
+
+```bash
+go test -race ./...
+```
+
+- **Run tests with coverage**: To see a test coverage report:
+
+```bash 
+go test -cover ./...
+```
+
+- **Read coverage report**
+
+```bash
+go tool cover -func=coverage.out
+```
+
+- **Run tests for a specific package**: For example, to test only the `usecase` package:
+
+```bash
+go test ./package/...
+```
+
+- Always add or update tests for any code you change. Test files should be named `*_test.go` and reside in the same package as the code they are testing.
+
+## Code Style and Conventions
+
+- **Formatting**: All Go code must be formatted with `gofmt`, run:
+
+```bash
+    go fmt ./...
+```
+
+- **Static Analysis**: Use `go vet` to catch potential issues in the code:
+
+```bash
+    go vet ./...
+```
+
 <!-- graft:start -->
 ## Graft — repo context graph
 

@@ -47,7 +47,7 @@ func TestParseCommand(t *testing.T) {
 		{"/cmd", "cmd", nil, "cmd without arg"},
 		{"/cmd arg1", "cmd", nil, "cmd with single arg"},
 		{"/cmd arg1 arg2", "cmd", nil, "cmd with multiples args"},
-		{"arg1 arg2 arg3", "", errors.New("Text could not been parser"), "without cmd"},
+		{"arg1 arg2 arg3", "", errors.New("text could not been parser"), "without cmd"},
 	}
 
 	for _, test := range tests {

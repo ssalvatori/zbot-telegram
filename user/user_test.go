@@ -10,14 +10,13 @@ import (
 )
 
 func TestBuildUser(t *testing.T) {
-	sender := tele.User{}
 	var newUser User
 
 	mockDatabase := &db.ZbotDatabaseMock{
 		Level: "10",
 	}
 
-	sender = tele.User{
+	sender := tele.User{
 		FirstName: "stefano",
 		Username:  "ssalvatori",
 	}

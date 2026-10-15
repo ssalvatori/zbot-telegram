@@ -65,7 +65,7 @@ func TestHelperProcess(t *testing.T) {
 		os.Exit(0)
 	}
 
-	fmt.Fprintf(os.Stdout, "%s\n", strings.Join(args, " "))
+	_, _ = fmt.Fprintf(os.Stdout, "%s\n", strings.Join(args, " "))
 	os.Exit(0)
 }
 
@@ -80,10 +80,10 @@ func TestExternalCommandOK(t *testing.T) {
 		LookPathCommand = exec.LookPath
 	}()
 
-	result, _ := externalCommand.ProcessText("!external_module arg1 arg2 arg3", userTest, "testchat", false)
+	result, _ := externalCommand.ProcessText("!external_module arg1 arg2 arg3", userTest, 0, "testchat", false)
 	assert.Equal(t, "/home/ssalvatori/module/external_module ssalvatori 100 testchat arg1 arg2 arg3\n", result, "external")
 
-	_, err := externalCommand.ProcessText("!mock-error arg1 arg2", userTest, "testchat", false)
+	_, err := externalCommand.ProcessText("!mock-error arg1 arg2", userTest, 0, "testchat", false)
 	// assert.Equal(t, "Internal error", err.Error(), "external mock")
 	assert.Nil(t, err)
 
@@ -115,7 +115,7 @@ func TestRunCommandError(t *testing.T) {
 func TestExternalCommandInject(t *testing.T) {
 	userTest.Level = 100
 
-	result, _ := externalCommand.ProcessText("!../../test arg1 arg2 arg3", userTest, "testchat", false)
+	result, _ := externalCommand.ProcessText("!../../test arg1 arg2 arg3", userTest, 0, "testchat", false)
 
 	assert.Equal(t, "", result, "external commmand inject")
 }

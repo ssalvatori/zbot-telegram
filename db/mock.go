@@ -151,7 +151,7 @@ func (d *ZbotDatabaseMock) UserLevel(str string) (string, error) {
 }
 
 // UserCheckIgnore Mock, it will return false if error is set otherwise it will return IgnoreUser value
-func (d *ZbotDatabaseMock) UserCheckIgnore(str string) bool {
+func (d *ZbotDatabaseMock) UserCheckIgnore(str string, channelID uint) bool {
 
 	if d.Error {
 		return false
@@ -161,7 +161,7 @@ func (d *ZbotDatabaseMock) UserCheckIgnore(str string) bool {
 }
 
 // UserIgnoreInsert mock
-func (d *ZbotDatabaseMock) UserIgnoreInsert(username string, durationSeconds int, createdBy string, chat string) error {
+func (d *ZbotDatabaseMock) UserIgnoreInsert(username string, durationSeconds int, createdBy string, channelID uint) error {
 	if d.Error {
 		return errors.New("mock")
 	}
@@ -209,4 +209,32 @@ func (d *ZbotDatabaseMock) UserIgnoreList() ([]UserIgnore, error) {
 // IncreaseHits mock
 func (d *ZbotDatabaseMock) IncreaseHits(limit uint) error {
 	return nil
+}
+
+func (d *ZbotDatabaseMock) AddChannel(channel string) error {
+	if d.Error {
+		return errors.New("mock")
+	}
+	return nil
+}
+
+func (d *ZbotDatabaseMock) RemoveChannel(channel string) (bool, error) {
+	if d.Error {
+		return false, errors.New("mock")
+	}
+	return true, nil
+}
+
+func (d *ZbotDatabaseMock) ListChannels() ([]Channel, error) {
+	if d.Error {
+		return nil, errors.New("mock")
+	}
+	return []Channel{}, nil
+}
+
+func (d *ZbotDatabaseMock) GetChannel(channel string) (Channel, error) {
+	if d.Error {
+		return Channel{}, errors.New("mock")
+	}
+	return Channel{Name: channel}, nil
 }
