@@ -5,20 +5,20 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func setupTestSqliteDB(t *testing.T) (*ZbotDatabaseSqlite, func()) {
 	t.Helper()
 	f, err := os.CreateTemp("", "zbot_test_*.db")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	_ = f.Close()
 	d := &ZbotDatabaseSqlite{File: f.Name()}
-	if err := d.Init(); err != nil {
+	err = d.Init()
+	if err != nil {
 		_ = os.Remove(f.Name())
-		t.Fatal(err)
 	}
+	require.NoError(t, err)
 	return d, func() {
 		d.Close()
 		_ = os.Remove(f.Name())

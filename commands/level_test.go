@@ -1,7 +1,6 @@
 package command
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/ssalvatori/zbot-telegram/db"
@@ -40,9 +39,8 @@ func TestProcessText(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got, _ := levelCommand.ProcessText(tt.cmd, tt.user, 0, "testchat", false); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("LevelCommand.ProcessText() = %v, want %v", got, tt.want)
-			}
+			got, _ := levelCommand.ProcessText(tt.cmd, tt.user, 0, "testchat", false)
+			assert.Equal(t, tt.want, got, "LevelCommand.ProcessText(%q)", tt.cmd)
 		})
 	}
 
@@ -65,9 +63,7 @@ func TestPaserCommand(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := levelCommand.PaserCommand(tt.cmd, tt.user); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("LevelCommand.PaserCommand() = %v, want %v", got, tt.want)
-			}
+			assert.Equal(t, tt.want, levelCommand.PaserCommand(tt.cmd, tt.user), "LevelCommand.PaserCommand(%q)", tt.cmd)
 		})
 	}
 }

@@ -2,8 +2,9 @@ package command
 
 import (
 	"container/list"
-	"errors"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestHelpCommand(t *testing.T) {
@@ -64,14 +65,14 @@ func TestHelpCommand(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			message, err := test.helper.ProcessText(test.text, userTest, 0, "test", test.private)
-			if message != test.want {
-				t.Errorf("HelpCommand.ProcessText(%q) = %q, want %q", test.text, message, test.want)
-			}
-			if !errors.Is(err, test.wantErr) {
-				t.Errorf("HelpCommand.ProcessText(%q) error = %v, want %v", test.text, err, test.wantErr)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			message, err := tt.helper.ProcessText(tt.text, userTest, 0, "test", tt.private)
+			assert.Equal(t, tt.want, message, "HelpCommand.ProcessText(%q)", tt.text)
+			if tt.wantErr == nil {
+				assert.NoError(t, err, "HelpCommand.ProcessText(%q)", tt.text)
+			} else {
+				assert.ErrorIs(t, err, tt.wantErr, "HelpCommand.ProcessText(%q)", tt.text)
 			}
 		})
 	}

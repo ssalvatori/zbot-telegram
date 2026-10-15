@@ -3,7 +3,6 @@ package command
 import (
 	"container/list"
 	"errors"
-	"sort"
 	"testing"
 
 	"github.com/ssalvatori/zbot-telegram/db"
@@ -11,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// userTest variable will be shared between all the test
+// userTest is shared by every command test and must not be mutated.
 var userTest = user.User{
 	Username: "ssalvatori",
 	Ident:    "stefano",
@@ -30,144 +29,219 @@ var minimumLevels = Levels{
 	Stats:  0,
 }
 
-func TestGetTerms(t *testing.T) {
-	items := []db.Definition{
-		{Term: "foo", Meaning: "bar"},
-		{Term: "foo2", Meaning: "bar2"},
-		{Term: "foo3", Meaning: "bar3"},
+// assertCommandError checks ProcessText's error against a sentinel, any error, or no error.
+func assertCommandError(t *testing.T, err error, wantErr error, wantAnyErr bool) {
+	t.Helper()
+	switch {
+	case wantErr != nil:
+		assert.ErrorIs(t, err, wantErr)
+	case wantAnyErr:
+		assert.Error(t, err)
+	default:
+		assert.NoError(t, err)
 	}
-	assert.Equal(t, []string{"foo", "foo2", "foo3"}, getTerms(items))
-	var terms []string
-	assert.Equal(t, terms, getTerms([]db.Definition{}))
 }
 
-func TestIsCommandDisable(t *testing.T) {
+// disableLearn marks testchat as learn-disabled for the duration of the test.
+func disableLearn(t *testing.T) {
+	t.Helper()
+	DisableLearnChannels = []string{"testchat"}
+	t.Cleanup(func() { DisableLearnChannels = nil })
+}
 
-	DisabledCommands = []string{
-		"learn",
-		"version",
+type fakeCommand struct {
+	output string
+	err    error
+}
+
+func (f *fakeCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool) (string, error) {
+	return f.output, f.err
+}
+
+func TestGetTerms(t *testing.T) {
+	tests := []struct {
+		name  string
+		items []db.Definition
+		want  []string
+	}{
+		{
+			name:  "terms",
+			items: []db.Definition{{Term: "foo", Meaning: "bar"}, {Term: "foo2", Meaning: "bar2"}, {Term: "foo3", Meaning: "bar3"}},
+			want:  []string{"foo", "foo2", "foo3"},
+		},
+		{name: "empty", items: []db.Definition{}, want: nil},
+		{name: "blank term skipped", items: []db.Definition{{Term: "", Meaning: "bar"}}, want: nil},
 	}
 
-	assert.True(t, IsCommandDisabled("learn"), "Disable Commands true")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, getTerms(tt.items))
+		})
+	}
+}
 
-	assert.False(t, IsCommandDisabled("lock"), "Disable Commands false")
+func TestIsCommandDisabled(t *testing.T) {
+	DisabledCommands = []string{"learn", "version"}
+	t.Cleanup(func() { DisabledCommands = nil })
+
+	tests := []struct {
+		name    string
+		command string
+		want    bool
+	}{
+		{"disabled", "learn", true},
+		{"enabled", "lock", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, IsCommandDisabled(tt.command))
+		})
+	}
 }
 
 func TestGetCommandInformation(t *testing.T) {
-	assert.Equal(t, "", GetCommandInformation("asdfasd"), "Command not found")
-	assert.Equal(t, "hola", GetCommandInformation("!hola"), "Command not found")
+	tests := []struct {
+		name string
+		text string
+		want string
+	}{
+		{"no prefix", "asdfasd", ""},
+		{"command", "!hola", "hola"},
+		{"lowercased", "!Learn", "learn"},
+	}
 
-	assert.Equal(t, "learn", GetCommandInformation("!Learn"), "Command not found")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, GetCommandInformation(tt.text))
+		})
+	}
 }
 
 func TestCheckPermission(t *testing.T) {
-	userTest.Level = 10
-	assert.True(t, CheckPermission("hola", userTest, 10), "")
-	userTest.Level = 5
-	assert.False(t, CheckPermission("learn", userTest, 1000), "")
+	tests := []struct {
+		name          string
+		level         int
+		requiredLevel int
+		want          bool
+	}{
+		{"equal level", 10, 10, true},
+		{"higher level", 100, 10, true},
+		{"lower level", 5, 1000, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			u := userTest
+			u.Level = tt.level
+			assert.Equal(t, tt.want, CheckPermission("cmd", u, tt.requiredLevel))
+		})
+	}
 }
 
 func TestGetMinimumLevel(t *testing.T) {
-
-	assert.Equal(t, minimumLevels.Lock, GetMinimumLevel("lock", minimumLevels), "checking lock")
-
-	assert.Equal(t, 0, GetMinimumLevel("hola", minimumLevels), "checking level not defined")
-}
-
-type FakeCommand2 struct {
-	cmd string
-}
-
-func (handler *FakeCommand2) ProcessText(text string, user user.User, channelID int, channelName string, private bool) (string, error) {
-	if text != "!fakecommand2" {
-		return "", ErrNextCommand
+	tests := []struct {
+		name    string
+		command string
+		want    int
+	}{
+		{"defined", "lock", minimumLevels.Lock},
+		{"not defined", "hola", 0},
 	}
-	return "Fake 2", nil
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, GetMinimumLevel(tt.command, minimumLevels))
+		})
+	}
 }
 
-func (handler *FakeCommand2) SetDB(db db.ZbotDatabase) {
+func TestCommandsListChain(t *testing.T) {
+	tests := []struct {
+		name     string
+		commands []string
+		wantLen  int
+	}{
+		{"empty", nil, 0},
+		{"single", []string{"one"}, 1},
+		{"multiple", []string{"one", "two", "three"}, 3},
+	}
 
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := &CommandsList{List: list.New()}
+			for _, name := range tt.commands {
+				l.Chain(name, &fakeCommand{}, 0, name+" help")
+			}
+			assert.Equal(t, tt.wantLen, l.List.Len())
+		})
+	}
 }
 
-var fake1Command = &FakeCommand2{cmd: "fakecommand1"}
-var fake2Command = &FakeCommand2{cmd: "fakecommand2"}
-var fake3Command = &FakeCommand2{cmd: "fakecommand3"}
+func TestCommandsListRun(t *testing.T) {
+	tests := []struct {
+		name     string
+		commands []zbotCommand
+		want     string
+	}{
+		{
+			name: "first matching command wins",
+			commands: []zbotCommand{
+				&fakeCommand{err: ErrNextCommand},
+				&fakeCommand{output: "Fake 2"},
+				&fakeCommand{output: "Fake 3"},
+			},
+			want: "Fake 2",
+		},
+		{
+			name:     "no command matches",
+			commands: []zbotCommand{&fakeCommand{err: ErrNextCommand}},
+			want:     "",
+		},
+		{
+			name:     "learn disabled channel",
+			commands: []zbotCommand{&fakeCommand{err: ErrLearnDisabledChannel}},
+			want:     "Learn modules are been disabled for this channel!",
+		},
+		{
+			name:     "internal error",
+			commands: []zbotCommand{&fakeCommand{err: errors.New("some internal error")}},
+			want:     "Internal Error, check logs",
+		},
+	}
 
-var cmdList = &CommandsList{
-	List: list.New(),
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := &CommandsList{List: list.New()}
+			for _, cmd := range tt.commands {
+				l.Chain("cmd", cmd, 0, "")
+			}
+			assert.Equal(t, tt.want, l.Run("cmd", "!cmd", userTest, 0, "test", false))
+		})
+	}
 }
-
-func TestChainAndRun(t *testing.T) {
-
-	cmdList.Chain("fakecommand1", fake1Command, 0, "fakecommand1 help")
-	cmdList.Chain("fakecommand2", fake2Command, 0, "fakecommand2 help2")
-	cmdList.Chain("fakecommand3", fake3Command, 0, "fakecommand3 help3")
-	assert.Equal(t, 3, cmdList.List.Len(), "Chain add elements in the list")
-
-	assert.Equal(t, "Fake 2", cmdList.Run("fakecommand2", "!fakecommand2", userTest, 0, "test", false))
-	assert.Equal(t, "", cmdList.Run("fakecommand1", "!fakecommand1", userTest, 0, "test", false))
-	assert.Equal(t, "", cmdList.Run("fakecommand2", "!fakecommand5", userTest, 0, "test", false))
-
-}
-
-/*
-func TestSetDisabledCommands(t *testing.T) {
-
-	commands := `["level","ignore"]`
-	jsonRaw := json.RawMessage(commands)
-	binary, _ := jsonRaw.MarshalJSON()
-	SetDisabledCommands(binary)
-	disabledCommands := []string{"ignore", "level"}
-
-	assert.Equal(t, disabledCommands, DisabledCommands, "disabled command")
-
-	DisabledCommands = []string(nil)
-
-	commands = ``
-	jsonRaw = json.RawMessage(commands)
-	binary, _ = jsonRaw.MarshalJSON()
-	SetDisabledCommands(binary)
-	disabledCommands = []string(nil)
-
-	assert.Equal(t, disabledCommands, DisabledCommands, "no disabled command")
-}
-*/
 
 func TestSetup(t *testing.T) {
 	Setup()
+	assert.IsNonDecreasing(t, LearnCommandList)
 }
 
 func TestCheckLearnCommandOnChannel(t *testing.T) {
 	DisableLearnChannels = []string{"disabled-chat"}
-	sort.Strings(DisableLearnChannels)
-	defer func() { DisableLearnChannels = nil }()
+	t.Cleanup(func() { DisableLearnChannels = nil })
 
-	assert.True(t, checkLearnCommandOnChannel("disabled-chat"), "channel should be disabled")
-	assert.False(t, checkLearnCommandOnChannel("testchat"), "channel should not be disabled")
-}
+	tests := []struct {
+		name    string
+		channel string
+		want    bool
+	}{
+		{"disabled", "disabled-chat", true},
+		{"enabled", "testchat", false},
+	}
 
-type FakeCommandLearnDisabled struct{}
-
-func (h *FakeCommandLearnDisabled) ProcessText(text string, user user.User, channelID int, channelName string, private bool) (string, error) {
-	return "", ErrLearnDisabledChannel
-}
-
-type FakeCommandError struct{}
-
-func (h *FakeCommandError) ProcessText(text string, user user.User, channelID int, channelName string, private bool) (string, error) {
-	return "", errors.New("some internal error")
-}
-
-func TestRunLearnDisabledChannel(t *testing.T) {
-	l := &CommandsList{List: list.New()}
-	l.Chain("learn-disabled", &FakeCommandLearnDisabled{}, 0, "")
-	result := l.Run("learn-disabled", "!learn-disabled", userTest, 0, "test", false)
-	assert.Equal(t, "Learn modules are been disabled for this channel!", result)
-}
-
-func TestRunInternalError(t *testing.T) {
-	l := &CommandsList{List: list.New()}
-	l.Chain("error-cmd", &FakeCommandError{}, 0, "")
-	result := l.Run("error-cmd", "!error-cmd", userTest, 0, "test", false)
-	assert.Equal(t, "Internal Error, check logs", result)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, checkLearnCommandOnChannel(tt.channel))
+		})
+	}
 }
