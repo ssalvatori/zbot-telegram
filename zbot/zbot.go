@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -83,6 +84,8 @@ var DefaultLevels = command.Levels{
 	Help:     0,
 }
 
+const DEFAULT_IGNORE_DURATION = 300
+
 // commandPrefix matches messages that should be processed as bot commands (starting with ! or ?)
 var commandPrefix = regexp.MustCompile(`^[!?]`)
 
@@ -91,7 +94,7 @@ func LoadConfig(conf *Configuration) (Config, error) {
 	cfg := Config{
 		Token:          conf.Zbot.Token,
 		ModulesPath:    conf.Modules.Path,
-		IgnoreDuration: conf.Zbot.IgnoreDuration,
+		IgnoreDuration: conf.Zbot.IgnoreDuration, //TODO: validate if this value is > 0, otherwise set to default DEFAULT_IGNORE_DURATION
 		Flags:          Flags{Ignore: conf.Zbot.Ignore, Level: conf.Zbot.Level},
 		Levels:         DefaultLevels,
 		Admins:         conf.Zbot.Admins,
@@ -106,10 +109,10 @@ func LoadConfig(conf *Configuration) (Config, error) {
 
 // Bot is a running zbot instance.
 type Bot struct {
-	cfg      Config
-	db       db.ZbotDatabase
-	commands *command.CommandsList
-	channels *channelRegistry
+	cfg      Config                // Configuration, loaded from file or built in tests
+	db       db.ZbotDatabase       // Database connection, initialized in Run
+	commands *command.CommandsList // List of commands the bot can run, including built-in and learned commands
+	channels *channelRegistry      // channels the bot is in, updated as invitations arrive from Bot Administrator
 }
 
 // New wires a Bot together. It does not touch the network or the database;
@@ -121,8 +124,10 @@ func New(cfg Config, database db.ZbotDatabase) (*Bot, error) {
 	if cfg.ModulesPath == "" {
 		cfg.ModulesPath = utils.GetCurrentDirectory() + "/../modules/"
 	}
+
+	//TODO:: this can be remove when the validation is done in while loading the configuration file.
 	if cfg.IgnoreDuration <= 0 {
-		cfg.IgnoreDuration = 300
+		cfg.IgnoreDuration = DEFAULT_IGNORE_DURATION
 	}
 
 	// The command package still keeps these as globals; this is the only place we set them.
@@ -147,9 +152,9 @@ func (b *Bot) buildLearnCommands() *command.CommandsList {
 	d := b.db
 
 	cl := &command.CommandsList{List: list.New()}
-	cl.Chain("last", &command.LastCommand{Db: d}, lv.Last, command.LastHelpMessage)
-	cl.Chain("rand", &command.RandCommand{Db: d}, lv.Rand, command.RandHelpMessage)
-	cl.Chain("who", &command.WhoCommand{Db: d}, lv.Who, command.WhoHelpMessage)
+	cl.Chain("last", &command.LastCommand{Db: b.db}, lv.Last, command.LastHelpMessage)
+	cl.Chain("rand", &command.RandCommand{Db: b.db}, lv.Rand, command.RandHelpMessage)
+	cl.Chain("who", &command.WhoCommand{Db: b.db}, lv.Who, command.WhoHelpMessage)
 	cl.Chain("find", &command.FindCommand{Db: d}, lv.Find, command.FindHelpMessage)
 	cl.Chain("get", &command.GetCommand{Db: d}, lv.Get, command.GetHelpMessage)
 	cl.Chain("search", &command.SearchCommand{Db: d}, lv.Search, command.SearchHelpMessage)
@@ -208,6 +213,7 @@ func (b *Bot) Run(ctx context.Context) error {
 
 	b.registerExternalModules(tb)
 	tb.Handle(tele.OnText, b.handleText)
+	tb.Handle(tele.OnAddedToGroup, b.handleAddedToGroup)
 
 	done := make(chan struct{})
 	go func() {
@@ -262,9 +268,6 @@ func (b *Bot) handleText(c tele.Context) error {
 		return nil
 	}
 
-	// Print all the content of c
-	// slog.Debug("%#v\n", c.Message())
-
 	response := b.messagesProcessing(c.Message(), c.Chat().Title)
 	if response == "" {
 		return nil
@@ -274,6 +277,30 @@ func (b *Bot) handleText(c tele.Context) error {
 		slog.Error("send response error", "err", err)
 		return err
 	}
+	return nil
+}
+
+func (b *Bot) handleAddedToGroup(c tele.Context) error {
+	sender := c.Sender()
+	inviter := strings.ToLower(sender.Username)
+
+	if inviter == "" {
+		slog.Warn("inviter username is empty, cannot verify admin status")
+		return c.Send("I cannot verify your admin status because your username is empty. Please set a username in Telegram and try again.")
+	}
+
+	if !slices.ContainsFunc(b.cfg.Admins, func(admin string) bool {
+		return strings.EqualFold(admin, inviter)
+	}) {
+		if err := c.Send("Only admins can add me"); err != nil {
+			slog.Error("send rejection error", "err", err)
+			return err
+		}
+		return nil
+	}
+
+	slog.Debug("added to group", "chat", c.Chat().Title, "id", c.Chat().ID, "inviter", inviter)
+	b.channels.Track(*c.Chat())
 	return nil
 }
 

@@ -2,6 +2,7 @@ package zbot
 
 import (
 	"testing"
+	"time"
 
 	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/stretchr/testify/assert"
@@ -431,4 +432,110 @@ func TestRunExternalModuleCommandNotFound(t *testing.T) {
 	}
 	result := newTestBot(dbMock).runExternalModule(msg)
 	assert.Equal(t, "", result)
+}
+
+// addedToGroupCtx implements tele.Context for testing handleAddedToGroup.
+type addedToGroupCtx struct {
+	sender *tele.User
+	chat   *tele.Chat
+	msg    *tele.Message
+	sent   string
+}
+
+func (m *addedToGroupCtx) Bot() tele.API                                                { return nil }
+func (m *addedToGroupCtx) Update() tele.Update                                          { return tele.Update{} }
+func (m *addedToGroupCtx) Message() *tele.Message                                       { return m.msg }
+func (m *addedToGroupCtx) Callback() *tele.Callback                                     { return nil }
+func (m *addedToGroupCtx) Query() *tele.Query                                           { return nil }
+func (m *addedToGroupCtx) InlineResult() *tele.InlineResult                             { return nil }
+func (m *addedToGroupCtx) ShippingQuery() *tele.ShippingQuery                           { return nil }
+func (m *addedToGroupCtx) PreCheckoutQuery() *tele.PreCheckoutQuery                     { return nil }
+func (m *addedToGroupCtx) Payment() *tele.Payment                                       { return nil }
+func (m *addedToGroupCtx) Poll() *tele.Poll                                             { return nil }
+func (m *addedToGroupCtx) PollAnswer() *tele.PollAnswer                                 { return nil }
+func (m *addedToGroupCtx) ChatMember() *tele.ChatMemberUpdate                           { return nil }
+func (m *addedToGroupCtx) ChatJoinRequest() *tele.ChatJoinRequest                       { return nil }
+func (m *addedToGroupCtx) Migration() (int64, int64)                                    { return 0, 0 }
+func (m *addedToGroupCtx) Topic() *tele.Topic                                           { return nil }
+func (m *addedToGroupCtx) Boost() *tele.BoostUpdated                                    { return nil }
+func (m *addedToGroupCtx) BoostRemoved() *tele.BoostRemoved                             { return nil }
+func (m *addedToGroupCtx) PurchasedPaidMedia() *tele.PaidMediaPurchased                 { return nil }
+func (m *addedToGroupCtx) Sender() *tele.User                                           { return m.sender }
+func (m *addedToGroupCtx) Chat() *tele.Chat                                             { return m.chat }
+func (m *addedToGroupCtx) Recipient() tele.Recipient                                    { return m.chat }
+func (m *addedToGroupCtx) Text() string                                                 { return "" }
+func (m *addedToGroupCtx) ThreadID() int                                                { return 0 }
+func (m *addedToGroupCtx) Entities() tele.Entities                                      { return nil }
+func (m *addedToGroupCtx) Data() string                                                 { return "" }
+func (m *addedToGroupCtx) Args() []string                                               { return nil }
+func (m *addedToGroupCtx) Send(what interface{}, opts ...interface{}) error              { m.sent = what.(string); return nil }
+func (m *addedToGroupCtx) SendAlbum(a tele.Album, opts ...interface{}) error            { return nil }
+func (m *addedToGroupCtx) Reply(what interface{}, opts ...interface{}) error            { return nil }
+func (m *addedToGroupCtx) Forward(msg tele.Editable, opts ...interface{}) error          { return nil }
+func (m *addedToGroupCtx) ForwardTo(to tele.Recipient, opts ...interface{}) error        { return nil }
+func (m *addedToGroupCtx) Edit(what interface{}, opts ...interface{}) error             { return nil }
+func (m *addedToGroupCtx) EditCaption(caption string, opts ...interface{}) error        { return nil }
+func (m *addedToGroupCtx) EditOrSend(what interface{}, opts ...interface{}) error       { return nil }
+func (m *addedToGroupCtx) EditOrReply(what interface{}, opts ...interface{}) error      { return nil }
+func (m *addedToGroupCtx) Delete() error                                                { return nil }
+func (m *addedToGroupCtx) DeleteAfter(d time.Duration) *time.Timer                      { return nil }
+func (m *addedToGroupCtx) Notify(action tele.ChatAction) error                          { return nil }
+func (m *addedToGroupCtx) Ship(what ...interface{}) error                               { return nil }
+func (m *addedToGroupCtx) Accept(errorMessage ...string) error                          { return nil }
+func (m *addedToGroupCtx) Answer(resp *tele.QueryResponse) error                        { return nil }
+func (m *addedToGroupCtx) AnswerGuest(result tele.Result) error                         { return nil }
+func (m *addedToGroupCtx) Respond(resp ...*tele.CallbackResponse) error                 { return nil }
+func (m *addedToGroupCtx) RespondText(text string) error                                { return nil }
+func (m *addedToGroupCtx) RespondAlert(text string) error                               { return nil }
+func (m *addedToGroupCtx) Get(key string) interface{}                                   { return nil }
+func (m *addedToGroupCtx) Set(key string, val interface{})                              {}
+
+func TestHandleAddedToGroupAdmin(t *testing.T) {
+	dbMock := &db.ZbotDatabaseMock{}
+	cfg := Config{Admins: []string{"admin"}}
+	bot := newTestBotWithConfig(dbMock, cfg)
+
+	ctx := &addedToGroupCtx{
+		sender: &tele.User{Username: "admin"},
+		chat:   &tele.Chat{ID: -1, Title: "test", Type: "group"},
+	}
+
+	err := bot.handleAddedToGroup(ctx)
+	assert.NoError(t, err)
+	assert.Empty(t, ctx.sent, "admin should not receive rejection")
+	channels := bot.channels.Channels()
+	assert.Contains(t, channels, Channel{ID: -1, Title: "test"}, "channel should be tracked")
+}
+
+func TestHandleAddedToGroupNonAdmin(t *testing.T) {
+	dbMock := &db.ZbotDatabaseMock{}
+	cfg := Config{Admins: []string{"admin"}}
+	bot := newTestBotWithConfig(dbMock, cfg)
+
+	ctx := &addedToGroupCtx{
+		sender: &tele.User{Username: "notadmin"},
+		chat:   &tele.Chat{ID: -1, Title: "test", Type: "group"},
+	}
+
+	err := bot.handleAddedToGroup(ctx)
+	assert.NoError(t, err)
+	assert.Equal(t, "Only admins can add me", ctx.sent)
+	assert.Empty(t, bot.channels.Channels(), "channel should not be tracked for non-admin")
+}
+
+func TestHandleAddedToGroupNoUsername(t *testing.T) {
+	dbMock := &db.ZbotDatabaseMock{}
+	cfg := Config{Admins: []string{"AdminUser"}}
+	bot := newTestBotWithConfig(dbMock, cfg)
+
+	// no username and no firstName — rejection sent
+	ctx := &addedToGroupCtx{
+		sender: &tele.User{FirstName: "adminuser"},
+		chat:   &tele.Chat{ID: -2, Title: "test2", Type: "supergroup"},
+	}
+
+	err := bot.handleAddedToGroup(ctx)
+	assert.NoError(t, err)
+	assert.Equal(t, "I cannot verify your admin status because your username is empty. Please set a username in Telegram and try again.", ctx.sent)
+	assert.Empty(t, bot.channels.Channels(), "channel should not be tracked when username is empty")
 }
