@@ -52,7 +52,7 @@ func (handler *RandCommand) ProcessText(text string, user user.User, channelID i
 			limit = RAND_MAX
 		}
 
-		items, err := handler.Db.Rand(channelName, limit)
+		items, err := handler.Db.Rand(uint(channelID), limit)
 		if err != nil {
 			if errors.Is(err, db.ErrNotFound) {
 				return "no results", nil

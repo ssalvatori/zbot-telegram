@@ -14,6 +14,8 @@ zbot:
   ignore_duration: 300
   ignore: true
   level: false
+  admins:
+  - admin_username_here
 db:
   engine: sqlite
   name: db_name
@@ -62,6 +64,8 @@ func TestLoadConfigurationValid(t *testing.T) {
 	assert.Equal(t, 3306, conf.Db.Port)
 	assert.Equal(t, "db_username", conf.Db.Username)
 	assert.Equal(t, "db_password", conf.Db.Password)
+
+	assert.Equal(t, []string{"admin_username_here"}, conf.Zbot.Admins)
 
 	assert.Equal(t, "./modules/", conf.Modules.Path)
 	assert.Equal(t, []ConfigurationModule{

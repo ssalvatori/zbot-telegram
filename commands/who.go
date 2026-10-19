@@ -43,7 +43,7 @@ func (handler *WhoCommand) ProcessText(text string, user user.User, channelID in
 		item := db.Definition{
 			Term: term[1],
 		}
-		Item, err := handler.Db.Get(item.Term, channelName)
+		Item, err := handler.Db.Get(item.Term, uint(channelID))
 		if err != nil {
 			if errors.Is(err, db.ErrNotFound) {
 				return "", fmt.Errorf("definition [%s] not found", item.Term)

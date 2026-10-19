@@ -25,6 +25,7 @@ type ZbotDatabaseMock struct {
 	IgnoreUser        bool
 	Error             bool
 	IgnoreListCleaned bool
+	Channel           Channel
 }
 
 // Engine mock
@@ -47,7 +48,7 @@ func (d *ZbotDatabaseMock) Close() {
 }
 
 // Statistics mock
-func (d *ZbotDatabaseMock) Statistics(chat string) (string, error) {
+func (d *ZbotDatabaseMock) Statistics(channelID uint) (string, error) {
 	if d.Error {
 		return "", errors.New("mock")
 	}
@@ -55,7 +56,7 @@ func (d *ZbotDatabaseMock) Statistics(chat string) (string, error) {
 }
 
 // Top mock
-func (d *ZbotDatabaseMock) Top(chat string, limit int) ([]Definition, error) {
+func (d *ZbotDatabaseMock) Top(channelID uint, limit int) ([]Definition, error) {
 	var items []Definition
 
 	if d.Error {
@@ -70,7 +71,7 @@ func (d *ZbotDatabaseMock) Top(chat string, limit int) ([]Definition, error) {
 }
 
 // Rand mock
-func (d *ZbotDatabaseMock) Rand(chat string, limit int) ([]Definition, error) {
+func (d *ZbotDatabaseMock) Rand(channelID uint, limit int) ([]Definition, error) {
 	if d.Error {
 		return []Definition{}, errors.New("mock")
 	}
@@ -78,7 +79,7 @@ func (d *ZbotDatabaseMock) Rand(chat string, limit int) ([]Definition, error) {
 }
 
 // Last mock
-func (d *ZbotDatabaseMock) Last(chat string, last int) ([]Definition, error) {
+func (d *ZbotDatabaseMock) Last(channelID uint, last int) ([]Definition, error) {
 
 	if d.Error {
 		return []Definition{}, errors.New("mock")
@@ -96,7 +97,7 @@ func (d *ZbotDatabaseMock) Set(def Definition) (string, error) {
 }
 
 // Find mock
-func (d *ZbotDatabaseMock) Find(criteria string, chat string, limit int) ([]Definition, error) {
+func (d *ZbotDatabaseMock) Find(criteria string, channelID uint, limit int) ([]Definition, error) {
 	if d.NotFound {
 		return []Definition{}, nil
 	}
@@ -107,7 +108,7 @@ func (d *ZbotDatabaseMock) Find(criteria string, chat string, limit int) ([]Defi
 }
 
 // Get definition mock
-func (d *ZbotDatabaseMock) Get(term string, chat string) (Definition, error) {
+func (d *ZbotDatabaseMock) Get(term string, channelID uint) (Definition, error) {
 	if d.NotFound {
 		return Definition{}, ErrNotFound
 	}
@@ -128,7 +129,7 @@ func (d *ZbotDatabaseMock) _set(term string, def Definition) error {
 }
 
 // Search mock
-func (d *ZbotDatabaseMock) Search(str string, chat string, limit int) ([]Definition, error) {
+func (d *ZbotDatabaseMock) Search(str string, channelID uint, limit int) ([]Definition, error) {
 	var items []Definition
 
 	if d.Error {
@@ -175,7 +176,7 @@ func (d *ZbotDatabaseMock) UserCleanupIgnorelist() error {
 }
 
 // Lock mock
-func (d *ZbotDatabaseMock) Lock(item Definition, chat string) error {
+func (d *ZbotDatabaseMock) Lock(item Definition) error {
 	if d.Error {
 		return errors.New("mock")
 	}
@@ -183,7 +184,7 @@ func (d *ZbotDatabaseMock) Lock(item Definition, chat string) error {
 }
 
 // Append mock
-func (d *ZbotDatabaseMock) Append(item Definition, chat string) error {
+func (d *ZbotDatabaseMock) Append(item Definition) error {
 	if d.Error {
 		return errors.New("mock")
 	}
@@ -191,7 +192,7 @@ func (d *ZbotDatabaseMock) Append(item Definition, chat string) error {
 }
 
 // Forget mock
-func (d *ZbotDatabaseMock) Forget(item Definition, chat string) error {
+func (d *ZbotDatabaseMock) Forget(item Definition) error {
 	if d.Error {
 		return errors.New("mock")
 	}
@@ -211,14 +212,14 @@ func (d *ZbotDatabaseMock) IncreaseHits(limit uint) error {
 	return nil
 }
 
-func (d *ZbotDatabaseMock) AddChannel(channel string) error {
+func (d *ZbotDatabaseMock) AddChannel(telegramID int64, name string) error {
 	if d.Error {
 		return errors.New("mock")
 	}
 	return nil
 }
 
-func (d *ZbotDatabaseMock) RemoveChannel(channel string) (bool, error) {
+func (d *ZbotDatabaseMock) RemoveChannel(telegramID int64) (bool, error) {
 	if d.Error {
 		return false, errors.New("mock")
 	}
@@ -232,9 +233,13 @@ func (d *ZbotDatabaseMock) ListChannels() ([]Channel, error) {
 	return []Channel{}, nil
 }
 
-func (d *ZbotDatabaseMock) GetChannel(channel string) (Channel, error) {
+// GetChannel returns d.Channel, defaulting to a channel with ID 1 when unset.
+func (d *ZbotDatabaseMock) GetChannel(telegramID int64) (Channel, error) {
 	if d.Error {
 		return Channel{}, errors.New("mock")
 	}
-	return Channel{Name: channel}, nil
+	if d.Channel.ID == 0 {
+		return Channel{ID: 1, TelegramID: telegramID, Name: "mock", LearnEnabled: true, ExternalEnabled: true}, nil
+	}
+	return d.Channel, nil
 }

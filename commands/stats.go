@@ -31,7 +31,7 @@ func (handler *StatsCommand) ProcessText(text string, user user.User, channelID 
 		if checkLearnCommandOnChannel(channelName) {
 			return "", ErrLearnDisabledChannel
 		}
-		statTotal, err := handler.Db.Statistics(channelName)
+		statTotal, err := handler.Db.Statistics(uint(channelID))
 		if err != nil {
 			slog.Error("statistics error", "err", err)
 			return "", db.ErrInternalError

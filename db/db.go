@@ -9,14 +9,13 @@ import (
 // Definition struct
 type Definition struct {
 	// gorm.Model
-	ID      uint
-	Term    string `gorm:"uniqueIndex"`
-	Meaning string
-	Author  string
-	// Date    string
-	Chat string
-	Hits uint
-	Link sql.NullInt32
+	ID        uint   `gorm:"primaryKey"`
+	Term      string `gorm:"uniqueIndex:idx_term_channel"`
+	Meaning   string
+	Author    string
+	ChannelID uint `gorm:"uniqueIndex:idx_term_channel"`
+	Hits      uint
+	Link      sql.NullInt32
 
 	CreatedAt int64 `gorm:"autoCreateTime"`
 	UpdatedAt int64 `gorm:"autoCreateTime;autoUpdateTime"`
@@ -35,12 +34,13 @@ type UserIgnore struct {
 	ChannelID  uint
 }
 
-// Channel
+// Channel is a Telegram chat the bot operates in.
 type Channel struct {
-	ID              uint `gorm:"primaryKey"`
+	ID              uint  `gorm:"primaryKey"`
+	TelegramID      int64 `gorm:"uniqueIndex"`
 	Name            string
-	LearnEnabled    bool  `grom:"default:true"`
-	ExternalEnabled bool  `grom:"default:true"`
+	LearnEnabled    bool  `gorm:"default:true"`
+	ExternalEnabled bool  `gorm:"default:true"`
 	CreatedAt       int64 `gorm:"autoCreateTime"`
 }
 
@@ -51,17 +51,18 @@ type ZbotDatabase interface {
 	GetConnectionInfo() string
 	Init() error
 	Close()
-	Statistics(string) (string, error)
-	Last(string, int) ([]Definition, error)
-	Append(Definition, string) error
-	Top(string, int) ([]Definition, error)
-	Rand(string, int) ([]Definition, error)
-	Get(string, string) (Definition, error)
+	// Definition methods are scoped by Channel.ID.
+	Statistics(channelID uint) (string, error)
+	Last(channelID uint, limit int) ([]Definition, error)
+	Append(Definition) error
+	Top(channelID uint, limit int) ([]Definition, error)
+	Rand(channelID uint, limit int) ([]Definition, error)
+	Get(term string, channelID uint) (Definition, error)
 	Set(Definition) (string, error)
 	_set(string, Definition) error
-	Find(string, string, int) ([]Definition, error)
-	Search(string, string, int) ([]Definition, error)
-	Forget(Definition, string) error
+	Find(criteria string, channelID uint, limit int) ([]Definition, error)
+	Search(criteria string, channelID uint, limit int) ([]Definition, error)
+	Forget(Definition) error
 	UserLevel(string) (string, error)
 	//UserIgnoreInsert ignore username for durationSeconds, recording who requested it and on which chat
 	UserIgnoreInsert(string, int, string, uint) error
@@ -70,14 +71,14 @@ type ZbotDatabase interface {
 	UserCleanupIgnorelist() error
 	UserIgnoreList() ([]UserIgnore, error)
 
-	Lock(Definition, string) error
+	Lock(Definition) error
 	IncreaseHits(uint) error
 
-	// Channel
-	AddChannel(string) error            // Add a new channel to the database
-	RemoveChannel(string) (bool, error) // Remove channel from database
-	ListChannels() ([]Channel, error)   // List all channels in database
-	GetChannel(string) (Channel, error) // Get channel information
+	// Channel methods are keyed by the Telegram chat ID.
+	AddChannel(telegramID int64, name string) error
+	RemoveChannel(telegramID int64) (bool, error)
+	ListChannels() ([]Channel, error)
+	GetChannel(telegramID int64) (Channel, error)
 	// DisableLearn(string) (string, error) // Disable learning for a channel
 	// IsLearnEnabled(string) (bool, error) // Check if learning is enabled for a channel
 }

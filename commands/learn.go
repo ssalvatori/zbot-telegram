@@ -37,7 +37,7 @@ func (handler *LearnCommand) ProcessText(text string, user user.User, channelID 
 			Meaning: term[2],
 			Author:  fmt.Sprintf("%s!%s@telegram.bot", user.Username, user.Ident),
 			// Date:    nowDate,
-			Chat: channelName,
+			ChannelID: uint(channelID),
 		}
 		usedTerm, err := handler.Db.Set(def)
 		if err != nil {

@@ -12,6 +12,9 @@ import (
 // testFlags is applied to every bot created with newTestBot. Tests mutate it before building.
 var testFlags Flags
 
+// testChannel is the resolved channel handed to cmdProcessing in tests.
+var testChannel = db.Channel{ID: 1, TelegramID: -1, Name: "test_chat", LearnEnabled: true, ExternalEnabled: true}
+
 func newTestBot(d db.ZbotDatabase) *Bot {
 	return newTestBotWithConfig(d, Config{})
 }
@@ -57,7 +60,7 @@ func TestProcessingVersion(t *testing.T) {
 			Title: "testgroup",
 		},
 	}
-	result := newTestBot(dbMock).cmdProcessing(botMsg, "test_chat", false)
+	result := newTestBot(dbMock).cmdProcessing(botMsg, testChannel, false)
 	assert.Equal(t, "zbot golang version ["+version+"] commit [undefined] build-time ["+buildTime+"]", result, "!version default")
 }
 
@@ -78,7 +81,7 @@ func TestProcessingStats(t *testing.T) {
 			Title: "testgroup",
 		},
 	}
-	result := newTestBot(dbMock).cmdProcessing(botMsg, "test_chat", false)
+	result := newTestBot(dbMock).cmdProcessing(botMsg, testChannel, false)
 	assert.Equal(t, "Number of definitions: 666", result, "!stats")
 }
 
@@ -99,7 +102,7 @@ func TestProcessingPing(t *testing.T) {
 			Title: "testgroup",
 		},
 	}
-	result := newTestBot(dbMock).cmdProcessing(botMsg, "test_chat", false)
+	result := newTestBot(dbMock).cmdProcessing(botMsg, testChannel, false)
 	assert.Equal(t, result, "pong!!", "!ping")
 }
 
@@ -110,7 +113,7 @@ func TestProcessingRand(t *testing.T) {
 	}
 
 	botMsg := tele.Message{Text: "!rand", Sender: &tele.User{Username: "zbot_test"}, Chat: &tele.Chat{Type: "private"}}
-	result := newTestBot(dbMock).cmdProcessing(botMsg, "test_chat", false)
+	result := newTestBot(dbMock).cmdProcessing(botMsg, testChannel, false)
 	assert.Equal(t, "[hola] - [gatolinux]", result, "!rand")
 }
 
@@ -124,7 +127,7 @@ func TestProcessingGet(t *testing.T) {
 	}
 
 	botMsg := tele.Message{Text: "? hola", Sender: &tele.User{Username: "zbot_test"}, Chat: &tele.Chat{Type: "private"}}
-	result := newTestBot(dbMock).cmdProcessing(botMsg, "test_chat", false)
+	result := newTestBot(dbMock).cmdProcessing(botMsg, testChannel, false)
 	assert.Equal(t, result, "[hola] - [foo bar!]", "? def fail")
 
 }
@@ -139,7 +142,7 @@ func TestProcessingFind(t *testing.T) {
 	}
 
 	botMsg := tele.Message{Text: "!find hola", Sender: &tele.User{Username: "zbot_test"}, Chat: &tele.Chat{Type: "private"}}
-	result := newTestBot(dbMock).cmdProcessing(botMsg, "test_chat", false)
+	result := newTestBot(dbMock).cmdProcessing(botMsg, testChannel, false)
 	assert.Equal(t, result, "hola", "!find fail")
 }
 
@@ -156,7 +159,7 @@ func TestProcessingSearch(t *testing.T) {
 	}
 
 	botMsg := tele.Message{Text: "!search hola", Sender: &tele.User{Username: "zbot_test"}, Chat: &tele.Chat{Type: "private"}}
-	result := newTestBot(dbMock).cmdProcessing(botMsg, "test_chat", false)
+	result := newTestBot(dbMock).cmdProcessing(botMsg, testChannel, false)
 	assert.Equal(t, "hola chao foobar", result, "!rand")
 }
 
@@ -177,7 +180,7 @@ func TestProcessingUserLevel(t *testing.T) {
 		Sender: &tele.User{FirstName: "ssalvato", Username: "ssalvato"},
 		Chat:   &tele.Chat{Type: "private"},
 	}
-	result := newTestBot(dbMock).cmdProcessing(botMsg, "test_chat", false)
+	result := newTestBot(dbMock).cmdProcessing(botMsg, testChannel, false)
 	assert.Equal(t, "ssalvato level 666", result, "!level self user")
 }
 
@@ -201,7 +204,7 @@ func TestProcessingUserIgnoreList(t *testing.T) {
 		Sender: &tele.User{FirstName: "ssalvato", Username: "ssalvato"},
 		Chat:   &tele.Chat{Type: "private"},
 	}
-	result := newTestBot(dbMock).cmdProcessing(botMsg, "test_chat", false)
+	result := newTestBot(dbMock).cmdProcessing(botMsg, testChannel, false)
 	assert.Equal(t, "[ @ssalvato ] since [1970-01-01 00:20:31 +0000 UTC] until [1970-01-01 01:16:04 +0000 UTC]", result, "!ignore list")
 }
 
@@ -223,7 +226,7 @@ func TestProcessingUserIgnoreInsert(t *testing.T) {
 		Sender: &tele.User{FirstName: "ssalvatori", Username: "ssalvatori"},
 		Chat:   &tele.Chat{Type: "private"},
 	}
-	result := newTestBot(dbMock).cmdProcessing(botMsg, "test_chat", false)
+	result := newTestBot(dbMock).cmdProcessing(botMsg, testChannel, false)
 	assert.Equal(t, "User [rigo] ignored for 5 minutes", result, "!ignore add OK")
 
 	botMsg = tele.Message{
@@ -231,7 +234,7 @@ func TestProcessingUserIgnoreInsert(t *testing.T) {
 		Sender: &tele.User{FirstName: "ssalvatori", Username: "ssalvatori"},
 		Chat:   &tele.Chat{Type: "private"},
 	}
-	result = newTestBot(dbMock).cmdProcessing(botMsg, "test_chat", false)
+	result = newTestBot(dbMock).cmdProcessing(botMsg, testChannel, false)
 	assert.Equal(t, "You can't ignore yourself", result, "!ignore add myself")
 
 }
@@ -255,7 +258,7 @@ func TestProcessingLearnReplyTo(t *testing.T) {
 		},
 		Chat: &tele.Chat{Type: "private"},
 	}
-	result := newTestBot(dbMock).cmdProcessing(botMsg, "test_chat", false)
+	result := newTestBot(dbMock).cmdProcessing(botMsg, testChannel, false)
 
 	assert.Equal(t, "[arg1] - [otheruser message in reply-to]", result, "!learn with replayto")
 }
@@ -282,7 +285,7 @@ func TestMessageProcessing(t *testing.T) {
 		Chat: &tele.Chat{Type: "private"},
 	}
 
-	result := newTestBot(dbMock).cmdProcessing(botMsg, "test_chat", false)
+	result := newTestBot(dbMock).cmdProcessing(botMsg, testChannel, false)
 
 	assert.Equal(t, "[arg1] - [otheruser message in reply-to]", result, "!learn with replayto")
 }
@@ -307,11 +310,24 @@ func TestMessagesProcessingIgnoredUser(t *testing.T) {
 				Username: "otheruser",
 			},
 		},
-		Chat: &tele.Chat{Type: "private"},
+		Chat: &tele.Chat{Type: "group", ID: -1, Title: "test_chat"},
 	}
 
-	result := newTestBot(dbMock).messagesProcessing(&botMsg, "test_chat")
+	result := newTestBot(dbMock).messagesProcessing(&botMsg)
 	assert.Equal(t, "", result, "!learn ignored")
+}
+
+func TestMessagesProcessingChannelNotFound(t *testing.T) {
+	dbMock := &db.ZbotDatabaseMock{Error: true}
+	testFlags.Ignore = false
+
+	botMsg := tele.Message{
+		Text:   "!ping",
+		Sender: &tele.User{Username: "ssalvatori"},
+		Chat:   &tele.Chat{Type: "group", ID: -1, Title: "unknown"},
+	}
+	result := newTestBot(dbMock).messagesProcessing(&botMsg)
+	assert.Equal(t, "", result, "unknown channel is dropped")
 }
 
 func TestProcessingNotEnoughPermissions(t *testing.T) {
@@ -335,10 +351,10 @@ func TestProcessingNotEnoughPermissions(t *testing.T) {
 				Username: "otheruser",
 			},
 		},
-		Chat: &tele.Chat{Type: "private"},
+		Chat: &tele.Chat{Type: "group", ID: -1, Title: "test_chat"},
 	}
 
-	result := newTestBot(dbMock).messagesProcessing(&botMsg, "test_chat")
+	result := newTestBot(dbMock).messagesProcessing(&botMsg)
 	assert.Equal(t, "Your level is not enough < 1000", result, "Not enough permissions to use a command")
 }
 
@@ -404,9 +420,9 @@ func TestMessagesProcessingNoMatch(t *testing.T) {
 	botMsg := tele.Message{
 		Text:   "just a plain message",
 		Sender: &tele.User{Username: "ssalvatori"},
-		Chat:   &tele.Chat{Type: "group"},
+		Chat:   &tele.Chat{Type: "group", ID: -1, Title: "testchat"},
 	}
-	result := newTestBot(dbMock).messagesProcessing(&botMsg, "testchat")
+	result := newTestBot(dbMock).messagesProcessing(&botMsg)
 	assert.Equal(t, "", result)
 }
 
@@ -442,53 +458,56 @@ type addedToGroupCtx struct {
 	sent   string
 }
 
-func (m *addedToGroupCtx) Bot() tele.API                                                { return nil }
-func (m *addedToGroupCtx) Update() tele.Update                                          { return tele.Update{} }
-func (m *addedToGroupCtx) Message() *tele.Message                                       { return m.msg }
-func (m *addedToGroupCtx) Callback() *tele.Callback                                     { return nil }
-func (m *addedToGroupCtx) Query() *tele.Query                                           { return nil }
-func (m *addedToGroupCtx) InlineResult() *tele.InlineResult                             { return nil }
-func (m *addedToGroupCtx) ShippingQuery() *tele.ShippingQuery                           { return nil }
-func (m *addedToGroupCtx) PreCheckoutQuery() *tele.PreCheckoutQuery                     { return nil }
-func (m *addedToGroupCtx) Payment() *tele.Payment                                       { return nil }
-func (m *addedToGroupCtx) Poll() *tele.Poll                                             { return nil }
-func (m *addedToGroupCtx) PollAnswer() *tele.PollAnswer                                 { return nil }
-func (m *addedToGroupCtx) ChatMember() *tele.ChatMemberUpdate                           { return nil }
-func (m *addedToGroupCtx) ChatJoinRequest() *tele.ChatJoinRequest                       { return nil }
-func (m *addedToGroupCtx) Migration() (int64, int64)                                    { return 0, 0 }
-func (m *addedToGroupCtx) Topic() *tele.Topic                                           { return nil }
-func (m *addedToGroupCtx) Boost() *tele.BoostUpdated                                    { return nil }
-func (m *addedToGroupCtx) BoostRemoved() *tele.BoostRemoved                             { return nil }
-func (m *addedToGroupCtx) PurchasedPaidMedia() *tele.PaidMediaPurchased                 { return nil }
-func (m *addedToGroupCtx) Sender() *tele.User                                           { return m.sender }
-func (m *addedToGroupCtx) Chat() *tele.Chat                                             { return m.chat }
-func (m *addedToGroupCtx) Recipient() tele.Recipient                                    { return m.chat }
-func (m *addedToGroupCtx) Text() string                                                 { return "" }
-func (m *addedToGroupCtx) ThreadID() int                                                { return 0 }
-func (m *addedToGroupCtx) Entities() tele.Entities                                      { return nil }
-func (m *addedToGroupCtx) Data() string                                                 { return "" }
-func (m *addedToGroupCtx) Args() []string                                               { return nil }
-func (m *addedToGroupCtx) Send(what interface{}, opts ...interface{}) error              { m.sent = what.(string); return nil }
-func (m *addedToGroupCtx) SendAlbum(a tele.Album, opts ...interface{}) error            { return nil }
-func (m *addedToGroupCtx) Reply(what interface{}, opts ...interface{}) error            { return nil }
-func (m *addedToGroupCtx) Forward(msg tele.Editable, opts ...interface{}) error          { return nil }
-func (m *addedToGroupCtx) ForwardTo(to tele.Recipient, opts ...interface{}) error        { return nil }
-func (m *addedToGroupCtx) Edit(what interface{}, opts ...interface{}) error             { return nil }
-func (m *addedToGroupCtx) EditCaption(caption string, opts ...interface{}) error        { return nil }
-func (m *addedToGroupCtx) EditOrSend(what interface{}, opts ...interface{}) error       { return nil }
-func (m *addedToGroupCtx) EditOrReply(what interface{}, opts ...interface{}) error      { return nil }
-func (m *addedToGroupCtx) Delete() error                                                { return nil }
-func (m *addedToGroupCtx) DeleteAfter(d time.Duration) *time.Timer                      { return nil }
-func (m *addedToGroupCtx) Notify(action tele.ChatAction) error                          { return nil }
-func (m *addedToGroupCtx) Ship(what ...interface{}) error                               { return nil }
-func (m *addedToGroupCtx) Accept(errorMessage ...string) error                          { return nil }
-func (m *addedToGroupCtx) Answer(resp *tele.QueryResponse) error                        { return nil }
-func (m *addedToGroupCtx) AnswerGuest(result tele.Result) error                         { return nil }
-func (m *addedToGroupCtx) Respond(resp ...*tele.CallbackResponse) error                 { return nil }
-func (m *addedToGroupCtx) RespondText(text string) error                                { return nil }
-func (m *addedToGroupCtx) RespondAlert(text string) error                               { return nil }
-func (m *addedToGroupCtx) Get(key string) interface{}                                   { return nil }
-func (m *addedToGroupCtx) Set(key string, val interface{})                              {}
+func (m *addedToGroupCtx) Bot() tele.API                                { return nil }
+func (m *addedToGroupCtx) Update() tele.Update                          { return tele.Update{} }
+func (m *addedToGroupCtx) Message() *tele.Message                       { return m.msg }
+func (m *addedToGroupCtx) Callback() *tele.Callback                     { return nil }
+func (m *addedToGroupCtx) Query() *tele.Query                           { return nil }
+func (m *addedToGroupCtx) InlineResult() *tele.InlineResult             { return nil }
+func (m *addedToGroupCtx) ShippingQuery() *tele.ShippingQuery           { return nil }
+func (m *addedToGroupCtx) PreCheckoutQuery() *tele.PreCheckoutQuery     { return nil }
+func (m *addedToGroupCtx) Payment() *tele.Payment                       { return nil }
+func (m *addedToGroupCtx) Poll() *tele.Poll                             { return nil }
+func (m *addedToGroupCtx) PollAnswer() *tele.PollAnswer                 { return nil }
+func (m *addedToGroupCtx) ChatMember() *tele.ChatMemberUpdate           { return nil }
+func (m *addedToGroupCtx) ChatJoinRequest() *tele.ChatJoinRequest       { return nil }
+func (m *addedToGroupCtx) Migration() (int64, int64)                    { return 0, 0 }
+func (m *addedToGroupCtx) Topic() *tele.Topic                           { return nil }
+func (m *addedToGroupCtx) Boost() *tele.BoostUpdated                    { return nil }
+func (m *addedToGroupCtx) BoostRemoved() *tele.BoostRemoved             { return nil }
+func (m *addedToGroupCtx) PurchasedPaidMedia() *tele.PaidMediaPurchased { return nil }
+func (m *addedToGroupCtx) Sender() *tele.User                           { return m.sender }
+func (m *addedToGroupCtx) Chat() *tele.Chat                             { return m.chat }
+func (m *addedToGroupCtx) Recipient() tele.Recipient                    { return m.chat }
+func (m *addedToGroupCtx) Text() string                                 { return "" }
+func (m *addedToGroupCtx) ThreadID() int                                { return 0 }
+func (m *addedToGroupCtx) Entities() tele.Entities                      { return nil }
+func (m *addedToGroupCtx) Data() string                                 { return "" }
+func (m *addedToGroupCtx) Args() []string                               { return nil }
+func (m *addedToGroupCtx) Send(what interface{}, opts ...interface{}) error {
+	m.sent = what.(string)
+	return nil
+}
+func (m *addedToGroupCtx) SendAlbum(a tele.Album, opts ...interface{}) error       { return nil }
+func (m *addedToGroupCtx) Reply(what interface{}, opts ...interface{}) error       { return nil }
+func (m *addedToGroupCtx) Forward(msg tele.Editable, opts ...interface{}) error    { return nil }
+func (m *addedToGroupCtx) ForwardTo(to tele.Recipient, opts ...interface{}) error  { return nil }
+func (m *addedToGroupCtx) Edit(what interface{}, opts ...interface{}) error        { return nil }
+func (m *addedToGroupCtx) EditCaption(caption string, opts ...interface{}) error   { return nil }
+func (m *addedToGroupCtx) EditOrSend(what interface{}, opts ...interface{}) error  { return nil }
+func (m *addedToGroupCtx) EditOrReply(what interface{}, opts ...interface{}) error { return nil }
+func (m *addedToGroupCtx) Delete() error                                           { return nil }
+func (m *addedToGroupCtx) DeleteAfter(d time.Duration) *time.Timer                 { return nil }
+func (m *addedToGroupCtx) Notify(action tele.ChatAction) error                     { return nil }
+func (m *addedToGroupCtx) Ship(what ...interface{}) error                          { return nil }
+func (m *addedToGroupCtx) Accept(errorMessage ...string) error                     { return nil }
+func (m *addedToGroupCtx) Answer(resp *tele.QueryResponse) error                   { return nil }
+func (m *addedToGroupCtx) AnswerGuest(result tele.Result) error                    { return nil }
+func (m *addedToGroupCtx) Respond(resp ...*tele.CallbackResponse) error            { return nil }
+func (m *addedToGroupCtx) RespondText(text string) error                           { return nil }
+func (m *addedToGroupCtx) RespondAlert(text string) error                          { return nil }
+func (m *addedToGroupCtx) Get(key string) interface{}                              { return nil }
+func (m *addedToGroupCtx) Set(key string, val interface{})                         {}
 
 func TestHandleAddedToGroupAdmin(t *testing.T) {
 	dbMock := &db.ZbotDatabaseMock{}

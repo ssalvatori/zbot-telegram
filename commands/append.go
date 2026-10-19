@@ -33,18 +33,18 @@ func (handler *AppendCommand) ProcessText(text string, user user.User, channelID
 		}
 		term := commandPattern.FindStringSubmatch(text)
 		def := db.Definition{
-			Term:    term[1],
-			Meaning: term[2],
-			Author:  fmt.Sprintf("%s!%s@telegram.bot", user.Username, user.Ident),
-			Chat:    channelName,
+			Term:      term[1],
+			Meaning:   term[2],
+			Author:    fmt.Sprintf("%s!%s@telegram.bot", user.Username, user.Ident),
+			ChannelID: uint(channelID),
 		}
-		err := handler.Db.Append(def, channelName)
+		err := handler.Db.Append(def)
 		if err != nil {
 			slog.Error("append error", "err", err)
 			return "", ErrInternalError
 		}
 
-		def, err = handler.Db.Get(def.Term, channelName)
+		def, err = handler.Db.Get(def.Term, uint(channelID))
 		if err != nil {
 			slog.Error("get after append error", "err", err)
 			return "", ErrInternalError

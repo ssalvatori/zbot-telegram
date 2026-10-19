@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/ssalvatori/zbot-telegram/db"
-	"go.yaml.in/yaml/v4"
+	"go.yaml.in/yaml/v3"
 )
 
 // Configuration contains the settings loaded from the bot configuration file.

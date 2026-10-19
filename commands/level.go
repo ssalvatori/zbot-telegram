@@ -41,8 +41,8 @@ func (handler *LevelCommand) GetLevel(user string) (string, error) {
 	return fmt.Sprintf("%s level %s", user, level), nil
 }
 
-// PaserCommand identify user to check levels
-func (handler *LevelCommand) PaserCommand(cmd string, user string) map[string]string {
+// ParseCommand identifies the user and subcommand in a level command.
+func (handler *LevelCommand) ParseCommand(cmd string, user string) map[string]string {
 
 	res := make(map[string]string)
 	parsed := strings.Fields(cmd)
@@ -88,7 +88,7 @@ func (handler *LevelCommand) ProcessText(text string, user user.User, channelID 
 	var err error
 
 	if commandPattern.MatchString(text) {
-		parsedCmd := handler.PaserCommand(text, user.Username)
+		parsedCmd := handler.ParseCommand(text, user.Username)
 		switch parsedCmd["subcommand"] {
 		case "add":
 			level, _ := strconv.Atoi(parsedCmd["level"])

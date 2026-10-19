@@ -264,11 +264,20 @@ func (b *Bot) handleExternalModule(c tele.Context) error {
 }
 
 func (b *Bot) handleText(c tele.Context) error {
+
+	slog.Debug("processing message from", "user", c.Sender())
+
 	if c.Message().Private() {
+
+		if b.IsAdmin(c.Sender().Username) {
+			slog.Debug("admin message received", "user", c.Sender().Username)
+
+		}
+
 		return nil
 	}
 
-	response := b.messagesProcessing(c.Message(), c.Chat().Title)
+	response := b.messagesProcessing(c.Message())
 	if response == "" {
 		return nil
 	}
@@ -300,6 +309,7 @@ func (b *Bot) handleAddedToGroup(c tele.Context) error {
 	}
 
 	slog.Debug("added to group", "chat", c.Chat().Title, "id", c.Chat().ID, "inviter", inviter)
+	b.db.AddChannel(c.Chat().ID, c.Chat().Title)
 	b.channels.Track(*c.Chat())
 	return nil
 }
@@ -348,14 +358,20 @@ func (b *Bot) runExternalModule(message *tele.Message) string {
 }
 
 // messagesProcessing decides whether a message is a command for the bot and runs it.
-func (b *Bot) messagesProcessing(message *tele.Message, channelName string) string {
+func (b *Bot) messagesProcessing(message *tele.Message) string {
 
-	slog.Debug("message", "chat", message.Chat, "text", message.Text)
+	slog.Debug("message", "chat", message, "text", message.Text)
 
-	private := message.Chat.Type == "private" && channelName == ""
+	private := message.Chat.Type == "private"
 	username := strings.ToLower(message.Sender.Username)
 
-	if b.ignoreMessage(username, channelName) {
+	channel, err := b.resolveChannel(message.Chat)
+	if err != nil {
+		slog.Error("resolve channel error", "chat", message.Chat.ID, "title", message.Chat.Title, "err", err)
+		return ""
+	}
+
+	if b.ignoreMessage(username, channel.ID) {
 		slog.Debug("message ignored", "user", username)
 		return ""
 	}
@@ -365,25 +381,28 @@ func (b *Bot) messagesProcessing(message *tele.Message, channelName string) stri
 	}
 
 	slog.Debug("received command", "user", username, "text", message.Text)
-	return b.cmdProcessing(*message, channelName, private)
+	return b.cmdProcessing(*message, channel, private)
 }
 
-// ignoreMessage check if the message should be ignore base on the username and channelName, if the ignore flag is disable we don't ignore any messages.
-func (b *Bot) ignoreMessage(username string, channelName string) bool {
+// resolveChannel looks up the stored channel for a Telegram chat by its ID.
+func (b *Bot) resolveChannel(chat *tele.Chat) (db.Channel, error) {
+	if chat == nil {
+		return db.Channel{}, errors.New("message has no chat")
+	}
+	return b.db.GetChannel(chat.ID)
+}
+
+// ignoreMessage check if the message should be ignore base on the username and channel, if the ignore flag is disable we don't ignore any messages.
+func (b *Bot) ignoreMessage(username string, channelID uint) bool {
 	if !b.cfg.Flags.Ignore {
 		slog.Debug("ignore flag is disabled, not ignoring messages")
 		return false
 	}
-	channel, err := b.db.GetChannel(channelName)
-	if err != nil {
-		slog.Error("get channel error", "err", err)
-		return false
-	}
-	return b.db.UserCheckIgnore(username, channel.ID)
+	return b.db.UserCheckIgnore(username, channelID)
 }
 
 // cmdProcessing runs a command message through the command chain.
-func (b *Bot) cmdProcessing(msg tele.Message, channelName string, private bool) string {
+func (b *Bot) cmdProcessing(msg tele.Message, channel db.Channel, private bool) string {
 
 	commandName := command.GetCommandInformation(msg.Text)
 
@@ -404,13 +423,6 @@ func (b *Bot) cmdProcessing(msg tele.Message, channelName string, private bool) 
 	messageString := msg.Text
 	if msg.ReplyTo != nil {
 		messageString = fmt.Sprintf("%s %s %s", messageString, msg.ReplyTo.Sender.Username, msg.ReplyTo.Text)
-	}
-
-	channel, err := b.db.GetChannel(channelName)
-
-	if err != nil {
-		slog.Error("get channel error", "err", err)
-		return ""
 	}
 
 	return b.commands.Run(commandName, messageString, u, int(channel.ID), channel.Name, private)

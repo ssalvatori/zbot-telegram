@@ -31,9 +31,10 @@ func (handler *ForgetCommand) ProcessText(text string, user user.User, channelID
 		}
 		term := commandPattern.FindStringSubmatch(text)
 		def := db.Definition{
-			Term: term[1],
+			Term:      term[1],
+			ChannelID: uint(channelID),
 		}
-		err := handler.Db.Forget(def, channelName)
+		err := handler.Db.Forget(def)
 		if err != nil {
 			return "", ErrInternalError
 		}

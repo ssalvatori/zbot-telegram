@@ -15,4 +15,6 @@ var (
 	ErrNoEngine = errors.New("no database engine selected")
 	//ErrUnsupportedEngine the configured database engine is not implemented
 	ErrUnsupportedEngine = errors.New("unsupported database engine")
+	//ErrTermCollisionLimit no unique term could be found within the retry limit
+	ErrTermCollisionLimit = errors.New("term collision retry limit reached")
 )

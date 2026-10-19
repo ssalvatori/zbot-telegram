@@ -35,7 +35,7 @@ func (handler *GetCommand) ProcessText(text string, user user.User, channelID in
 			return "", ErrLearnDisabledChannel
 		}
 		term := commandPattern.FindStringSubmatch(text)
-		definition, err := handler.Db.Get(strings.ToLower(term[1]), channelName)
+		definition, err := handler.Db.Get(strings.ToLower(term[1]), uint(channelID))
 		if err != nil {
 			if errors.Is(err, db.ErrNotFound) {
 				return fmt.Sprintf("[%s] Not found!", term[1]), nil

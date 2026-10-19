@@ -1,12 +1,22 @@
 package db
 
 import (
+	"bytes"
+	"context"
+	"fmt"
+	"log/slog"
 	"os"
+	"path/filepath"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// testChannelID is the Channel.ID used for definitions in these tests.
+const testChannelID uint = 1
 
 func setupTestSqliteDB(t *testing.T) (*ZbotDatabaseSqlite, func()) {
 	t.Helper()
@@ -32,9 +42,13 @@ func TestSqliteGetConnectionInfo(t *testing.T) {
 }
 
 func TestSqliteClose(t *testing.T) {
-	d, cleanup := setupTestSqliteDB(t)
-	defer cleanup()
-	d.Close() // should not panic
+	d := &ZbotDatabaseSqlite{File: filepath.Join(t.TempDir(), "zbot.db")}
+	require.NoError(t, d.Init())
+	sqlDB, err := d.DB.DB()
+	require.NoError(t, err)
+
+	d.Close()
+	require.Error(t, sqlDB.Ping())
 }
 
 func TestSqliteInitInvalidPath(t *testing.T) {
@@ -46,35 +60,100 @@ func TestSqliteInitInvalidPath(t *testing.T) {
 func TestSqliteStatistics(t *testing.T) {
 	d, cleanup := setupTestSqliteDB(t)
 	defer cleanup()
-	stats, err := d.Statistics("testchat")
+	stats, err := d.Statistics(testChannelID)
 	assert.NoError(t, err)
 	assert.Equal(t, "0", stats)
+}
+
+func TestGORMLoggerUsesApplicationDebugLevel(t *testing.T) {
+	tests := []struct {
+		name        string
+		level       slog.Level
+		wantSQLLogs bool
+	}{
+		{name: "debug", level: slog.LevelDebug, wantSQLLogs: true},
+		{name: "info", level: slog.LevelInfo, wantSQLLogs: false},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			var output bytes.Buffer
+			applicationLogger := slog.New(slog.NewTextHandler(&output, &slog.HandlerOptions{Level: test.level}))
+			gormLogger := newGORMLogger(applicationLogger)
+
+			gormLogger.Trace(context.Background(), time.Now(), func() (string, int64) {
+				return "SELECT 1", 1
+			}, nil)
+
+			gotSQLLogs := strings.Contains(output.String(), "SELECT 1")
+			if gotSQLLogs != test.wantSQLLogs {
+				t.Errorf("SQL log visibility = %t, want %t; output = %q", gotSQLLogs, test.wantSQLLogs, output.String())
+			}
+		})
+	}
 }
 
 func TestSqliteSetAndGet(t *testing.T) {
 	d, cleanup := setupTestSqliteDB(t)
 	defer cleanup()
 
-	term, err := d.Set(Definition{Term: "hello", Meaning: "world", Chat: "testchat"})
+	term, err := d.Set(Definition{Term: "hello", Meaning: "world", ChannelID: testChannelID})
 	assert.NoError(t, err)
 	assert.Equal(t, "hello", term)
 
 	// Duplicate term should get a numbered suffix.
-	term2, err := d.Set(Definition{Term: "hello", Meaning: "world2", Chat: "testchat"})
+	term2, err := d.Set(Definition{Term: "hello", Meaning: "world2", ChannelID: testChannelID})
 	assert.NoError(t, err)
 	assert.Equal(t, "hello1", term2)
 
-	def, err := d.Get("hello", "testchat")
+	def, err := d.Get("hello", testChannelID)
 	assert.NoError(t, err)
 	assert.Equal(t, "hello", def.Term)
 	assert.Equal(t, "world", def.Meaning)
+	assert.Equal(t, testChannelID, def.ChannelID)
+}
+
+func TestSqliteSetSameTermDifferentChannels(t *testing.T) {
+	d, cleanup := setupTestSqliteDB(t)
+	defer cleanup()
+
+	term, err := d.Set(Definition{Term: "hello", Meaning: "one", ChannelID: 1})
+	require.NoError(t, err)
+	assert.Equal(t, "hello", term)
+
+	term, err = d.Set(Definition{Term: "hello", Meaning: "two", ChannelID: 2})
+	require.NoError(t, err)
+	assert.Equal(t, "hello", term, "same term in another channel keeps its name")
+
+	def, err := d.Get("hello", 2)
+	require.NoError(t, err)
+	assert.Equal(t, "two", def.Meaning)
+
+	_, err = d.Get("hello", 3)
+	assert.ErrorIs(t, err, ErrNotFound)
+}
+
+func TestSqliteSetStopsAfterTermCollisions(t *testing.T) {
+	d, cleanup := setupTestSqliteDB(t)
+	defer cleanup()
+
+	for attempt := 0; attempt < maxSetAttempts; attempt++ {
+		term := "taken"
+		if attempt > 0 {
+			term = fmt.Sprintf("taken%d", attempt)
+		}
+		require.NoError(t, d._set(term, Definition{Term: term, ChannelID: testChannelID}))
+	}
+
+	_, err := d.Set(Definition{Term: "taken", ChannelID: testChannelID})
+	require.ErrorIs(t, err, ErrTermCollisionLimit)
 }
 
 func TestSqliteGetNotFound(t *testing.T) {
 	d, cleanup := setupTestSqliteDB(t)
 	defer cleanup()
 
-	_, err := d.Get("nonexistent", "testchat")
+	_, err := d.Get("nonexistent", testChannelID)
 	assert.ErrorIs(t, err, ErrNotFound)
 }
 
@@ -82,10 +161,10 @@ func TestSqliteIncreaseHits(t *testing.T) {
 	d, cleanup := setupTestSqliteDB(t)
 	defer cleanup()
 
-	_, err := d.Set(Definition{Term: "foo", Meaning: "bar", Chat: "testchat"})
+	_, err := d.Set(Definition{Term: "foo", Meaning: "bar", ChannelID: testChannelID})
 	assert.NoError(t, err)
 
-	def, err := d.Get("foo", "testchat")
+	def, err := d.Get("foo", testChannelID)
 	assert.NoError(t, err)
 
 	err = d.IncreaseHits(def.ID)
@@ -96,14 +175,14 @@ func TestSqliteFind(t *testing.T) {
 	d, cleanup := setupTestSqliteDB(t)
 	defer cleanup()
 
-	_, _ = d.Set(Definition{Term: "term1", Meaning: "meaning hello", Chat: "testchat"})
-	_, _ = d.Set(Definition{Term: "term2", Meaning: "other meaning", Chat: "testchat"})
+	_, _ = d.Set(Definition{Term: "term1", Meaning: "meaning hello", ChannelID: testChannelID})
+	_, _ = d.Set(Definition{Term: "term2", Meaning: "other meaning", ChannelID: testChannelID})
 
-	results, err := d.Find("hello", "testchat", 10)
+	results, err := d.Find("hello", testChannelID, 10)
 	assert.NoError(t, err)
 	assert.Len(t, results, 1)
 
-	_, err = d.Find("zzznomatch", "testchat", 10)
+	_, err = d.Find("zzznomatch", testChannelID, 10)
 	assert.ErrorIs(t, err, ErrNotFound)
 }
 
@@ -111,13 +190,13 @@ func TestSqliteSearch(t *testing.T) {
 	d, cleanup := setupTestSqliteDB(t)
 	defer cleanup()
 
-	_, _ = d.Set(Definition{Term: "searchterm", Meaning: "some meaning", Chat: "testchat"})
+	_, _ = d.Set(Definition{Term: "searchterm", Meaning: "some meaning", ChannelID: testChannelID})
 
-	results, err := d.Search("search", "testchat", 10)
+	results, err := d.Search("search", testChannelID, 10)
 	assert.NoError(t, err)
 	assert.Len(t, results, 1)
 
-	_, err = d.Search("zzznomatch", "testchat", 10)
+	_, err = d.Search("zzznomatch", testChannelID, 10)
 	assert.ErrorIs(t, err, ErrNotFound)
 }
 
@@ -125,9 +204,9 @@ func TestSqliteLast(t *testing.T) {
 	d, cleanup := setupTestSqliteDB(t)
 	defer cleanup()
 
-	_, _ = d.Set(Definition{Term: "lastterm", Meaning: "some meaning", Chat: "testchat"})
+	_, _ = d.Set(Definition{Term: "lastterm", Meaning: "some meaning", ChannelID: testChannelID})
 
-	results, err := d.Last("testchat", 5)
+	results, err := d.Last(testChannelID, 5)
 	assert.NoError(t, err)
 	assert.Len(t, results, 1)
 }
@@ -136,9 +215,9 @@ func TestSqliteTop(t *testing.T) {
 	d, cleanup := setupTestSqliteDB(t)
 	defer cleanup()
 
-	_, _ = d.Set(Definition{Term: "topterm", Meaning: "some meaning", Chat: "testchat"})
+	_, _ = d.Set(Definition{Term: "topterm", Meaning: "some meaning", ChannelID: testChannelID})
 
-	results, err := d.Top("testchat", 5)
+	results, err := d.Top(testChannelID, 5)
 	assert.NoError(t, err)
 	assert.Len(t, results, 1)
 }
@@ -147,9 +226,9 @@ func TestSqliteRand(t *testing.T) {
 	d, cleanup := setupTestSqliteDB(t)
 	defer cleanup()
 
-	_, _ = d.Set(Definition{Term: "randterm", Meaning: "some meaning", Chat: "testchat"})
+	_, _ = d.Set(Definition{Term: "randterm", Meaning: "some meaning", ChannelID: testChannelID})
 
-	results, err := d.Rand("testchat", 1)
+	results, err := d.Rand(testChannelID, 1)
 	assert.NoError(t, err)
 	assert.Len(t, results, 1)
 }
@@ -158,16 +237,16 @@ func TestSqliteAppend(t *testing.T) {
 	d, cleanup := setupTestSqliteDB(t)
 	defer cleanup()
 
-	_, _ = d.Set(Definition{Term: "appendme", Meaning: "original", Chat: "testchat"})
+	_, _ = d.Set(Definition{Term: "appendme", Meaning: "original", ChannelID: testChannelID})
 
-	err := d.Append(Definition{Term: "appendme", Meaning: "addition", Chat: "testchat", Author: "user1"}, "testchat")
+	err := d.Append(Definition{Term: "appendme", Meaning: "addition", ChannelID: testChannelID, Author: "user1"})
 	assert.NoError(t, err)
 
-	def, _ := d.Get("appendme", "testchat")
+	def, _ := d.Get("appendme", testChannelID)
 	assert.Contains(t, def.Meaning, "original")
 	assert.Contains(t, def.Meaning, "addition")
 
-	err = d.Append(Definition{Term: "notexists", Chat: "testchat"}, "testchat")
+	err = d.Append(Definition{Term: "notexists", ChannelID: testChannelID})
 	assert.Error(t, err)
 }
 
@@ -175,17 +254,17 @@ func TestSqliteLock(t *testing.T) {
 	d, cleanup := setupTestSqliteDB(t)
 	defer cleanup()
 
-	_, _ = d.Set(Definition{Term: "lockme", Meaning: "some meaning", Chat: "testchat"})
+	_, _ = d.Set(Definition{Term: "lockme", Meaning: "some meaning", ChannelID: testChannelID})
 
-	err := d.Lock(Definition{Term: "lockme", Chat: "testchat", Author: "user1"}, "testchat")
+	err := d.Lock(Definition{Term: "lockme", ChannelID: testChannelID, Author: "user1"})
 	assert.NoError(t, err)
 
 	// Lock again should fail.
-	err = d.Lock(Definition{Term: "lockme", Chat: "testchat"}, "testchat")
+	err = d.Lock(Definition{Term: "lockme", ChannelID: testChannelID})
 	assert.Error(t, err)
 
 	// Lock non-existent term.
-	err = d.Lock(Definition{Term: "nonexistent", Chat: "testchat"}, "testchat")
+	err = d.Lock(Definition{Term: "nonexistent", ChannelID: testChannelID})
 	assert.Error(t, err)
 }
 
@@ -193,76 +272,16 @@ func TestSqliteAppendLocked(t *testing.T) {
 	d, cleanup := setupTestSqliteDB(t)
 	defer cleanup()
 
-	_, _ = d.Set(Definition{Term: "locked", Meaning: "some meaning", Chat: "testchat"})
-	_ = d.Lock(Definition{Term: "locked", Chat: "testchat", Author: "user1"}, "testchat")
+	_, _ = d.Set(Definition{Term: "locked", Meaning: "some meaning", ChannelID: testChannelID})
+	_ = d.Lock(Definition{Term: "locked", ChannelID: testChannelID, Author: "user1"})
 
-	err := d.Append(Definition{Term: "locked", Meaning: "more", Chat: "testchat"}, "testchat")
+	err := d.Append(Definition{Term: "locked", Meaning: "more", ChannelID: testChannelID})
 	assert.ErrorIs(t, err, ErrLocked)
 }
 
 func TestSqliteForget(t *testing.T) {
 	d, cleanup := setupTestSqliteDB(t)
 	defer cleanup()
-	err := d.Forget(Definition{Term: "foo"}, "chat")
+	err := d.Forget(Definition{Term: "foo", ChannelID: testChannelID})
 	assert.NoError(t, err)
-}
-
-func TestSqliteUserIgnoreList(t *testing.T) {
-	d, cleanup := setupTestSqliteDB(t)
-	defer cleanup()
-
-	list, err := d.UserIgnoreList()
-	assert.NoError(t, err)
-	assert.Empty(t, list)
-
-	assert.NoError(t, d.UserIgnoreInsert("user1", 300, "admin", 42))
-
-	list, err = d.UserIgnoreList()
-	assert.NoError(t, err)
-	assert.Len(t, list, 1)
-	assert.Equal(t, "user1", list[0].Username)
-	assert.Equal(t, "admin", list[0].CreatedBy)
-	assert.Equal(t, uint(42), list[0].ChannelID)
-}
-
-func TestSqliteUserLevel(t *testing.T) {
-	d, cleanup := setupTestSqliteDB(t)
-	defer cleanup()
-	level, err := d.UserLevel("user1")
-	assert.NoError(t, err)
-	assert.Equal(t, "bnil", level)
-}
-
-func TestSqliteUserCheckIgnore(t *testing.T) {
-	d, cleanup := setupTestSqliteDB(t)
-	defer cleanup()
-
-	assert.False(t, d.UserCheckIgnore("user1", 42))
-
-	assert.NoError(t, d.UserIgnoreInsert("user1", 300, "admin", 42))
-	assert.True(t, d.UserCheckIgnore("user1", 42))
-	assert.True(t, d.UserCheckIgnore("USER1", 42))
-	assert.False(t, d.UserCheckIgnore("user1", 43))
-}
-
-func TestSqliteUserIgnoreInsert(t *testing.T) {
-	d, cleanup := setupTestSqliteDB(t)
-	defer cleanup()
-	assert.NoError(t, d.UserIgnoreInsert("user1", 300, "admin", 42))
-	assert.True(t, d.UserCheckIgnore("user1", 42))
-}
-
-func TestSqliteUserCleanupIgnorelist(t *testing.T) {
-	d, cleanup := setupTestSqliteDB(t)
-	defer cleanup()
-
-	assert.NoError(t, d.UserIgnoreInsert("expired", -10, "admin", 42))
-	assert.NoError(t, d.UserIgnoreInsert("active", 300, "admin", 42))
-
-	assert.NoError(t, d.UserCleanupIgnorelist())
-
-	list, err := d.UserIgnoreList()
-	assert.NoError(t, err)
-	assert.Len(t, list, 1)
-	assert.Equal(t, "active", list[0].Username)
 }

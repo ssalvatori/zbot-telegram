@@ -56,7 +56,7 @@ func (handler *TopCommand) ProcessText(text string, user user.User, channelID in
 			limit = TOP_MAX
 		}
 
-		items, err := handler.Db.Top(channelName, limit)
+		items, err := handler.Db.Top(uint(channelID), limit)
 		if err != nil {
 			if errors.Is(err, db.ErrNotFound) {
 				return "no results", nil

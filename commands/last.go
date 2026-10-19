@@ -39,7 +39,7 @@ func (handler *LastCommand) ProcessText(text string, user user.User, channelID i
 		if checkLearnCommandOnChannel(channelName) {
 			return "", ErrLearnDisabledChannel
 		}
-		lastItems, err := handler.Db.Last(channelName, LAST_ITEMS)
+		lastItems, err := handler.Db.Last(uint(channelID), LAST_ITEMS)
 		if err != nil {
 			slog.Error("last query error", "err", err)
 			return "", err

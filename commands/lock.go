@@ -33,10 +33,11 @@ func (handler *LockCommand) ProcessText(text string, user user.User, channelID i
 		}
 		term := commandPattern.FindStringSubmatch(text)
 		def := db.Definition{
-			Author: user.Username,
-			Term:   term[1],
+			Author:    user.Username,
+			Term:      term[1],
+			ChannelID: uint(channelID),
 		}
-		err := handler.Db.Lock(def, channelName)
+		err := handler.Db.Lock(def)
 		if err != nil {
 			slog.Error("lock error", "err", err)
 			return "", err

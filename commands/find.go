@@ -34,7 +34,7 @@ func (handler *FindCommand) ProcessText(text string, user user.User, channelID i
 			return "", ErrLearnDisabledChannel
 		}
 		term := commandPattern.FindStringSubmatch(text)
-		results, err := handler.Db.Find(term[1], channelName, findLimit)
+		results, err := handler.Db.Find(term[1], uint(channelID), findLimit)
 		if err != nil {
 			if errors.Is(err, db.ErrNotFound) {
 				return fmt.Sprintf("[%s] wasn't found in the content of any definition", term[1]), nil

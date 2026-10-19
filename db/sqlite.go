@@ -1,11 +1,11 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	"gorm.io/driver/sqlite"
@@ -21,6 +21,14 @@ type ZbotDatabaseSqlite struct {
 	File string
 }
 
+func newGORMLogger(applicationLogger *slog.Logger) logger.Interface {
+	logLevel := logger.Silent
+	if applicationLogger.Enabled(context.Background(), slog.LevelDebug) {
+		logLevel = logger.Info
+	}
+	return logger.NewSlogLogger(applicationLogger, logger.Config{LogLevel: logLevel})
+}
+
 // Engine returns the backend name
 func (d *ZbotDatabaseSqlite) Engine() string {
 	return EngineSqlite
@@ -34,16 +42,27 @@ func (d *ZbotDatabaseSqlite) GetConnectionInfo() string {
 // Close close connecttion to DB
 func (d *ZbotDatabaseSqlite) Close() {
 	slog.Debug("Closing DB connection")
+	if d.DB == nil {
+		return
+	}
+
+	sqlDB, err := d.DB.DB()
+	if err != nil {
+		slog.Error("get SQL database connection error", "err", err)
+		return
+	}
+	if err := sqlDB.Close(); err != nil {
+		slog.Error("close database connection error", "err", err)
+	}
 }
 
 // Init connect to sqlite db
 func (d *ZbotDatabaseSqlite) Init() error {
 	slog.Info("Connecting to database", "file", d.File)
 
-	newLogger := logger.Default.LogMode(logger.Silent)
-
 	db, err := gorm.Open(sqlite.Open(d.File), &gorm.Config{
-		Logger: newLogger,
+		Logger:         newGORMLogger(slog.Default()),
+		TranslateError: true,
 		NowFunc: func() time.Time {
 			return time.Now()
 		},
@@ -58,7 +77,7 @@ func (d *ZbotDatabaseSqlite) Init() error {
 		return errors.New("error connecting")
 	}
 
-	err = db.Debug().AutoMigrate(&Definition{}, &UserIgnore{})
+	err = db.AutoMigrate(&Definition{}, &UserIgnore{}, &Channel{})
 	if err != nil {
 		slog.Error("migration error", "err", err)
 		return errors.New("error during migration")
@@ -70,10 +89,10 @@ func (d *ZbotDatabaseSqlite) Init() error {
 }
 
 // Statistics get total number of definitions
-func (d *ZbotDatabaseSqlite) Statistics(chat string) (string, error) {
+func (d *ZbotDatabaseSqlite) Statistics(channelID uint) (string, error) {
 
 	var count int64
-	if result := d.DB.Model(&Definition{}).Where("chat = ? COLLATE NOCASE", chat).Count(&count); result.Error != nil {
+	if result := d.DB.Model(&Definition{}).Where("channel_id = ?", channelID).Count(&count); result.Error != nil {
 		slog.Error("statistics query error", "err", result.Error)
 		return "", result.Error
 	}
@@ -82,9 +101,9 @@ func (d *ZbotDatabaseSqlite) Statistics(chat string) (string, error) {
 }
 
 // Last get last X definitions
-func (d *ZbotDatabaseSqlite) Last(chat string, limit int) ([]Definition, error) {
+func (d *ZbotDatabaseSqlite) Last(channelID uint, limit int) ([]Definition, error) {
 	definitions := []Definition{}
-	if err := d.DB.Debug().Model(&Definition{}).Where("chat = ? COLLATE NOCASE", chat).Limit(limit).Order("ID desc").Find(&definitions).Error; err != nil {
+	if err := d.DB.Model(&Definition{}).Where("channel_id = ?", channelID).Limit(limit).Order("ID desc").Find(&definitions).Error; err != nil {
 		slog.Error("last query error", "err", err)
 		return nil, err
 	}
@@ -92,9 +111,9 @@ func (d *ZbotDatabaseSqlite) Last(chat string, limit int) ([]Definition, error) 
 }
 
 // Top get definition with the most numbers of hits
-func (d *ZbotDatabaseSqlite) Top(chat string, limit int) ([]Definition, error) {
+func (d *ZbotDatabaseSqlite) Top(channelID uint, limit int) ([]Definition, error) {
 	definitions := []Definition{}
-	if result := d.DB.Debug().Model(&Definition{}).Where("chat = ? COLLATE NOCASE", chat).Limit(limit).Order("hits desc").Find(&definitions); result.Error != nil {
+	if result := d.DB.Model(&Definition{}).Where("channel_id = ?", channelID).Limit(limit).Order("hits desc").Find(&definitions); result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return []Definition{}, ErrNotFound
 		}
@@ -104,9 +123,9 @@ func (d *ZbotDatabaseSqlite) Top(chat string, limit int) ([]Definition, error) {
 }
 
 // Rand get a random definition from the DB
-func (d *ZbotDatabaseSqlite) Rand(chat string, limit int) ([]Definition, error) {
+func (d *ZbotDatabaseSqlite) Rand(channelID uint, limit int) ([]Definition, error) {
 	definitions := []Definition{}
-	if result := d.DB.Debug().Model(&Definition{}).Where("chat = ? COLLATE NOCASE", chat).Limit(limit).Order("random()").Find(&definitions); result.Error != nil {
+	if result := d.DB.Model(&Definition{}).Where("channel_id = ?", channelID).Limit(limit).Order("random()").Find(&definitions); result.Error != nil {
 		slog.Error("rand query error", "err", result.Error)
 		return []Definition{}, result.Error
 	}
@@ -115,10 +134,11 @@ func (d *ZbotDatabaseSqlite) Rand(chat string, limit int) ([]Definition, error) 
 }
 
 // Get get a definition from the db using term
-func (d *ZbotDatabaseSqlite) Get(term string, chat string) (Definition, error) {
+func (d *ZbotDatabaseSqlite) Get(term string, channelID uint) (Definition, error) {
 	var def Definition
 
-	if result := d.DB.Debug().Model(&Definition{}).Where("term = ? COLLATE NOCASE", term, chat).Where("chat = ? COLLATE NOCASE", chat).First(&def); result.Error != nil {
+	if result := d.DB.Model(&Definition{}).Where("term = ? COLLATE NOCASE", term).Where("channel_id = ?", channelID).First(&def); result.Error != nil {
+		slog.Error("get query error", "err", result.Error)
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return Definition{}, ErrNotFound
 		}
@@ -130,7 +150,7 @@ func (d *ZbotDatabaseSqlite) Get(term string, chat string) (Definition, error) {
 
 // IncreaseHits increase the definition hits by one
 func (d *ZbotDatabaseSqlite) IncreaseHits(id uint) error {
-	if err := d.DB.Debug().Model(&Definition{}).Where("id = ?", id).UpdateColumn("hits", gorm.Expr("hits + ?", 1)).Error; err != nil {
+	if err := d.DB.Model(&Definition{}).Where("id = ?", id).UpdateColumn("hits", gorm.Expr("hits + ?", 1)).Error; err != nil {
 		slog.Error("increase hits error", "err", err)
 		return ErrInternalError
 	}
@@ -138,12 +158,12 @@ func (d *ZbotDatabaseSqlite) IncreaseHits(id uint) error {
 }
 
 // Find terms with criteria inside of the meaning
-func (d *ZbotDatabaseSqlite) Find(criteria string, chat string, limit int) ([]Definition, error) {
+func (d *ZbotDatabaseSqlite) Find(criteria string, channelID uint, limit int) ([]Definition, error) {
 
 	definitions := []Definition{}
 	criteria = fmt.Sprintf("%%%s%%", criteria)
 
-	if result := d.DB.Debug().Model(&Definition{}).Where("meaning like ? COLLATE NOCASE", criteria).Where("chat = ? COLLATE NOCASE", chat).Limit(limit).Order("random()").Find(&definitions); result.Error != nil {
+	if result := d.DB.Model(&Definition{}).Where("meaning like ? COLLATE NOCASE", criteria).Where("channel_id = ?", channelID).Limit(limit).Order("random()").Find(&definitions); result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return []Definition{}, ErrNotFound
 		}
@@ -156,11 +176,11 @@ func (d *ZbotDatabaseSqlite) Find(criteria string, chat string, limit int) ([]De
 }
 
 // Search find list of term with a given pattern
-func (d *ZbotDatabaseSqlite) Search(criteria string, chat string, limit int) ([]Definition, error) {
+func (d *ZbotDatabaseSqlite) Search(criteria string, channelID uint, limit int) ([]Definition, error) {
 	definitions := []Definition{}
 	criteria = fmt.Sprintf("%%%s%%", criteria)
 
-	if result := d.DB.Debug().Model(&Definition{}).Where("term like ? COLLATE NOCASE", criteria).Where("chat = ? COLLATE NOCASE", chat).Limit(limit).Order("random()").Find(&definitions); result.Error != nil {
+	if result := d.DB.Model(&Definition{}).Where("term like ? COLLATE NOCASE", criteria).Where("channel_id = ?", channelID).Limit(limit).Order("random()").Find(&definitions); result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return []Definition{}, ErrNotFound
 		}
@@ -172,28 +192,31 @@ func (d *ZbotDatabaseSqlite) Search(criteria string, chat string, limit int) ([]
 	return definitions, nil
 }
 
+const maxSetAttempts = 100
+
 // Set create a new term in the db.
 func (d *ZbotDatabaseSqlite) Set(definition Definition) (string, error) {
-	count := 1
-	term := definition.Term
 	slog.Debug("set definition", "definition", definition)
-	for {
+	for attempt := 0; attempt < maxSetAttempts; attempt++ {
+		term := definition.Term
+		if attempt > 0 {
+			term = fmt.Sprintf("%s%d", definition.Term, attempt)
+		}
+
 		err := d._set(term, definition)
 		if err != nil {
-			slog.Debug("SQL insert error", "err", err.Error())
-			if strings.Contains(err.Error(), "UNIQUE constraint failed") {
-				term = fmt.Sprintf("%s%d", definition.Term, count)
-				slog.Debug("new term", "term", term)
-				count = count + 1
-			} else {
-				return "", err
+			if errors.Is(err, gorm.ErrDuplicatedKey) {
+				slog.Debug("term already exists, trying next suffix", "term", term)
+				continue
 			}
-		} else {
-			slog.Debug("trying with term", "term", term)
-			break
+			slog.Error("create definition error", "err", err)
+			return "", err
 		}
+
+		return term, nil
 	}
-	return term, nil
+
+	return "", fmt.Errorf("%w: %q after %d attempts", ErrTermCollisionLimit, definition.Term, maxSetAttempts)
 }
 
 // _set create a new definition
@@ -201,17 +224,16 @@ func (d *ZbotDatabaseSqlite) _set(term string, definition Definition) error {
 
 	definition.Term = term
 
-	if err := d.DB.Debug().Model(&Definition{}).Create(&definition).Error; err != nil {
-		slog.Error("create definition error", "err", err)
+	if err := d.DB.Model(&Definition{}).Create(&definition).Error; err != nil {
 		return err
 	}
 	return nil
 }
 
 // Append append meaning to a given definition
-func (d *ZbotDatabaseSqlite) Append(item Definition, chat string) error {
+func (d *ZbotDatabaseSqlite) Append(item Definition) error {
 
-	definition, err := d.Get(item.Term, item.Chat)
+	definition, err := d.Get(item.Term, item.ChannelID)
 	if err != nil {
 		if errors.Is(err, ErrNotFound) {
 			return fmt.Errorf("Definition [%s] not found", item.Term)
@@ -222,7 +244,7 @@ func (d *ZbotDatabaseSqlite) Append(item Definition, chat string) error {
 	if !definition.Locked.Bool {
 		appenedMeaning := fmt.Sprintf("%s. %s", definition.Meaning, item.Meaning)
 		def := Definition{Meaning: appenedMeaning, Author: item.Author}
-		if err := d.DB.Debug().Model(&definition).Updates(def).Error; err != nil {
+		if err := d.DB.Model(&definition).Updates(def).Error; err != nil {
 			slog.Error("append definition error", "err", err)
 			return err
 		}
@@ -232,16 +254,16 @@ func (d *ZbotDatabaseSqlite) Append(item Definition, chat string) error {
 }
 
 // Lock a given definition (no more append or forget)
-func (d *ZbotDatabaseSqlite) Lock(item Definition, chat string) error {
-	definition, err := d.Get(item.Term, item.Chat)
+func (d *ZbotDatabaseSqlite) Lock(item Definition) error {
+	definition, err := d.Get(item.Term, item.ChannelID)
 	if err != nil {
 		slog.Error("lock get error", "err", err)
 		return err
 	}
 
 	if !definition.Locked.Bool {
-		def := Definition{Locked: sql.NullBool{Bool: true, Valid: true}, LockedBy: sql.NullString{String: item.Author}}
-		if err := d.DB.Debug().Model(&definition).Updates(def).Where("chat = ? COLLATE NOCASE", chat).Error; err != nil {
+		def := Definition{Locked: sql.NullBool{Bool: true, Valid: true}, LockedBy: sql.NullString{String: item.Author, Valid: true}}
+		if err := d.DB.Model(&definition).Updates(def).Error; err != nil {
 			slog.Error("lock update error", "err", err)
 			return err
 		}
@@ -252,96 +274,6 @@ func (d *ZbotDatabaseSqlite) Lock(item Definition, chat string) error {
 }
 
 // Forget No implemented yet
-func (d *ZbotDatabaseSqlite) Forget(item Definition, chat string) error {
+func (d *ZbotDatabaseSqlite) Forget(item Definition) error {
 	return nil
-}
-
-// UserIgnoreList return users currently on the ignore list
-func (d *ZbotDatabaseSqlite) UserIgnoreList() ([]UserIgnore, error) {
-	ignoredUsers := []UserIgnore{}
-	now := time.Now().Unix()
-	if err := d.DB.Debug().Model(&UserIgnore{}).Where("valid_until > ?", now).Order("created_at desc").Find(&ignoredUsers).Error; err != nil {
-		slog.Error("ignore list query error", "err", err)
-		return nil, err
-	}
-	return ignoredUsers, nil
-}
-
-// UserLevel Mock
-func (d *ZbotDatabaseSqlite) UserLevel(str string) (string, error) {
-	return "bnil", nil
-}
-
-// UserCheckIgnore return true if the user is currently on the ignore list
-func (d *ZbotDatabaseSqlite) UserCheckIgnore(username string, channelID uint) bool {
-	var count int64
-	now := time.Now().Unix()
-	if err := d.DB.Debug().Model(&UserIgnore{}).Where("username = ? COLLATE NOCASE", username).Where("channel_id = ?", channelID).Where("valid_until > ?", now).Count(&count).Error; err != nil {
-		slog.Error("check ignore query error", "err", err)
-		return false
-	}
-	return count > 0
-}
-
-// UserIgnoreInsert Add a user to ignore list
-func (d *ZbotDatabaseSqlite) UserIgnoreInsert(username string, durationSeconds int, createdBy string, channelID uint) error {
-	ignore := UserIgnore{
-		Username:   strings.ToLower(username),
-		ValidUntil: time.Now().Add(time.Duration(durationSeconds) * time.Second).Unix(),
-		CreatedBy:  createdBy,
-		ChannelID:  channelID,
-	}
-
-	if err := d.DB.Debug().Create(&ignore).Error; err != nil {
-		slog.Error("ignore insert error", "err", err)
-		return err
-	}
-	return nil
-}
-
-// UserCleanupIgnorelist Cleanup ignore list
-func (d *ZbotDatabaseSqlite) UserCleanupIgnorelist() error {
-	now := time.Now().Unix()
-	if err := d.DB.Debug().Where("valid_until <= ?", now).Delete(&UserIgnore{}).Error; err != nil {
-		slog.Error("ignore list cleanup error", "err", err)
-		return err
-	}
-	return nil
-}
-
-func (d *ZbotDatabaseSqlite) ListChannels() ([]Channel, error) {
-	var channels []Channel
-	if err := d.DB.Debug().Model(&Channel{}).Find(&channels).Error; err != nil {
-		slog.Error("list channels error", "err", err)
-		return nil, err
-	}
-	return channels, nil
-}
-
-// AddChannel add a new channel to the database
-func (d *ZbotDatabaseSqlite) AddChannel(channel string) error {
-	if err := d.DB.Debug().Model(&Channel{}).Create(&Channel{Name: channel, LearnEnabled: true, ExternalEnabled: true}).Error; err != nil {
-		slog.Error("add channel error", "err", err)
-		return err
-	}
-	return nil
-}
-
-// DeleteChannel delete a channel from the database
-func (d *ZbotDatabaseSqlite) RemoveChannel(channel string) (bool, error) {
-	if err := d.DB.Debug().Where("name = ? COLLATE NOCASE", channel).Delete(&Channel{}).Error; err != nil {
-		slog.Error("delete channel error", "err", err)
-		return false, err
-	}
-	return true, nil
-}
-
-// GetChannel get a channel information from the database
-func (d *ZbotDatabaseSqlite) GetChannel(channel string) (Channel, error) {
-	var ch Channel
-	if err := d.DB.Debug().Model(&Channel{}).Where("name = ? COLLATE NOCASE", channel).First(&ch).Error; err != nil {
-		slog.Error("get channel error", "err", err)
-		return Channel{}, err
-	}
-	return ch, nil
 }

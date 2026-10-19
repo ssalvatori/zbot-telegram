@@ -46,7 +46,7 @@ func TestProcessText(t *testing.T) {
 
 }
 
-func TestPaserCommand(t *testing.T) {
+func TestParseCommand(t *testing.T) {
 
 	tests := []struct {
 		name string
@@ -63,7 +63,7 @@ func TestPaserCommand(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, levelCommand.PaserCommand(tt.cmd, tt.user), "LevelCommand.PaserCommand(%q)", tt.cmd)
+			assert.Equal(t, tt.want, levelCommand.ParseCommand(tt.cmd, tt.user), "LevelCommand.ParseCommand(%q)", tt.cmd)
 		})
 	}
 }
