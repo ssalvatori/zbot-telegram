@@ -79,11 +79,10 @@ type CommandsList struct {
 	List *list.List
 }
 
-type commandElement struct {
+type CommandElement struct {
 	requiredLevel int
 	command       zbotCommand
-	cmdString     string
-	helpMessage   string
+	CmdString     string
 }
 
 // Setup initail setup
@@ -91,14 +90,32 @@ func Setup() {
 	sort.Strings(LearnCommandList)
 }
 
-// Chain add a command and the required level to use it to the list of command
-func (cmdList *CommandsList) Chain(cmdDefinition string, cmd any, level int, helpMessage string) *CommandsList {
+func NewCommandElement(cmdString string, level int, command zbotCommand) *CommandElement {
+	return &CommandElement{
+		command:       command,
+		requiredLevel: level,
+		CmdString:     cmdString,
+	}
+}
 
-	newCommand := &commandElement{
+// ProcessText runs the wrapped command against msg.
+func (c *CommandElement) ProcessCommand(msg string, u user.User, channelID int, channelName string, private bool) (string, error) {
+	return c.command.ProcessText(msg, u, channelID, channelName, private, true)
+}
+
+// ShowHelp returns the wrapped command's help message.
+func (c *CommandElement) ShowHelp(args ...string) string { return c.command.ShowHelp(args...) }
+
+// ShowDescription returns the wrapped command's description.
+func (c *CommandElement) ShowDescription() string { return c.command.ShowDescription() }
+
+// Chain add a command and the required level to use it to the list of command
+func (cmdList *CommandsList) Chain(cmdDefinition string, cmd any, level int) *CommandsList {
+
+	newCommand := &CommandElement{
 		command:       cmd.(zbotCommand),
 		requiredLevel: level,
-		cmdString:     cmdDefinition,
-		helpMessage:   helpMessage,
+		CmdString:     cmdDefinition,
 	}
 
 	cmdList.List.PushBack(newCommand)
@@ -113,7 +130,7 @@ func (cmdList *CommandsList) Run(cmd string, msg string, user user.User, channel
 	slog.Debug("Running command", "cmd", cmd, "channelId", channelId, "channelName", channelName, "private", private)
 
 	for e := cmdList.List.Front(); e != nil; e = e.Next() {
-		output, err = e.Value.(*commandElement).command.ProcessText(msg, user, channelId, channelName, private)
+		output, err = e.Value.(*CommandElement).command.ProcessText(msg, user, channelId, channelName, private, false)
 		if err != nil {
 			if errors.Is(err, ErrNextCommand) {
 				continue
@@ -131,7 +148,9 @@ func (cmdList *CommandsList) Run(cmd string, msg string, user user.User, channel
 
 // zbotCommand interface to be implemented by each command
 type zbotCommand interface {
-	ProcessText(text string, username user.User, channelID int, channelName string, private bool) (string, error)
+	ProcessText(text string, username user.User, channelID int, channelName string, private bool, isCommand bool) (string, error)
+	ShowHelp(args ...string) string
+	ShowDescription() string
 }
 
 // getTerms transform Definition array into an array of term

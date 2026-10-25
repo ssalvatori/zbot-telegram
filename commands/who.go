@@ -13,6 +13,7 @@ import (
 )
 
 const WhoHelpMessage = "!who <term> - get information about a term"
+const WhoDescription = "Get information about a term"
 
 // WhoCommand definition
 type WhoCommand struct {
@@ -25,8 +26,12 @@ func (handler *WhoCommand) SetDb(db db.ZbotDatabase) {
 	handler.Db = db
 }
 
+// ShowHelp returns the help message for the command.
+func (handler *WhoCommand) ShowHelp(args ...string) string { return WhoHelpMessage }
+func (handler *WhoCommand) ShowDescription() string        { return WhoDescription }
+
 // ProcessText run command
-func (handler *WhoCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool) (string, error) {
+func (handler *WhoCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool, isCommand bool) (string, error) {
 
 	if private {
 		return "", ErrNextCommand

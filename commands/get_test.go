@@ -16,7 +16,7 @@ func TestGetCommandOK(t *testing.T) {
 		Meaning: "bar",
 	}
 
-	result, _ := getCommand.ProcessText("? foo", userTest, 0, "testchat", false)
+	result, _ := getCommand.ProcessText("? foo", userTest, 0, "testchat", false, false)
 	assert.Equal(t, "[foo] - [bar]", result, "Get Command")
 
 }
@@ -26,23 +26,23 @@ func TestGetCommandNoFound(t *testing.T) {
 		NotFound: true,
 	}
 
-	result, _ := getCommand.ProcessText("? foo2", userTest, 0, "testchat", false)
+	result, _ := getCommand.ProcessText("? foo2", userTest, 0, "testchat", false, false)
 	assert.Equal(t, "[foo2] Not found!", result, "Get no next command")
 }
 
 func TestGetCommandDisabledChannel(t *testing.T) {
 	DisableLearnChannels = []string{"disabled-chat"}
 	defer func() { DisableLearnChannels = nil }()
-	_, err := getCommand.ProcessText("? foo", userTest, 0, "disabled-chat", false)
+	_, err := getCommand.ProcessText("? foo", userTest, 0, "disabled-chat", false, false)
 	assert.Equal(t, ErrLearnDisabledChannel, err)
 }
 
 func TestGetCommandNotMatch(t *testing.T) {
 
-	result, _ := getCommand.ProcessText("?6", userTest, 0, "testchat", false)
+	result, _ := getCommand.ProcessText("?6", userTest, 0, "testchat", false, false)
 	assert.Equal(t, "", result, "Empty output doesn't match")
 
-	_, err := getCommand.ProcessText("?6", userTest, 0, "testchat", false)
+	_, err := getCommand.ProcessText("?6", userTest, 0, "testchat", false, false)
 	assert.Equal(t, "no action in command", err.Error(), "Error output doesn't match")
 }
 
@@ -52,9 +52,9 @@ func TestGetCommandError(t *testing.T) {
 		RandDef: []db.Definition{db.Definition{Term: "foo", Meaning: "bar"}},
 		Error:   true,
 	}
-	_, err := getCommand.ProcessText("? foo", userTest, 0, "testchat", false)
+	_, err := getCommand.ProcessText("? foo", userTest, 0, "testchat", false, false)
 	assert.Error(t, err, "DB error")
 
-	_, err = getCommand.ProcessText("? foo", userTest, 0, "testchat", true)
+	_, err = getCommand.ProcessText("? foo", userTest, 0, "testchat", true, false)
 	assert.Error(t, err, "DB error")
 }

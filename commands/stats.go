@@ -11,6 +11,7 @@ import (
 )
 
 const StatsHelpMessage = "!stats - get the total number of terms"
+const StatsDescription = "Get the total number of terms"
 
 // StatsCommand definition
 type StatsCommand struct {
@@ -18,8 +19,12 @@ type StatsCommand struct {
 	HelpMessage string
 }
 
+// ShowHelp returns the help message for the command.
+func (handler *StatsCommand) ShowHelp(args ...string) string { return StatsHelpMessage }
+func (handler *StatsCommand) ShowDescription() string        { return StatsDescription }
+
 // ProcessText run command
-func (handler *StatsCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool) (string, error) {
+func (handler *StatsCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool, isCommand bool) (string, error) {
 
 	if private {
 		return "", ErrNextCommand

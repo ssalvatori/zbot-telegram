@@ -15,7 +15,7 @@ zbot:
   ignore: true
   level: false
   admins:
-  - admin_username_here
+  - 123456 # telegram_id
 db:
   engine: sqlite
   name: db_name
@@ -65,7 +65,7 @@ func TestLoadConfigurationValid(t *testing.T) {
 	assert.Equal(t, "db_username", conf.Db.Username)
 	assert.Equal(t, "db_password", conf.Db.Password)
 
-	assert.Equal(t, []string{"admin_username_here"}, conf.Zbot.Admins)
+	assert.Equal(t, []int64{123456}, conf.Zbot.Admins)
 
 	assert.Equal(t, "./modules/", conf.Modules.Path)
 	assert.Equal(t, []ConfigurationModule{

@@ -13,6 +13,7 @@ import (
 )
 
 const SearchHelpMessage = "!search <term> - search for similar <term>"
+const SearchDescription = "Search for similar terms in the database"
 
 // SearchCommand definition
 type SearchCommand struct {
@@ -22,8 +23,12 @@ type SearchCommand struct {
 
 var findSearch = 10
 
+// ShowHelp returns the help message for the command.
+func (handler *SearchCommand) ShowHelp(args ...string) string { return SearchHelpMessage }
+func (handler *SearchCommand) ShowDescription() string        { return SearchDescription }
+
 // ProcessText Run module
-func (handler *SearchCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool) (string, error) {
+func (handler *SearchCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool, isCommand bool) (string, error) {
 
 	if private {
 		return "", ErrNextCommand

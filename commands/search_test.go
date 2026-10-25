@@ -17,26 +17,26 @@ func TestSearchCommandOK(t *testing.T) {
 		SearchTerms: []string{"foo", "bar"},
 	}
 
-	result, _ = searchCommand.ProcessText("!search foo", userTest, 0, "testchat", false)
+	result, _ = searchCommand.ProcessText("!search foo", userTest, 0, "testchat", false, false)
 	assert.Equal(t, "foo bar", result, "Search Command")
 
 	searchCommand.Db = &db.ZbotDatabaseMock{
 		SearchTerms: []string{},
 	}
 
-	result, _ = searchCommand.ProcessText("!search", userTest, 0, "testchat", false)
+	result, _ = searchCommand.ProcessText("!search", userTest, 0, "testchat", false, false)
 	assert.Equal(t, "", result, "Search empty")
 }
 func TestSearchCommandDisabledChannel(t *testing.T) {
 	DisableLearnChannels = []string{"disabled-chat"}
 	defer func() { DisableLearnChannels = nil }()
-	_, err := searchCommand.ProcessText("!search foo", userTest, 0, "disabled-chat", false)
+	_, err := searchCommand.ProcessText("!search foo", userTest, 0, "disabled-chat", false, false)
 	assert.Equal(t, ErrLearnDisabledChannel, err)
 }
 
 func TestSearchCommandNotMatch(t *testing.T) {
 
-	result, err := searchCommand.ProcessText("!search6", userTest, 0, "testchat", false)
+	result, err := searchCommand.ProcessText("!search6", userTest, 0, "testchat", false, false)
 	assert.Equal(t, "", result, "Empty output doesn't match")
 	assert.Equal(t, err, ErrNextCommand, "Error output doesn't match")
 }
@@ -47,9 +47,9 @@ func TestSearchCommandError(t *testing.T) {
 		RandDef: []db.Definition{db.Definition{Term: "foo", Meaning: "bar"}},
 		Error:   true,
 	}
-	_, err := searchCommand.ProcessText("!search foo", userTest, 0, "testchat", false)
+	_, err := searchCommand.ProcessText("!search foo", userTest, 0, "testchat", false, false)
 	assert.Error(t, err, "Internal Error")
 
-	_, err = searchCommand.ProcessText("!search foo", userTest, 0, "testchat", true)
+	_, err = searchCommand.ProcessText("!search foo", userTest, 0, "testchat", true, false)
 	assert.Error(t, err, "Private message")
 }

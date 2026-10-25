@@ -14,6 +14,7 @@ import (
 )
 
 const TopHelpMessage = "!top <limit> - get the top terms by hits"
+const TopDescription = "Get the top terms by hits"
 const TOP_MAX = 20
 
 // TopCommand definition
@@ -26,8 +27,12 @@ func (handler *TopCommand) SetDb(db db.ZbotDatabase) {
 	handler.Db = db
 }
 
+// ShowHelp returns the help message for the command.
+func (handler *TopCommand) ShowHelp(args ...string) string { return TopHelpMessage }
+func (handler *TopCommand) ShowDescription() string        { return TopDescription }
+
 // ProcessText run command
-func (handler *TopCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool) (string, error) {
+func (handler *TopCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool, isCommand bool) (string, error) {
 
 	if private {
 		return "", ErrNextCommand

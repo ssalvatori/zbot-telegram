@@ -15,7 +15,7 @@ func TestRandCommandOK(t *testing.T) {
 		RandDef: []db.Definition{db.Definition{Term: "foo", Meaning: "bar"}},
 	}
 
-	result, _ := randCommand.ProcessText("!rand", userTest, 0, "testchat", false)
+	result, _ := randCommand.ProcessText("!rand", userTest, 0, "testchat", false, false)
 	assert.Equal(t, "[foo] - [bar]", result, "Rand command")
 
 }
@@ -25,23 +25,23 @@ func TestRandCommandWithLimit(t *testing.T) {
 		RandDef: []db.Definition{{Term: "foo", Meaning: "bar"}},
 	}
 
-	result, _ := randCommand.ProcessText("!rand 5", userTest, 0, "testchat", false)
+	result, _ := randCommand.ProcessText("!rand 5", userTest, 0, "testchat", false, false)
 	assert.Equal(t, "[foo] - [bar]", result, "Rand with numeric limit")
 
-	result, _ = randCommand.ProcessText("!rand 200", userTest, 0, "testchat", false)
+	result, _ = randCommand.ProcessText("!rand 200", userTest, 0, "testchat", false, false)
 	assert.Equal(t, "[foo] - [bar]", result, "Rand with limit capped at 100")
 }
 
 func TestRandCommandDisabledChannel(t *testing.T) {
 	DisableLearnChannels = []string{"disabled-chat"}
 	defer func() { DisableLearnChannels = nil }()
-	_, err := randCommand.ProcessText("!rand", userTest, 0, "disabled-chat", false)
+	_, err := randCommand.ProcessText("!rand", userTest, 0, "disabled-chat", false, false)
 	assert.Equal(t, ErrLearnDisabledChannel, err)
 }
 
 func TestRandCommandNotMatch(t *testing.T) {
 
-	result, err := randCommand.ProcessText("!rand6", userTest, 0, "testchat", false)
+	result, err := randCommand.ProcessText("!rand6", userTest, 0, "testchat", false, false)
 	assert.Equal(t, "", result, "Empty output doesn't match")
 	assert.Equal(t, err, ErrNextCommand, "Command doesn't match")
 }
@@ -52,9 +52,9 @@ func TestRandCommandError(t *testing.T) {
 		RandDef: []db.Definition{db.Definition{Term: "foo", Meaning: "bar"}},
 		Error:   true,
 	}
-	_, err := randCommand.ProcessText("!rand", userTest, 0, "testchat", false)
+	_, err := randCommand.ProcessText("!rand", userTest, 0, "testchat", false, false)
 	assert.Error(t, err, "Internal Error")
 
-	_, err = randCommand.ProcessText("!rand", userTest, 0, "testchat", true)
+	_, err = randCommand.ProcessText("!rand", userTest, 0, "testchat", true, false)
 	assert.Error(t, err, "Private Message")
 }

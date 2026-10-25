@@ -15,6 +15,7 @@ import (
 )
 
 const IgnoreHelpMessage = "!ignore <username> - ignore a <username> for 10 minutes"
+const IgnoreDescription = "Ignore a user for a specified duration."
 
 // IgnoreCommand definition
 type IgnoreCommand struct {
@@ -27,8 +28,12 @@ type IgnoreCommand struct {
 
 const dateFormat string = "02-01-2006 15:04:05 MST" //dd-mm-yyyy hh:ii:ss TZ
 
+// ShowHelp returns the help message for the command.
+func (handler *IgnoreCommand) ShowHelp(args ...string) string { return IgnoreHelpMessage }
+func (handler *IgnoreCommand) ShowDescription() string        { return IgnoreDescription }
+
 // ProcessText run command
-func (handler *IgnoreCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool) (string, error) {
+func (handler *IgnoreCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool, isCommand bool) (string, error) {
 
 	if private {
 		return "", ErrNextCommand

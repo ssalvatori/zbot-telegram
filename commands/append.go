@@ -11,6 +11,7 @@ import (
 )
 
 const AppendHelpMessage = "!append <term> <meaning> - append a <meaning> to a <term>."
+const AppendDescription = "Append a meaning to a term."
 
 // AppendCommand definition
 type AppendCommand struct {
@@ -18,8 +19,12 @@ type AppendCommand struct {
 	HelpMessage string
 }
 
+// ShowHelp returns the help message for the command.
+func (handler *AppendCommand) ShowHelp(args ...string) string { return AppendHelpMessage }
+func (handler *AppendCommand) ShowDescription() string        { return AppendDescription }
+
 // ProcessText run command
-func (handler *AppendCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool) (string, error) {
+func (handler *AppendCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool, isCommand bool) (string, error) {
 
 	if private {
 		return "", ErrNextCommand

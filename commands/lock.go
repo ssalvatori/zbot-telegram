@@ -11,6 +11,7 @@ import (
 )
 
 const LockHelpMessage = "!lock <term> - lock a <term> to prevent modifications"
+const LockDescription = "Lock a term to prevent modifications."
 
 // LockCommand definition
 type LockCommand struct {
@@ -18,8 +19,12 @@ type LockCommand struct {
 	HelpMessage string
 }
 
+// ShowHelp returns the help message for the command.
+func (handler *LockCommand) ShowHelp(args ...string) string { return LockHelpMessage }
+func (handler *LockCommand) ShowDescription() string        { return LockDescription }
+
 // ProcessText run command
-func (handler *LockCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool) (string, error) {
+func (handler *LockCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool, isCommand bool) (string, error) {
 
 	if private {
 		return "", ErrNextCommand

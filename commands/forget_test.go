@@ -11,23 +11,23 @@ var forgetCommand = ForgetCommand{}
 
 func TestForgetCommandPrivateMessage(t *testing.T) {
 	forgetCommand.Db = &db.ZbotDatabaseMock{}
-	result, err := forgetCommand.ProcessText("!forget foo", userTest, 0, "testchat", true)
+	result, err := forgetCommand.ProcessText("!forget foo", userTest, 0, "testchat", true, false)
 	assert.Equal(t, "", result, "Private message")
 	assert.Error(t, err, "Private message")
 }
 
 func TestForgetCommandOK(t *testing.T) {
 	forgetCommand.Db = &db.ZbotDatabaseMock{}
-	result, _ := forgetCommand.ProcessText("!forget foo", userTest, 0, "testchat", false)
+	result, _ := forgetCommand.ProcessText("!forget foo", userTest, 0, "testchat", false, false)
 	assert.Equal(t, "[foo] deleted", result, "Forget Command OK")
 }
 
 func TestForgetCommandNotMatch(t *testing.T) {
 
-	result, _ := forgetCommand.ProcessText("!forget6", userTest, 0, "testchat", false)
+	result, _ := forgetCommand.ProcessText("!forget6", userTest, 0, "testchat", false, false)
 	assert.Equal(t, "", result, "Empty output doesn't match")
 
-	_, err := forgetCommand.ProcessText("!forget6", userTest, 0, "testchat", false)
+	_, err := forgetCommand.ProcessText("!forget6", userTest, 0, "testchat", false, false)
 	assert.Equal(t, "no action in command", err.Error(), "Error output doesn't match")
 }
 
@@ -36,6 +36,6 @@ func TestForgetCommandError(t *testing.T) {
 	forgetCommand.Db = &db.ZbotDatabaseMock{
 		Error: true,
 	}
-	_, err := forgetCommand.ProcessText("!forget lal", userTest, 0, "testchat", false)
+	_, err := forgetCommand.ProcessText("!forget lal", userTest, 0, "testchat", false, false)
 	assert.Error(t, err, "DB error")
 }

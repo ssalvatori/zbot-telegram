@@ -15,17 +15,17 @@ func TestStatsCommandOK(t *testing.T) {
 		RandDef: []db.Definition{db.Definition{Term: "foo", Meaning: "bar"}},
 	}
 
-	result, _ := statsCommand.ProcessText("!stats", userTest, 0, "testchat", false)
+	result, _ := statsCommand.ProcessText("!stats", userTest, 0, "testchat", false, false)
 	assert.Equal(t, "Number of definitions: 7", result, "Stats Command")
 
 }
 
 func TestStatsCommandNotMatch(t *testing.T) {
 
-	result, _ := statsCommand.ProcessText("!stats6", userTest, 0, "testchat", false)
+	result, _ := statsCommand.ProcessText("!stats6", userTest, 0, "testchat", false, false)
 	assert.Equal(t, "", result, "Empty output doesn't match")
 
-	_, err := statsCommand.ProcessText("!stats6", userTest, 0, "testchat", false)
+	_, err := statsCommand.ProcessText("!stats6", userTest, 0, "testchat", false, false)
 	assert.Equal(t, "no action in command", err.Error(), "Error output doesn't match")
 }
 
@@ -36,9 +36,9 @@ func TestStatsCommandError(t *testing.T) {
 		RandDef: []db.Definition{db.Definition{Term: "foo", Meaning: "bar"}},
 		Error:   true,
 	}
-	_, err := statsCommand.ProcessText("!stats", userTest, 0, "testchat", false)
+	_, err := statsCommand.ProcessText("!stats", userTest, 0, "testchat", false, false)
 	assert.Error(t, err, "Internal error")
 
-	_, err = statsCommand.ProcessText("!sstats", userTest, 0, "testchat", true)
+	_, err = statsCommand.ProcessText("!sstats", userTest, 0, "testchat", true, false)
 	assert.Error(t, err, "Private message")
 }

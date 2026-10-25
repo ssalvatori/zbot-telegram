@@ -14,6 +14,7 @@ import (
 )
 
 const RandHelpMessage = "!rand <limit> <limit> - get a random term, with an optional <limit> (default 1, max 20)"
+const RandDescription = "Get a random term from the database"
 const RAND_MAX = 20
 
 // RandCommand definition
@@ -22,8 +23,12 @@ type RandCommand struct {
 	HelpMessage string
 }
 
+// ShowHelp returns the help message for the command.
+func (handler *RandCommand) ShowHelp(args ...string) string { return RandHelpMessage }
+func (handler *RandCommand) ShowDescription() string        { return RandDescription }
+
 // ProcessText run command
-func (handler *RandCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool) (string, error) {
+func (handler *RandCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool, isCommand bool) (string, error) {
 
 	if private {
 		return "", ErrNextCommand

@@ -15,6 +15,7 @@ import (
 )
 
 const LevelHelpMessage = "!level <subcommand> <username> <level> - manage user levels in the channel"
+const LevelDescription = "Manage user levels in the channel."
 
 // LevelCommand definition
 type LevelCommand struct {
@@ -76,8 +77,12 @@ func (handler *LevelCommand) ParseCommand(cmd string, user string) map[string]st
 	return res
 }
 
+// ShowHelp returns the help message for the command.
+func (handler *LevelCommand) ShowHelp(args ...string) string { return LevelHelpMessage }
+func (handler *LevelCommand) ShowDescription() string        { return LevelDescription }
+
 // ProcessText run command
-func (handler *LevelCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool) (string, error) {
+func (handler *LevelCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool, isCommand bool) (string, error) {
 
 	if private {
 		return "", ErrNextCommand

@@ -9,6 +9,7 @@ import (
 )
 
 const ForgetHelpMessage = "!forget <term> - delete a <term> from the dictionary"
+const ForgetDescription = "Delete a term from the dictionary."
 
 // ForgetCommand definition
 type ForgetCommand struct {
@@ -16,8 +17,12 @@ type ForgetCommand struct {
 	HelpMessage string
 }
 
+// ShowHelp returns the help message for the command.
+func (handler *ForgetCommand) ShowHelp(args ...string) string { return ForgetHelpMessage }
+func (handler *ForgetCommand) ShowDescription() string        { return ForgetDescription }
+
 // ProcessText run command
-func (handler *ForgetCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool) (string, error) {
+func (handler *ForgetCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool, isCommand bool) (string, error) {
 
 	if private {
 		return "", ErrNextCommand

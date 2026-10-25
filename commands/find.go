@@ -11,6 +11,7 @@ import (
 )
 
 const FindHelpMessage = "!find <text> - find _terms_ whose meaning contains <text>."
+const FindDescription = "Find terms whose meaning contains the specified text."
 
 // FindCommand definition
 type FindCommand struct {
@@ -20,8 +21,12 @@ type FindCommand struct {
 
 var findLimit = 10
 
+// ShowHelp returns the help message for the command.
+func (handler *FindCommand) ShowHelp(args ...string) string { return FindHelpMessage }
+func (handler *FindCommand) ShowDescription() string        { return FindDescription }
+
 // ProcessText run command
-func (handler *FindCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool) (string, error) {
+func (handler *FindCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool, isCommand bool) (string, error) {
 
 	if private {
 		return "", ErrNextCommand

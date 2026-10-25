@@ -102,9 +102,9 @@ zbot:
   ignore_duration: 300
   ignore: true
   level: false
-admins: # List of bot's administrators (Telegram usernames)
-  - admin1
-  - admin2
+  admins: # List of bot administrators' Telegram user IDs
+    - 123456789
+    - 987654321
 db:
   engine: sqlite
   file: path_to_sqlite_file.db

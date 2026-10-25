@@ -13,6 +13,7 @@ import (
 )
 
 const GetHelpMessage = "!get <term> - get a <term>'s meaning"
+const GetDescription = "Get the meaning of a term."
 
 // GetCommand definition
 type GetCommand struct {
@@ -20,8 +21,12 @@ type GetCommand struct {
 	HelpMessage string
 }
 
+// ShowHelp returns the help message for the command.
+func (handler *GetCommand) ShowHelp(args ...string) string { return GetHelpMessage }
+func (handler *GetCommand) ShowDescription() string        { return GetDescription }
+
 // ProcessText run command
-func (handler *GetCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool) (string, error) {
+func (handler *GetCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool, isCommand bool) (string, error) {
 
 	if private {
 		return "", ErrNextCommand

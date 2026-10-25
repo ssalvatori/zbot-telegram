@@ -17,14 +17,14 @@ func TestTemplateCommandOK(t *testing.T) {
 		Level:   "100",
 	}
 
-	result, _ := lockCommand.ProcessText("!lock foo", userTest, 0, "testchat", false)
+	result, _ := lockCommand.ProcessText("!lock foo", userTest, 0, "testchat", false, false)
 	assert.Equal(t, "[foo] locked", result, "Template Command")
 }
 
 func TestLockCommandDisabledChannel(t *testing.T) {
 	DisableLearnChannels = []string{"disabled-chat"}
 	defer func() { DisableLearnChannels = nil }()
-	_, err := lockCommand.ProcessText("!lock foo", userTest, 0, "disabled-chat", false)
+	_, err := lockCommand.ProcessText("!lock foo", userTest, 0, "disabled-chat", false, false)
 	assert.Equal(t, ErrLearnDisabledChannel, err)
 }
 
@@ -34,9 +34,9 @@ func TestTemplateCommandErro(t *testing.T) {
 		Error: true,
 	}
 
-	_, err := lockCommand.ProcessText("!lock foo", userTest, 0, "testchat", false)
+	_, err := lockCommand.ProcessText("!lock foo", userTest, 0, "testchat", false, false)
 	assert.Error(t, err, "Internal error")
 
-	_, err = lockCommand.ProcessText("!lock foo", userTest, 0, "testchat", true)
+	_, err = lockCommand.ProcessText("!lock foo", userTest, 0, "testchat", true, false)
 	assert.Error(t, err, "Private message")
 }

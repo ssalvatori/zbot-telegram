@@ -17,15 +17,20 @@ var ExecCommand = exec.Command
 // LookPathCommand handler to exec.LookPath
 var LookPathCommand = exec.LookPath
 
-const ExternalMessage = "run an external module"
+const ExternalHelpMessage = "run an external module"
+const ExternalDescription = "Run an external module"
 
 // ExternalCommand definition
 type ExternalCommand struct {
 	PathModules string
 }
 
+// ShowHelp returns the help message for the command.
+func (handler *ExternalCommand) ShowHelp(args ...string) string { return ExternalHelpMessage }
+func (handler *ExternalCommand) ShowDescription() string        { return ExternalDescription }
+
 // ProcessText run command
-func (handler *ExternalCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool) (string, error) {
+func (handler *ExternalCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool, isCommand bool) (string, error) {
 
 	commandPattern := regexp.MustCompile(`^!([a-zA-Z0-9\_\-]+)([\s(\S*)]*)?`)
 

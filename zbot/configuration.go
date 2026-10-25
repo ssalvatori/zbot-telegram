@@ -18,11 +18,11 @@ type Configuration struct {
 
 // ConfigurationZbot contains the bot's token and feature settings.
 type ConfigurationZbot struct {
-	Token          string   `yaml:"token"`
-	IgnoreDuration int      `yaml:"ignore_duration"`
-	Ignore         bool     `yaml:"ignore"`
-	Level          bool     `yaml:"level"`
-	Admins         []string `yaml:"admins"`
+	Token          string  `yaml:"token"`
+	IgnoreDuration int     `yaml:"ignore_duration"`
+	Ignore         bool    `yaml:"ignore"`
+	Level          bool    `yaml:"level"`
+	Admins         []int64 `yaml:"admins"`
 }
 
 // ConfigurationModules contains external module settings.

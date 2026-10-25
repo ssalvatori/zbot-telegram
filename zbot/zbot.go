@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log/slog"
 	"regexp"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -17,6 +16,7 @@ import (
 	"github.com/ssalvatori/zbot-telegram/db"
 	"github.com/ssalvatori/zbot-telegram/user"
 	"github.com/ssalvatori/zbot-telegram/utils"
+	zbotMiddleware "github.com/ssalvatori/zbot-telegram/zbot/middleware"
 
 	tele "gopkg.in/telebot.v4"
 	"gopkg.in/telebot.v4/middleware"
@@ -52,7 +52,7 @@ type Config struct {
 	// Levels minimum user level per command
 	Levels command.Levels
 	// List of global admins.
-	Admins []string
+	Admins []int64
 }
 
 // Version information, injected at build time with -ldflags -X
@@ -109,10 +109,12 @@ func LoadConfig(conf *Configuration) (Config, error) {
 
 // Bot is a running zbot instance.
 type Bot struct {
-	cfg      Config                // Configuration, loaded from file or built in tests
-	db       db.ZbotDatabase       // Database connection, initialized in Run
-	commands *command.CommandsList // List of commands the bot can run, including built-in and learned commands
-	channels *channelRegistry      // channels the bot is in, updated as invitations arrive from Bot Administrator
+	cfg       Config                   // Configuration, loaded from file or built in tests
+	db        db.ZbotDatabase          // Database connection, initialized in Run
+	commands  *command.CommandsList    // List of commands the bot can run, including built-in and learned commands (chained list)
+	adminCmds []command.CommandElement // List of commands the bot can run for admins
+	channels  *channelRegistry         // channels the bot is in, updated as invitations arrive from Bot Administrator
+	admins    []Admin                  // List of bot administrators, loaded from configuration and verified at startup
 }
 
 // New wires a Bot together. It does not touch the network or the database;
@@ -142,6 +144,8 @@ func New(cfg Config, database db.ZbotDatabase) (*Bot, error) {
 	b.commands = b.buildBaseCommands()
 	b.commands.List.PushBackList(b.buildLearnCommands().List)
 
+	b.adminCmds = b.buildAdminCommands()
+
 	return b, nil
 }
 
@@ -152,17 +156,17 @@ func (b *Bot) buildLearnCommands() *command.CommandsList {
 	d := b.db
 
 	cl := &command.CommandsList{List: list.New()}
-	cl.Chain("last", &command.LastCommand{Db: b.db}, lv.Last, command.LastHelpMessage)
-	cl.Chain("rand", &command.RandCommand{Db: b.db}, lv.Rand, command.RandHelpMessage)
-	cl.Chain("who", &command.WhoCommand{Db: b.db}, lv.Who, command.WhoHelpMessage)
-	cl.Chain("find", &command.FindCommand{Db: d}, lv.Find, command.FindHelpMessage)
-	cl.Chain("get", &command.GetCommand{Db: d}, lv.Get, command.GetHelpMessage)
-	cl.Chain("search", &command.SearchCommand{Db: d}, lv.Search, command.SearchHelpMessage)
-	cl.Chain("stats", &command.StatsCommand{Db: d}, lv.Stats, command.StatsHelpMessage)
-	cl.Chain("learn", &command.LearnCommand{Db: d}, lv.Learn, command.LearnHelpMessage)
-	cl.Chain("append", &command.AppendCommand{Db: d}, lv.Append, command.AppendHelpMessage)
-	cl.Chain("forget", &command.ForgetCommand{Db: d}, lv.Forget, command.ForgetHelpMessage)
-	cl.Chain("lock", &command.LockCommand{Db: d}, lv.Lock, command.LockHelpMessage)
+	cl.Chain("last", &command.LastCommand{Db: b.db}, lv.Last)
+	cl.Chain("rand", &command.RandCommand{Db: b.db}, lv.Rand)
+	cl.Chain("who", &command.WhoCommand{Db: b.db}, lv.Who)
+	cl.Chain("find", &command.FindCommand{Db: d}, lv.Find)
+	cl.Chain("get", &command.GetCommand{Db: d}, lv.Get)
+	cl.Chain("search", &command.SearchCommand{Db: d}, lv.Search)
+	cl.Chain("stats", &command.StatsCommand{Db: d}, lv.Stats)
+	cl.Chain("learn", &command.LearnCommand{Db: d}, lv.Learn)
+	cl.Chain("append", &command.AppendCommand{Db: d}, lv.Append)
+	cl.Chain("forget", &command.ForgetCommand{Db: d}, lv.Forget)
+	cl.Chain("lock", &command.LockCommand{Db: d}, lv.Lock)
 
 	return cl
 }
@@ -173,12 +177,22 @@ func (b *Bot) buildBaseCommands() *command.CommandsList {
 	d := b.db
 
 	cl := &command.CommandsList{List: list.New()}
-	cl.Chain("help", &command.HelpCommand{Commands: cl}, lv.Help, command.HelpMessage)
-	cl.Chain("ping", &command.PingCommand{Db: d}, lv.Ping, command.PingHelpMessage)
-	cl.Chain("version", &command.VersionCommand{GitHash: gitHash, Version: version, BuildTime: buildTime}, lv.Version, command.VersionHelpMessage)
-	cl.Chain("level", &command.LevelCommand{Db: d}, lv.Level, command.LevelHelpMessage)
-	cl.Chain("ignore", &command.IgnoreCommand{Db: d, IgnoreDuration: b.cfg.IgnoreDuration, AdminLevel: lv.Ignore}, lv.Ignore, command.IgnoreHelpMessage)
+	cl.Chain("help", &command.HelpCommand{Commands: cl}, lv.Help)
+	cl.Chain("ping", &command.PingCommand{}, lv.Ping)
+	cl.Chain("version", &command.VersionCommand{GitHash: gitHash, Version: version, BuildTime: buildTime}, lv.Version)
+	cl.Chain("level", &command.LevelCommand{Db: d}, lv.Level)
+	cl.Chain("ignore", &command.IgnoreCommand{Db: d, IgnoreDuration: b.cfg.IgnoreDuration, AdminLevel: lv.Ignore}, lv.Ignore)
 	return cl
+}
+
+// buildAdminCommands list of commands that can be run by admins in private chat with the bot.
+func (b *Bot) buildAdminCommands() []command.CommandElement {
+	cmds := []command.CommandElement{
+		*command.NewCommandElement("/version", 0, &command.VersionCommand{GitHash: gitHash, Version: version, BuildTime: buildTime}),
+		*command.NewCommandElement("/ping", 0, &command.PingCommand{}),
+		// command.NewCommandElement("/help", 0, "/help", command.LevelHelpMessage{}),
+	}
+	return cmds
 }
 
 // Run connects to Telegram and the database and processes updates until ctx
@@ -199,6 +213,7 @@ func (b *Bot) Run(ctx context.Context) error {
 		return fmt.Errorf("bot init: %w", err)
 	}
 	tb.Use(middleware.Logger())
+	// tb.Use(middleware.RegistryChannel()) #TODO: Create a middleware to register the channel the bot is in.
 
 	if err := b.db.Init(); err != nil {
 		return fmt.Errorf("db init: %w", err)
@@ -211,9 +226,17 @@ func (b *Bot) Run(ctx context.Context) error {
 		}
 	}
 
-	b.registerExternalModules(tb)
-	tb.Handle(tele.OnText, b.handleText)
-	tb.Handle(tele.OnAddedToGroup, b.handleAddedToGroup)
+	b.admins = b.setupAdministrators(tb)
+
+	b.cleanUpCommands(tb)
+	b.registerAdminCommands(tb)
+
+	// b.registerExternalModules(tb)
+	// tb.Handle(tele.OnText, b.handleText)
+	// tb.Handle(tele.OnAddedToGroup, b.handleAddedToGroup)
+
+	// adminGroup := tb.Group()
+	// adminGroup.Use(zbotMiddleware.AdminOnly(b.IsAdmin))
 
 	done := make(chan struct{})
 	go func() {
@@ -226,6 +249,16 @@ func (b *Bot) Run(ctx context.Context) error {
 	tb.Stop()
 	<-done
 	return nil
+}
+
+// cleanUpCommands removes all commands from the bot, so that we can set them again with the current configuration.
+func (b *Bot) cleanUpCommands(tb *tele.Bot) {
+	slog.Debug("Cleaning up commands for all admins", "admin_ids", b.cfg.Admins)
+
+	if err := tb.DeleteCommands(); err != nil {
+		slog.Error("delete commands error", "err", err)
+	}
+
 }
 
 // registerExternalModules installs a /<key> handler for every configured module whose binary exists.
@@ -263,18 +296,14 @@ func (b *Bot) handleExternalModule(c tele.Context) error {
 	return nil
 }
 
+// handleText is the main entry point for processing messages.
+// It decides whether to ignore the message, run a command, or do nothing.
 func (b *Bot) handleText(c tele.Context) error {
 
 	slog.Debug("processing message from", "user", c.Sender())
 
 	if c.Message().Private() {
-
-		if b.IsAdmin(c.Sender().Username) {
-			slog.Debug("admin message received", "user", c.Sender().Username)
-
-		}
-
-		return nil
+		return zbotMiddleware.AdminOnly(b.IsAdmin)(b.handleAdminText)(c)
 	}
 
 	response := b.messagesProcessing(c.Message())
@@ -289,18 +318,22 @@ func (b *Bot) handleText(c tele.Context) error {
 	return nil
 }
 
+// handleAdminText processes private-chat messages; only reachable by admins via AdminOnly.
+func (b *Bot) handleAdminText(c tele.Context) error {
+	slog.Debug("admin message received", "user", c.Sender().Username)
+
+	// TODO: process messages using b.adminCommands
+	return nil
+}
+
 func (b *Bot) handleAddedToGroup(c tele.Context) error {
 	sender := c.Sender()
-	inviter := strings.ToLower(sender.Username)
-
-	if inviter == "" {
-		slog.Warn("inviter username is empty, cannot verify admin status")
-		return c.Send("I cannot verify your admin status because your username is empty. Please set a username in Telegram and try again.")
+	if sender == nil || sender.ID == 0 {
+		slog.Warn("inviter has no Telegram ID, cannot verify admin status")
+		return c.Send("Only admins can add me")
 	}
 
-	if !slices.ContainsFunc(b.cfg.Admins, func(admin string) bool {
-		return strings.EqualFold(admin, inviter)
-	}) {
+	if !b.IsAdmin(sender.ID) {
 		if err := c.Send("Only admins can add me"); err != nil {
 			slog.Error("send rejection error", "err", err)
 			return err
@@ -308,7 +341,7 @@ func (b *Bot) handleAddedToGroup(c tele.Context) error {
 		return nil
 	}
 
-	slog.Debug("added to group", "chat", c.Chat().Title, "id", c.Chat().ID, "inviter", inviter)
+	slog.Debug("added to group", "chat", c.Chat().Title, "id", c.Chat().ID, "inviter_id", sender.ID)
 	b.db.AddChannel(c.Chat().ID, c.Chat().Title)
 	b.channels.Track(*c.Chat())
 	return nil

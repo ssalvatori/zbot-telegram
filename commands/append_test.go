@@ -16,7 +16,7 @@ func TestAppendCommandPrivateMessage(t *testing.T) {
 		Meaning: "bar",
 	}
 
-	result, err := appendCommand.ProcessText("!append foo bar", userTest, 0, "testchat", true)
+	result, err := appendCommand.ProcessText("!append foo bar", userTest, 0, "testchat", true, false)
 	assert.Equal(t, "", result, "Private message")
 	assert.Equal(t, ErrNextCommand, err, "Private message")
 
@@ -29,7 +29,7 @@ func TestAppendCommandOK(t *testing.T) {
 		Meaning: "bar",
 	}
 
-	result, _ := appendCommand.ProcessText("!append foo bar", userTest, 0, "testchat", false)
+	result, _ := appendCommand.ProcessText("!append foo bar", userTest, 0, "testchat", false, false)
 	assert.Equal(t, "[foo] = [bar]", result, "Append Command")
 
 }
@@ -37,16 +37,16 @@ func TestAppendCommandOK(t *testing.T) {
 func TestAppendCommandDisabledChannel(t *testing.T) {
 	DisableLearnChannels = []string{"disabled-chat"}
 	defer func() { DisableLearnChannels = nil }()
-	_, err := appendCommand.ProcessText("!append foo bar", userTest, 0, "disabled-chat", false)
+	_, err := appendCommand.ProcessText("!append foo bar", userTest, 0, "disabled-chat", false, false)
 	assert.Equal(t, ErrLearnDisabledChannel, err)
 }
 
 func TestAppendCommandNotMatch(t *testing.T) {
 
-	result, _ := appendCommand.ProcessText("!append6 foor ala", userTest, 0, "testchat", false)
+	result, _ := appendCommand.ProcessText("!append6 foor ala", userTest, 0, "testchat", false, false)
 	assert.Equal(t, "", result, "Empty output doesn't match")
 
-	_, err := appendCommand.ProcessText("!append6 fo lala", userTest, 0, "testchat", false)
+	_, err := appendCommand.ProcessText("!append6 fo lala", userTest, 0, "testchat", false, false)
 	assert.Equal(t, "no action in command", err.Error(), "Error output doesn't match")
 }
 
@@ -58,13 +58,13 @@ func TestAppendCommandError(t *testing.T) {
 		},
 		Error: true,
 	}
-	_, err := appendCommand.ProcessText("!append foo lala", userTest, 0, "testchat", false)
+	_, err := appendCommand.ProcessText("!append foo lala", userTest, 0, "testchat", false, false)
 	assert.Error(t, err, "DB Error")
 
 	appendCommand.Db = &db.ZbotDatabaseMock{
 		Error: true,
 	}
 
-	_, err = appendCommand.ProcessText("!append foo bar2", userTest, 0, "testchat", false)
+	_, err = appendCommand.ProcessText("!append foo bar2", userTest, 0, "testchat", false, false)
 	assert.Error(t, err, "Append Error Get")
 }

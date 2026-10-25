@@ -9,12 +9,17 @@ import (
 )
 
 const HelpMessage = "!help <command> - get help for a specific <command>."
+const HelpDescription = "Get help for a specific command."
 
 type HelpCommand struct {
 	Commands *CommandsList
 }
 
-func (handler *HelpCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool) (string, error) {
+// ShowHelp returns the help message for the command.
+func (handler *HelpCommand) ShowHelp(args ...string) string { return HelpMessage }
+func (handler *HelpCommand) ShowDescription() string        { return HelpDescription }
+
+func (handler *HelpCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool, isCommand bool) (string, error) {
 
 	if private {
 		return "", ErrNextCommand
@@ -31,9 +36,9 @@ func (handler *HelpCommand) ProcessText(text string, user user.User, channelID i
 		}
 
 		for element := handler.Commands.List.Front(); element != nil; element = element.Next() {
-			command := element.Value.(*commandElement)
-			if strings.EqualFold(command.cmdString, term[1]) {
-				return command.helpMessage, nil
+			command := element.Value.(*CommandElement)
+			if strings.EqualFold(command.CmdString, term[1]) {
+				return "", nil
 			}
 		}
 

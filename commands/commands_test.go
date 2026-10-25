@@ -54,8 +54,64 @@ type fakeCommand struct {
 	err    error
 }
 
-func (f *fakeCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool) (string, error) {
+func (f *fakeCommand) ShowHelp(args ...string) string { return "fake help" }
+
+func (f *fakeCommand) ShowDescription() string { return "fake description" }
+
+func (f *fakeCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool, isCommand bool) (string, error) {
 	return f.output, f.err
+}
+
+func TestCommandElementProcessText(t *testing.T) {
+	elem := NewCommandElement("/ping", 0, &fakeCommand{output: "pong"})
+
+	out, err := elem.ProcessCommand("ping", userTest, 1, "chat", true)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "pong", out)
+}
+
+func TestCommandElementProcessTextError(t *testing.T) {
+	elem := NewCommandElement("/ping", 0, &fakeCommand{err: ErrNextCommand})
+
+	_, err := elem.ProcessCommand("ping", userTest, 1, "chat", true)
+
+	assert.ErrorIs(t, err, ErrNextCommand)
+}
+
+func TestCommandsShowHelp(t *testing.T) {
+	tests := []struct {
+		name            string
+		command         zbotCommand
+		wantHelp        string
+		wantDescription string
+	}{
+		{"append", &AppendCommand{}, AppendHelpMessage, AppendDescription},
+		{"find", &FindCommand{}, FindHelpMessage, FindDescription},
+		{"forget", &ForgetCommand{}, ForgetHelpMessage, ForgetDescription},
+		{"get", &GetCommand{}, GetHelpMessage, GetDescription},
+		{"help", &HelpCommand{}, HelpMessage, HelpDescription},
+		{"ignore", &IgnoreCommand{}, IgnoreHelpMessage, IgnoreDescription},
+		{"last", &LastCommand{}, LastHelpMessage, LastDescription},
+		{"learn", &LearnCommand{}, LearnHelpMessage, LearnDescription},
+		{"level", &LevelCommand{}, LevelHelpMessage, LevelDescription},
+		{"lock", &LockCommand{}, LockHelpMessage, LockDescription},
+		{"ping", &PingCommand{}, PingHelpMessage, PingDescription},
+		{"rand", &RandCommand{}, RandHelpMessage, RandDescription},
+		{"search", &SearchCommand{}, SearchHelpMessage, SearchDescription},
+		{"stats", &StatsCommand{}, StatsHelpMessage, StatsDescription},
+		{"top", &TopCommand{}, TopHelpMessage, TopDescription},
+		{"version", &VersionCommand{}, VersionHelpMessage, VersionDescription},
+		{"who", &WhoCommand{}, WhoHelpMessage, WhoDescription},
+		{"external", &ExternalCommand{}, ExternalHelpMessage, ExternalDescription},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.wantHelp, tt.command.ShowHelp())
+			assert.Equal(t, tt.wantDescription, tt.command.ShowDescription())
+		})
+	}
 }
 
 func TestGetTerms(t *testing.T) {
@@ -171,7 +227,7 @@ func TestCommandsListChain(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			l := &CommandsList{List: list.New()}
 			for _, name := range tt.commands {
-				l.Chain(name, &fakeCommand{}, 0, name+" help")
+				l.Chain(name, &fakeCommand{}, 0)
 			}
 			assert.Equal(t, tt.wantLen, l.List.Len())
 		})
@@ -214,7 +270,7 @@ func TestCommandsListRun(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			l := &CommandsList{List: list.New()}
 			for _, cmd := range tt.commands {
-				l.Chain("cmd", cmd, 0, "")
+				l.Chain("cmd", cmd, 0)
 			}
 			assert.Equal(t, tt.want, l.Run("cmd", "!cmd", userTest, 0, "test", false))
 		})

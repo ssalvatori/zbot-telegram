@@ -511,11 +511,12 @@ func (m *addedToGroupCtx) Set(key string, val interface{})                      
 
 func TestHandleAddedToGroupAdmin(t *testing.T) {
 	dbMock := &db.ZbotDatabaseMock{}
-	cfg := Config{Admins: []string{"admin"}}
+	const adminID int64 = 123
+	cfg := Config{Admins: []int64{adminID}}
 	bot := newTestBotWithConfig(dbMock, cfg)
 
 	ctx := &addedToGroupCtx{
-		sender: &tele.User{Username: "admin"},
+		sender: &tele.User{ID: adminID},
 		chat:   &tele.Chat{ID: -1, Title: "test", Type: "group"},
 	}
 
@@ -528,11 +529,11 @@ func TestHandleAddedToGroupAdmin(t *testing.T) {
 
 func TestHandleAddedToGroupNonAdmin(t *testing.T) {
 	dbMock := &db.ZbotDatabaseMock{}
-	cfg := Config{Admins: []string{"admin"}}
+	cfg := Config{Admins: []int64{123}}
 	bot := newTestBotWithConfig(dbMock, cfg)
 
 	ctx := &addedToGroupCtx{
-		sender: &tele.User{Username: "notadmin"},
+		sender: &tele.User{ID: 456, Username: "admin"},
 		chat:   &tele.Chat{ID: -1, Title: "test", Type: "group"},
 	}
 
@@ -542,19 +543,34 @@ func TestHandleAddedToGroupNonAdmin(t *testing.T) {
 	assert.Empty(t, bot.channels.Channels(), "channel should not be tracked for non-admin")
 }
 
-func TestHandleAddedToGroupNoUsername(t *testing.T) {
+func TestHandleAddedToGroupZeroID(t *testing.T) {
 	dbMock := &db.ZbotDatabaseMock{}
-	cfg := Config{Admins: []string{"AdminUser"}}
-	bot := newTestBotWithConfig(dbMock, cfg)
+	bot := newTestBotWithConfig(dbMock, Config{Admins: []int64{0}})
 
-	// no username and no firstName — rejection sent
 	ctx := &addedToGroupCtx{
-		sender: &tele.User{FirstName: "adminuser"},
+		sender: &tele.User{Username: "admin"},
 		chat:   &tele.Chat{ID: -2, Title: "test2", Type: "supergroup"},
 	}
 
 	err := bot.handleAddedToGroup(ctx)
 	assert.NoError(t, err)
-	assert.Equal(t, "I cannot verify your admin status because your username is empty. Please set a username in Telegram and try again.", ctx.sent)
-	assert.Empty(t, bot.channels.Channels(), "channel should not be tracked when username is empty")
+	assert.Equal(t, "Only admins can add me", ctx.sent)
+	assert.Empty(t, bot.channels.Channels(), "channel should not be tracked for a sender without an ID")
+}
+
+func TestHandleAddedToGroupAdminWithoutUsername(t *testing.T) {
+	dbMock := &db.ZbotDatabaseMock{}
+	const adminID int64 = 123
+	cfg := Config{Admins: []int64{adminID}}
+	bot := newTestBotWithConfig(dbMock, cfg)
+
+	ctx := &addedToGroupCtx{
+		sender: &tele.User{ID: adminID, FirstName: "adminuser"},
+		chat:   &tele.Chat{ID: -2, Title: "test2", Type: "supergroup"},
+	}
+
+	err := bot.handleAddedToGroup(ctx)
+	assert.NoError(t, err)
+	assert.Empty(t, ctx.sent, "admin should not receive rejection")
+	assert.Contains(t, bot.channels.Channels(), Channel{ID: -2, Title: "test2"}, "channel should be tracked")
 }

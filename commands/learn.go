@@ -11,14 +11,19 @@ import (
 )
 
 const LearnHelpMessage = "!learn <term> <meaning> - learn a <term> with <meaning>; duplicate terms receive a numeric suffix"
+const LearnDescription = "Learn a new term with its meaning."
 
 // LearnCommand defintion
 type LearnCommand struct {
 	Db db.ZbotDatabase
 }
 
+// ShowHelp returns the help message for the command.
+func (handler *LearnCommand) ShowHelp(args ...string) string { return LearnHelpMessage }
+func (handler *LearnCommand) ShowDescription() string        { return LearnDescription }
+
 // ProcessText Run module
-func (handler *LearnCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool) (string, error) {
+func (handler *LearnCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool, isCommand bool) (string, error) {
 
 	if private {
 		return "", ErrNextCommand

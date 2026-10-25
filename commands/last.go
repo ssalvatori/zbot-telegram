@@ -16,18 +16,19 @@ type LastCommand struct {
 	Db db.ZbotDatabase
 }
 
-func (*LastCommand) GetHelp() string {
-	return LastHelpMessage
-}
+// ShowHelp returns the help message for the command.
+func (handler *LastCommand) ShowHelp(args ...string) string { return LastHelpMessage }
+func (handler *LastCommand) ShowDescription() string        { return LastDescription }
 
 const LastHelpMessage = "!last - get the last learned term"
+const LastDescription = "Get the last learned term."
 const LAST_ITEMS = 10
 
 // SetDb set db connection if the module need it
 func (handler *LastCommand) SetDb(db db.ZbotDatabase) {}
 
 // ProcessText run command
-func (handler *LastCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool) (string, error) {
+func (handler *LastCommand) ProcessText(text string, user user.User, channelID int, channelName string, private bool, isCommand bool) (string, error) {
 
 	if private {
 		return "", ErrNextCommand
