@@ -50,8 +50,17 @@ func TestSetUpNoDatabaseEngine(t *testing.T) {
 	assert.Nil(t, bot)
 }
 
-func TestSetupLog(t *testing.T) {
+// chdirTemp switches the test to a temporary working directory so setupLog
+// does not create zbot.log in the repository root.
+func chdirTemp(t *testing.T) {
+	t.Helper()
+	old, err := os.Getwd()
+	require.NoError(t, err)
+	require.NoError(t, os.Chdir(t.TempDir()))
+	t.Cleanup(func() { _ = os.Chdir(old) })
+}
 
+func TestSetupLogLevel(t *testing.T) {
 	levels := map[string]slog.Level{
 		"info":  slog.LevelInfo,
 		"debug": slog.LevelDebug,
@@ -59,10 +68,29 @@ func TestSetupLog(t *testing.T) {
 		"":      slog.LevelInfo,
 	}
 	for key, value := range levels {
-		setupLog(key)
-		assert.Equal(t, logLevel.Level(), value, "Setup log levels for key: "+key)
+		lvl := setupLogLevel(key)
+		assert.Equal(t, value, lvl.Level(), "Setup log level for key: "+key)
 	}
+}
 
+func TestSetupLog(t *testing.T) {
+	chdirTemp(t)
+
+	// Repeated calls must not panic and must reinstall the logger.
+	for _, key := range []string{"info", "debug", "error", ""} {
+		setupLog(key)
+	}
+}
+
+func TestSetupLogWritesToFile(t *testing.T) {
+	chdirTemp(t)
+
+	setupLog("info")
+	slog.Info("file log test message")
+
+	content, err := os.ReadFile(logFileName)
+	require.NoError(t, err)
+	assert.Contains(t, string(content), "file log test message")
 }
 
 func TestReadConfigurationNotFound(t *testing.T) {

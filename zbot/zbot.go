@@ -53,6 +53,8 @@ type Config struct {
 	Levels command.Levels
 	// List of global admins.
 	Admins []int64
+	// LogFileName is the name of the file where logs are written in addition to stdout.
+	LogFileName string
 }
 
 // Version information, injected at build time with -ldflags -X
@@ -190,6 +192,7 @@ func (b *Bot) buildAdminCommands() []command.CommandElement {
 	cmds := []command.CommandElement{
 		*command.NewCommandElement("/version", 0, &command.VersionCommand{GitHash: gitHash, Version: version, BuildTime: buildTime}),
 		*command.NewCommandElement("/ping", 0, &command.PingCommand{}),
+		*command.NewCommandElement("/logs", 0, &command.LogsCommand{Path: command.DefaultLogsPath}),
 		// command.NewCommandElement("/help", 0, "/help", command.LevelHelpMessage{}),
 	}
 	return cmds

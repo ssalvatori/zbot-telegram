@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -19,12 +20,18 @@ type environmentVariables struct {
 	LogLevel          string `env:"ZBOT_LOG_LEVEL" envDefault:"info"`
 }
 
-// logLevel holds the current log level and can be inspected in tests
-var logLevel = new(slog.LevelVar)
+// // logLevel holds the current log level and can be inspected in tests
+// var logLevel = new(slog.LevelVar)
 
-// setupLog configures the default slog logger for the given level name
+// logFileName is the fixed name of the file that receives a copy of every
+// log line in addition to the standard output.
+const logFileName = "zbot.log"
+
+// setupLogLevel configures the default slog logger for the given level name
 // ("debug", "info" or "error"). Unknown values fall back to info.
-func setupLog(level string) {
+func setupLogLevel(level string) *slog.LevelVar {
+
+	logLevel := new(slog.LevelVar)
 	switch level {
 	case "debug":
 		logLevel.Set(slog.LevelDebug)
@@ -33,7 +40,23 @@ func setupLog(level string) {
 	default:
 		logLevel.Set(slog.LevelInfo)
 	}
-	h := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel})
+	return logLevel
+}
+
+// setupLog configures the default slog logger to write to both stdout and a
+// file, with the given log level.
+func setupLog(level string) {
+	logLevel := setupLogLevel(level)
+
+	var w io.Writer = os.Stdout
+	f, err := os.OpenFile(logFileName, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o644)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "cannot open %s for logging: %v (logging to stdout only)\n", logFileName, err)
+	} else {
+		w = io.MultiWriter(os.Stdout, f)
+	}
+
+	h := slog.NewTextHandler(w, &slog.HandlerOptions{Level: logLevel})
 	slog.SetDefault(slog.New(h))
 }
 
@@ -48,6 +71,8 @@ func setup(configurationFile string) (*zbot.Bot, error) {
 	if err != nil {
 		return nil, fmt.Errorf("load configuration: %w", err)
 	}
+
+	cfg.LogFileName = logFileName
 
 	database, err := db.New(conf.Db)
 	if err != nil {
