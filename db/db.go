@@ -42,6 +42,8 @@ type Channel struct {
 	LearnEnabled    bool  `gorm:"default:true"`
 	ExternalEnabled bool  `gorm:"default:true"`
 	CreatedAt       int64 `gorm:"autoCreateTime"`
+	Deactivate      bool  `gorm:"default:false"`
+	DeactivatedAt   int64
 }
 
 // ZbotDatabase DB interface for Zbot
@@ -78,7 +80,10 @@ type ZbotDatabase interface {
 	AddChannel(telegramID int64, name string) error
 	RemoveChannel(telegramID int64) (bool, error)
 	ListChannels() ([]Channel, error)
-	GetChannel(telegramID int64) (Channel, error)
+	GetChannel(int64) (Channel, error)
+	DisableChannel(int64) (bool, error) // Disable a channel
+	EnableChannel(int64) (bool, error)  // Enable a channel
+	CheckIfChannelExist(int64) bool     // Check if a channel exists in the database
 	// DisableLearn(string) (string, error) // Disable learning for a channel
 	// IsLearnEnabled(string) (bool, error) // Check if learning is enabled for a channel
 }

@@ -1,6 +1,9 @@
 package db
 
-import "log/slog"
+import (
+	"log/slog"
+	"time"
+)
 
 func (d *ZbotDatabaseSqlite) ListChannels() ([]Channel, error) {
 	var channels []Channel
@@ -37,4 +40,39 @@ func (d *ZbotDatabaseSqlite) GetChannel(telegramID int64) (Channel, error) {
 		return Channel{}, err
 	}
 	return ch, nil
+}
+
+// DisableChannel disables a channel in the database and records when it was deactivated.
+func (d *ZbotDatabaseSqlite) DisableChannel(telegramID int64) (bool, error) {
+	updates := map[string]any{
+		"deactivate":     true,
+		"deactivated_at": time.Now().Unix(),
+	}
+	if err := d.DB.Model(&Channel{}).Where("telegram_id = ?", telegramID).Updates(updates).Error; err != nil {
+		slog.Error("disable channel error", "err", err)
+		return false, err
+	}
+	return true, nil
+}
+
+// EnableChannel disables a channel in the database and records when it was deactivated.
+func (d *ZbotDatabaseSqlite) EnableChannel(channelID int64) (bool, error) {
+	updates := map[string]any{
+		"deactivate":     false,
+		"deactivated_at": 0,
+	}
+	if err := d.DB.Model(&Channel{}).Where("telegram_id = ?", channelID).Updates(updates).Error; err != nil {
+		slog.Error("disable channel error", "err", err)
+		return false, err
+	}
+	return true, nil
+}
+
+func (d *ZbotDatabaseSqlite) CheckIfChannelExist(telegramID int64) bool {
+	var count int64
+	if err := d.DB.Model(&Channel{}).Where("telegram_id = ?", telegramID).Count(&count).Error; err != nil {
+		slog.Error("check if channel exist error", "err", err)
+		return false
+	}
+	return count > 0
 }

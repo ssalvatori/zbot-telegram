@@ -236,7 +236,8 @@ func (b *Bot) Run(ctx context.Context) error {
 
 	// b.registerExternalModules(tb)
 	// tb.Handle(tele.OnText, b.handleText)
-	// tb.Handle(tele.OnAddedToGroup, b.handleAddedToGroup)
+	tb.Handle(tele.OnAddedToGroup, b.handleAddedToGroup)
+	tb.Handle(tele.OnMyChatMember, b.handleMyChatMember)
 
 	// adminGroup := tb.Group()
 	// adminGroup.Use(zbotMiddleware.AdminOnly(b.IsAdmin))
@@ -329,24 +330,107 @@ func (b *Bot) handleAdminText(c tele.Context) error {
 	return nil
 }
 
+// handleAddedToGroup processes the bot being added to a group.
+// Only admins may add the bot; non-admin inviters get a rejection message
+// and the bot leaves the chat immediately.
 func (b *Bot) handleAddedToGroup(c tele.Context) error {
 	sender := c.Sender()
 	if sender == nil || sender.ID == 0 {
 		slog.Warn("inviter has no Telegram ID, cannot verify admin status")
-		return c.Send("Only admins can add me")
+		return b.rejectAndLeave(c, "Only admins can add me")
 	}
 
 	if !b.IsAdmin(sender.ID) {
-		if err := c.Send("Only admins can add me"); err != nil {
-			slog.Error("send rejection error", "err", err)
-			return err
+		slog.Info("non-admin tried to add the bot", "user_id", sender.ID, "chat_id", c.Chat().ID)
+		return b.rejectAndLeave(c, "Only admins can add me")
+	}
+
+	b.EnableOrAddChannel(*c.Chat(), *c.Sender()) // Add the channel to the database and the in-memory registry
+	b.NotifyAdmins(c, fmt.Sprintf("Bot added to new group: %s (%d) by @%s (%d)", c.Chat().Title, c.Chat().ID, sender.Username, sender.ID))
+
+	return nil
+}
+
+// NotifyAdmins sends a message to all configured zbot admins.
+func (b *Bot) NotifyAdmins(c tele.Context, message string) {
+	slog.Debug("Notify admins", "message", message, "admin_ids", b.cfg.Admins)
+
+	for _, adminID := range b.cfg.Admins {
+		admin := &tele.User{ID: adminID}
+		msg, err := c.Bot().Send(admin, message)
+		if err != nil {
+			slog.Error("notify admin error", "admin_id", adminID, "err", err)
+			continue
 		}
+		slog.Debug("notified admin", "admin_id", adminID, "message_id", msg.ID)
+	}
+}
+
+// EnableOrAddChannel adds a channel to the database and the in-memory registry.
+func (b *Bot) EnableOrAddChannel(chat tele.Chat, sender tele.User) error {
+	// Add the channel to the DB or activate it if it already exists
+	// Send messages to the admins that the bot has been added to a new group and inform the inviter.
+
+	slog.Info("Checking if channel should be enabled or added", "chat", chat.Title, "chat_id", chat.ID, "inviter", sender.Username, "inviter_id", sender.ID)
+
+	if !b.db.CheckIfChannelExist(chat.ID) {
+		slog.Info("adding new channel to database", "chat", chat.Title, "id", chat.ID)
+		b.db.AddChannel(chat.ID, chat.Title)
+	} else {
+		slog.Info("enabling existing channel in database", "chat", chat.Title, "id", chat.ID)
+		b.db.EnableChannel(chat.ID)
+	}
+
+	b.channels.Track(chat)
+
+	return nil
+}
+
+// rejectAndLeave sends a rejection message and leaves the chat.
+func (b *Bot) rejectAndLeave(c tele.Context, message string) error {
+	if err := c.Send(message); err != nil {
+		slog.Error("send rejection error", "err", err)
+	}
+
+	bot := c.Bot()
+	if bot == nil {
+		slog.Warn("cannot leave chat: no bot in context")
 		return nil
 	}
 
-	slog.Debug("added to group", "chat", c.Chat().Title, "id", c.Chat().ID, "inviter_id", sender.ID)
-	b.db.AddChannel(c.Chat().ID, c.Chat().Title)
-	b.channels.Track(*c.Chat())
+	if err := bot.Leave(c.Chat()); err != nil {
+		slog.Error("leave chat error", "chat_id", c.Chat().ID, "err", err)
+		return err
+	}
+
+	slog.Info("left unauthorized chat", "chat", c.Chat().Title, "chat_id", c.Chat().ID)
+	return nil
+}
+
+// handleMyChatMember reacts to changes in the bot's own membership status.
+// When the bot is kicked or leaves a chat, the channel is removed from the
+// database and from the in-memory registry.
+func (b *Bot) handleMyChatMember(c tele.Context) error {
+	m := c.ChatMember()
+	if m == nil || m.NewChatMember == nil || m.Chat == nil {
+		return nil
+	}
+
+	role := m.NewChatMember.Role
+	if role != tele.Kicked && role != tele.Left {
+		return nil
+	}
+
+	slog.Info("bot removed from chat", "chat", m.Chat.Title, "chat_id", m.Chat.ID, "status", role)
+
+	removed, err := b.db.DisableChannel(m.Chat.ID)
+	if err != nil {
+		slog.Error("remove channel from db error", "chat_id", m.Chat.ID, "err", err)
+	} else if removed {
+		slog.Debug("channel removed from db", "chat_id", m.Chat.ID)
+	}
+
+	b.channels.Forget(m.Chat.ID)
 	return nil
 }
 

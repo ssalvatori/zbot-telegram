@@ -26,6 +26,12 @@ type ZbotDatabaseMock struct {
 	Error             bool
 	IgnoreListCleaned bool
 	Channel           Channel
+	// ChannelExists, when non-nil, overrides the default CheckIfChannelExist result.
+	ChannelExists *bool
+	// Call markers set when the corresponding channel method is invoked.
+	AddedChannel    bool
+	EnabledChannel  bool
+	DisabledChannel bool
 }
 
 // Engine mock
@@ -216,6 +222,7 @@ func (d *ZbotDatabaseMock) AddChannel(telegramID int64, name string) error {
 	if d.Error {
 		return errors.New("mock")
 	}
+	d.AddedChannel = true
 	return nil
 }
 
@@ -223,6 +230,22 @@ func (d *ZbotDatabaseMock) RemoveChannel(telegramID int64) (bool, error) {
 	if d.Error {
 		return false, errors.New("mock")
 	}
+	return true, nil
+}
+
+func (d *ZbotDatabaseMock) DisableChannel(telegramID int64) (bool, error) {
+	if d.Error {
+		return false, errors.New("mock")
+	}
+	d.DisabledChannel = true
+	return true, nil
+}
+
+func (d *ZbotDatabaseMock) EnableChannel(telegramID int64) (bool, error) {
+	if d.Error {
+		return false, errors.New("mock")
+	}
+	d.EnabledChannel = true
 	return true, nil
 }
 
@@ -242,4 +265,14 @@ func (d *ZbotDatabaseMock) GetChannel(telegramID int64) (Channel, error) {
 		return Channel{ID: 1, TelegramID: telegramID, Name: "mock", LearnEnabled: true, ExternalEnabled: true}, nil
 	}
 	return d.Channel, nil
+}
+
+func (d *ZbotDatabaseMock) CheckIfChannelExist(channelID int64) bool {
+	if d.Error {
+		return false
+	}
+	if d.ChannelExists != nil {
+		return *d.ChannelExists
+	}
+	return true
 }
