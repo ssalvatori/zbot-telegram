@@ -20,9 +20,6 @@ type environmentVariables struct {
 	LogLevel          string `env:"ZBOT_LOG_LEVEL" envDefault:"info"`
 }
 
-// // logLevel holds the current log level and can be inspected in tests
-// var logLevel = new(slog.LevelVar)
-
 // logFileName is the fixed name of the file that receives a copy of every
 // log line in addition to the standard output.
 const logFileName = "zbot.log"

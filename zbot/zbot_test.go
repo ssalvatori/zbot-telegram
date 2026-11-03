@@ -1,6 +1,7 @@
 package zbot
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -450,15 +451,49 @@ func TestRunExternalModuleCommandNotFound(t *testing.T) {
 	assert.Equal(t, "", result)
 }
 
+// stubAPI embeds tele.API so only the methods we need are implemented.
+type stubAPI struct {
+	tele.API
+	leftChat *tele.Chat
+	leaveErr error
+	sentTo   []int64
+	messages []string
+	sendErr  error
+}
+
+func (s *stubAPI) Leave(chat tele.Recipient) error {
+	if s.leaveErr != nil {
+		return s.leaveErr
+	}
+	if c, ok := chat.(*tele.Chat); ok {
+		s.leftChat = c
+	}
+	return nil
+}
+
+func (s *stubAPI) Send(to tele.Recipient, what interface{}, opts ...interface{}) (*tele.Message, error) {
+	if s.sendErr != nil {
+		return nil, s.sendErr
+	}
+	if u, ok := to.(*tele.User); ok {
+		s.sentTo = append(s.sentTo, u.ID)
+	}
+	if str, ok := what.(string); ok {
+		s.messages = append(s.messages, str)
+	}
+	return &tele.Message{ID: len(s.messages)}, nil
+}
+
 // addedToGroupCtx implements tele.Context for testing handleAddedToGroup.
 type addedToGroupCtx struct {
 	sender *tele.User
 	chat   *tele.Chat
 	msg    *tele.Message
 	sent   string
+	api    tele.API
 }
 
-func (m *addedToGroupCtx) Bot() tele.API                                { return nil }
+func (m *addedToGroupCtx) Bot() tele.API                                { return m.api }
 func (m *addedToGroupCtx) Update() tele.Update                          { return tele.Update{} }
 func (m *addedToGroupCtx) Message() *tele.Message                       { return m.msg }
 func (m *addedToGroupCtx) Callback() *tele.Callback                     { return nil }
@@ -515,14 +550,17 @@ func TestHandleAddedToGroupAdmin(t *testing.T) {
 	cfg := Config{Admins: []int64{adminID}}
 	bot := newTestBotWithConfig(dbMock, cfg)
 
+	api := &stubAPI{}
 	ctx := &addedToGroupCtx{
 		sender: &tele.User{ID: adminID},
 		chat:   &tele.Chat{ID: -1, Title: "test", Type: "group"},
+		api:    api,
 	}
 
 	err := bot.handleAddedToGroup(ctx)
 	assert.NoError(t, err)
 	assert.Empty(t, ctx.sent, "admin should not receive rejection")
+	assert.Nil(t, api.leftChat, "bot should not leave when added by an admin")
 	channels := bot.channels.Channels()
 	assert.Contains(t, channels, Channel{ID: -1, Title: "test"}, "channel should be tracked")
 }
@@ -532,14 +570,17 @@ func TestHandleAddedToGroupNonAdmin(t *testing.T) {
 	cfg := Config{Admins: []int64{123}}
 	bot := newTestBotWithConfig(dbMock, cfg)
 
+	api := &stubAPI{}
 	ctx := &addedToGroupCtx{
 		sender: &tele.User{ID: 456, Username: "admin"},
 		chat:   &tele.Chat{ID: -1, Title: "test", Type: "group"},
+		api:    api,
 	}
 
 	err := bot.handleAddedToGroup(ctx)
 	assert.NoError(t, err)
 	assert.Equal(t, "Only admins can add me", ctx.sent)
+	assert.Equal(t, int64(-1), api.leftChat.ID, "bot should leave the chat for non-admin inviter")
 	assert.Empty(t, bot.channels.Channels(), "channel should not be tracked for non-admin")
 }
 
@@ -547,14 +588,17 @@ func TestHandleAddedToGroupZeroID(t *testing.T) {
 	dbMock := &db.ZbotDatabaseMock{}
 	bot := newTestBotWithConfig(dbMock, Config{Admins: []int64{0}})
 
+	api := &stubAPI{}
 	ctx := &addedToGroupCtx{
 		sender: &tele.User{Username: "admin"},
 		chat:   &tele.Chat{ID: -2, Title: "test2", Type: "supergroup"},
+		api:    api,
 	}
 
 	err := bot.handleAddedToGroup(ctx)
 	assert.NoError(t, err)
 	assert.Equal(t, "Only admins can add me", ctx.sent)
+	assert.Equal(t, int64(-2), api.leftChat.ID, "bot should leave the chat when sender has no ID")
 	assert.Empty(t, bot.channels.Channels(), "channel should not be tracked for a sender without an ID")
 }
 
@@ -564,13 +608,227 @@ func TestHandleAddedToGroupAdminWithoutUsername(t *testing.T) {
 	cfg := Config{Admins: []int64{adminID}}
 	bot := newTestBotWithConfig(dbMock, cfg)
 
+	api := &stubAPI{}
 	ctx := &addedToGroupCtx{
 		sender: &tele.User{ID: adminID, FirstName: "adminuser"},
 		chat:   &tele.Chat{ID: -2, Title: "test2", Type: "supergroup"},
+		api:    api,
 	}
 
 	err := bot.handleAddedToGroup(ctx)
 	assert.NoError(t, err)
 	assert.Empty(t, ctx.sent, "admin should not receive rejection")
+	assert.Nil(t, api.leftChat, "bot should not leave when added by an admin")
 	assert.Contains(t, bot.channels.Channels(), Channel{ID: -2, Title: "test2"}, "channel should be tracked")
+}
+
+// myChatMemberCtx implements tele.Context for testing handleMyChatMember.
+type myChatMemberCtx struct {
+	member *tele.ChatMemberUpdate
+}
+
+func (m *myChatMemberCtx) Bot() tele.API                                { return nil }
+func (m *myChatMemberCtx) Update() tele.Update                          { return tele.Update{} }
+func (m *myChatMemberCtx) Message() *tele.Message                       { return nil }
+func (m *myChatMemberCtx) Callback() *tele.Callback                     { return nil }
+func (m *myChatMemberCtx) Query() *tele.Query                           { return nil }
+func (m *myChatMemberCtx) InlineResult() *tele.InlineResult             { return nil }
+func (m *myChatMemberCtx) ShippingQuery() *tele.ShippingQuery           { return nil }
+func (m *myChatMemberCtx) PreCheckoutQuery() *tele.PreCheckoutQuery     { return nil }
+func (m *myChatMemberCtx) Payment() *tele.Payment                       { return nil }
+func (m *myChatMemberCtx) Poll() *tele.Poll                             { return nil }
+func (m *myChatMemberCtx) PollAnswer() *tele.PollAnswer                 { return nil }
+func (m *myChatMemberCtx) ChatMember() *tele.ChatMemberUpdate           { return m.member }
+func (m *myChatMemberCtx) ChatJoinRequest() *tele.ChatJoinRequest       { return nil }
+func (m *myChatMemberCtx) Migration() (int64, int64)                    { return 0, 0 }
+func (m *myChatMemberCtx) Topic() *tele.Topic                           { return nil }
+func (m *myChatMemberCtx) Boost() *tele.BoostUpdated                    { return nil }
+func (m *myChatMemberCtx) BoostRemoved() *tele.BoostRemoved             { return nil }
+func (m *myChatMemberCtx) PurchasedPaidMedia() *tele.PaidMediaPurchased { return nil }
+func (m *myChatMemberCtx) Sender() *tele.User {
+	if m.member != nil {
+		return m.member.Sender
+	}
+	return nil
+}
+func (m *myChatMemberCtx) Chat() *tele.Chat {
+	if m.member != nil {
+		return m.member.Chat
+	}
+	return nil
+}
+func (m *myChatMemberCtx) Recipient() tele.Recipient { return m.Chat() }
+func (m *myChatMemberCtx) Text() string              { return "" }
+func (m *myChatMemberCtx) ThreadID() int             { return 0 }
+func (m *myChatMemberCtx) Entities() tele.Entities   { return nil }
+func (m *myChatMemberCtx) Data() string              { return "" }
+func (m *myChatMemberCtx) Args() []string            { return nil }
+func (m *myChatMemberCtx) Send(what interface{}, opts ...interface{}) error {
+	return nil
+}
+func (m *myChatMemberCtx) SendAlbum(a tele.Album, opts ...interface{}) error       { return nil }
+func (m *myChatMemberCtx) Reply(what interface{}, opts ...interface{}) error       { return nil }
+func (m *myChatMemberCtx) Forward(msg tele.Editable, opts ...interface{}) error    { return nil }
+func (m *myChatMemberCtx) ForwardTo(to tele.Recipient, opts ...interface{}) error  { return nil }
+func (m *myChatMemberCtx) Edit(what interface{}, opts ...interface{}) error        { return nil }
+func (m *myChatMemberCtx) EditCaption(caption string, opts ...interface{}) error   { return nil }
+func (m *myChatMemberCtx) EditOrSend(what interface{}, opts ...interface{}) error  { return nil }
+func (m *myChatMemberCtx) EditOrReply(what interface{}, opts ...interface{}) error { return nil }
+func (m *myChatMemberCtx) Delete() error                                           { return nil }
+func (m *myChatMemberCtx) DeleteAfter(d time.Duration) *time.Timer                 { return nil }
+func (m *myChatMemberCtx) Notify(action tele.ChatAction) error                     { return nil }
+func (m *myChatMemberCtx) Ship(what ...interface{}) error                          { return nil }
+func (m *myChatMemberCtx) Accept(errorMessage ...string) error                     { return nil }
+func (m *myChatMemberCtx) Answer(resp *tele.QueryResponse) error                   { return nil }
+func (m *myChatMemberCtx) AnswerGuest(result tele.Result) error                    { return nil }
+func (m *myChatMemberCtx) Respond(resp ...*tele.CallbackResponse) error            { return nil }
+func (m *myChatMemberCtx) RespondText(text string) error                           { return nil }
+func (m *myChatMemberCtx) RespondAlert(text string) error                          { return nil }
+func (m *myChatMemberCtx) Get(key string) interface{}                              { return nil }
+func (m *myChatMemberCtx) Set(key string, val interface{})                         {}
+
+func TestHandleMyChatMemberKicked(t *testing.T) {
+	dbMock := &db.ZbotDatabaseMock{}
+	bot := newTestBotWithConfig(dbMock, Config{Channels: []Channel{{ID: -100, Title: "gone"}}})
+
+	ctx := &myChatMemberCtx{
+		member: &tele.ChatMemberUpdate{
+			Chat:          &tele.Chat{ID: -100, Title: "gone", Type: "supergroup"},
+			Sender:        &tele.User{ID: 1, Username: "admin"},
+			NewChatMember: &tele.ChatMember{Role: tele.Kicked},
+		},
+	}
+
+	err := bot.handleMyChatMember(ctx)
+	assert.NoError(t, err)
+	assert.NotContains(t, bot.channels.Channels(), Channel{ID: -100, Title: "gone"}, "channel should be forgotten")
+}
+
+func TestHandleMyChatMemberLeft(t *testing.T) {
+	dbMock := &db.ZbotDatabaseMock{}
+	bot := newTestBotWithConfig(dbMock, Config{Channels: []Channel{{ID: -200, Title: "left"}}})
+
+	ctx := &myChatMemberCtx{
+		member: &tele.ChatMemberUpdate{
+			Chat:          &tele.Chat{ID: -200, Title: "left", Type: "group"},
+			Sender:        &tele.User{ID: 2},
+			NewChatMember: &tele.ChatMember{Role: tele.Left},
+		},
+	}
+
+	err := bot.handleMyChatMember(ctx)
+	assert.NoError(t, err)
+	assert.Empty(t, bot.channels.Channels(), "channel should be forgotten on left")
+}
+
+func TestHandleMyChatMemberStillMember(t *testing.T) {
+	dbMock := &db.ZbotDatabaseMock{}
+	bot := newTestBotWithConfig(dbMock, Config{Channels: []Channel{{ID: -300, Title: "stays"}}})
+
+	ctx := &myChatMemberCtx{
+		member: &tele.ChatMemberUpdate{
+			Chat:          &tele.Chat{ID: -300, Title: "stays", Type: "supergroup"},
+			Sender:        &tele.User{ID: 3},
+			NewChatMember: &tele.ChatMember{Role: tele.Member},
+		},
+	}
+
+	err := bot.handleMyChatMember(ctx)
+	assert.NoError(t, err)
+	assert.Contains(t, bot.channels.Channels(), Channel{ID: -300, Title: "stays"}, "channel should remain when bot is still a member")
+}
+
+func TestHandleMyChatMemberNil(t *testing.T) {
+	dbMock := &db.ZbotDatabaseMock{}
+	bot := newTestBot(dbMock)
+
+	ctx := &myChatMemberCtx{member: nil}
+
+	err := bot.handleMyChatMember(ctx)
+	assert.NoError(t, err, "nil member update should be a no-op")
+}
+
+func TestNotifyAdmins(t *testing.T) {
+	dbMock := &db.ZbotDatabaseMock{}
+	cfg := Config{Admins: []int64{111, 222}}
+	bot := newTestBotWithConfig(dbMock, cfg)
+
+	api := &stubAPI{}
+	ctx := &addedToGroupCtx{api: api}
+
+	bot.NotifyAdmins(ctx, "hello admins")
+
+	assert.Equal(t, []int64{111, 222}, api.sentTo, "message should be sent to every admin")
+	assert.Equal(t, []string{"hello admins", "hello admins"}, api.messages)
+}
+
+func TestNotifyAdminsSendError(t *testing.T) {
+	dbMock := &db.ZbotDatabaseMock{}
+	bot := newTestBotWithConfig(dbMock, Config{Admins: []int64{111}})
+
+	api := &stubAPI{sendErr: errors.New("boom")}
+	ctx := &addedToGroupCtx{api: api}
+
+	bot.NotifyAdmins(ctx, "msg") // send error is logged, not propagated
+	assert.Empty(t, api.sentTo)
+}
+
+func TestEnableOrAddChannelNew(t *testing.T) {
+	exists := false
+	dbMock := &db.ZbotDatabaseMock{ChannelExists: &exists}
+	bot := newTestBot(dbMock)
+
+	err := bot.EnableOrAddChannel(tele.Chat{ID: -10, Title: "newgroup"}, tele.User{ID: 1, Username: "admin"})
+	assert.NoError(t, err)
+	assert.True(t, dbMock.AddedChannel, "AddChannel should be called for a new channel")
+	assert.False(t, dbMock.EnabledChannel, "EnableChannel should not be called for a new channel")
+	assert.Contains(t, bot.channels.Channels(), Channel{ID: -10, Title: "newgroup"}, "channel should be tracked")
+}
+
+func TestEnableOrAddChannelExisting(t *testing.T) {
+	exists := true
+	dbMock := &db.ZbotDatabaseMock{ChannelExists: &exists}
+	bot := newTestBot(dbMock)
+
+	err := bot.EnableOrAddChannel(tele.Chat{ID: -20, Title: "oldgroup"}, tele.User{ID: 2, Username: "admin"})
+	assert.NoError(t, err)
+	assert.True(t, dbMock.EnabledChannel, "EnableChannel should be called for an existing channel")
+	assert.False(t, dbMock.AddedChannel, "AddChannel should not be called for an existing channel")
+	assert.Contains(t, bot.channels.Channels(), Channel{ID: -20, Title: "oldgroup"}, "channel should be tracked")
+}
+
+func TestRejectAndLeave(t *testing.T) {
+	dbMock := &db.ZbotDatabaseMock{}
+	bot := newTestBot(dbMock)
+
+	api := &stubAPI{}
+	ctx := &addedToGroupCtx{chat: &tele.Chat{ID: -5, Title: "bad"}, api: api}
+
+	err := bot.rejectAndLeave(ctx, "nope")
+	assert.NoError(t, err)
+	assert.Equal(t, "nope", ctx.sent, "rejection message should be sent")
+	assert.Equal(t, int64(-5), api.leftChat.ID, "bot should leave the chat")
+}
+
+func TestRejectAndLeaveError(t *testing.T) {
+	dbMock := &db.ZbotDatabaseMock{}
+	bot := newTestBot(dbMock)
+
+	api := &stubAPI{leaveErr: errors.New("cannot leave")}
+	ctx := &addedToGroupCtx{chat: &tele.Chat{ID: -6}, api: api}
+
+	err := bot.rejectAndLeave(ctx, "nope")
+	assert.Error(t, err, "leave error should be propagated")
+	assert.Equal(t, "nope", ctx.sent, "rejection message is still sent before leaving")
+}
+
+func TestRejectAndLeaveNoBot(t *testing.T) {
+	dbMock := &db.ZbotDatabaseMock{}
+	bot := newTestBot(dbMock)
+
+	ctx := &addedToGroupCtx{chat: &tele.Chat{ID: -7}, api: nil}
+
+	err := bot.rejectAndLeave(ctx, "nope")
+	assert.NoError(t, err, "missing bot in context is not an error")
+	assert.Equal(t, "nope", ctx.sent)
 }

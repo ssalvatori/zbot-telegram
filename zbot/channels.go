@@ -43,6 +43,18 @@ func (r *channelRegistry) Channels() []Channel {
 	return out
 }
 
+// Forget removes the channel with the given Telegram chat ID from the registry.
+func (r *channelRegistry) Forget(chatID int64) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	for i, ch := range r.channels {
+		if ch.ID == chatID {
+			r.channels = append(r.channels[:i], r.channels[i+1:]...)
+			return
+		}
+	}
+}
+
 func appendChannel(channels []Channel, chat tele.Chat) []Channel {
 
 	for i := range channels {
